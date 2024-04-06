@@ -32,9 +32,11 @@
     "scripts": {
         "build": "vite build",
         "build:dev": "NODE_ENV=development npm run build",
+        "copy": "rimraf \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
         "cy:open": "cypress open",
         "cy:run": "cypress run",
         "cy:server": "node-red -u ./cypress/fixtures/user-dir/ -p 1881",
+        "cy:clean-install": "rimraf ./cypress/fixtures/user-dir/node_modules/@flowfuse && cd ./cypress/fixtures/user-dir && npm install",
         "dev": "NODE_ENV=development vite build --watch",
         "dev:prod": "vite build --watch",
         "docs:build": "vitepress build docs",
@@ -58,6 +60,7 @@
         "d3": "^7.8.5",
         "escodegen": "^2.1.0",
         "express": "^4.18.2",
+        "ncp": "^2.0.0",
         "socket.io": "^4.7.1",
         "vue": "^3.4.5"
     },
@@ -95,6 +98,7 @@
         "socket.io-client": "^4.7.2",
         "sort-package-json": "^2.6.0",
         "vite": "^5.0.0",
+        "vite-plugin-pwa": "^0.19.8",
         "vitepress": "^1.0.2",
         "vue-router": "^4.2.4",
         "vuetify": "^3.4.10",
