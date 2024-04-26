@@ -1,3 +1,7 @@
+---
+description: Customize your Node-RED Dashboard 2.0 experience with detailed settings for optimal dashboard performance and appearance.
+---
+
 # Settings
 
 Whilst most dashboard configuration is done within the Node-RED editor, some settings
@@ -73,6 +77,19 @@ dashboard: {
             next(new Error("invalid"));
         }
     }
+}
+```
+
+#### `maxHttpBufferSize`
+
+This set the maximum message size (in bytes) the socket can send.
+Default value is 1MiB (1E6 bytes).
+
+Change this value to allow larger files to be uploaded.
+
+```js
+dashboard: {
+    maxHttpBufferSize: 1e8 // size in bytes, example: 100 MB
 }
 ```
 

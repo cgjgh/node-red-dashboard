@@ -1,6 +1,6 @@
 {
     "name": "@flowfuse/node-red-dashboard",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "description": "Dashboard 2.0 - A collection of Node-RED nodes that provide functionality to build your own UI applications (inc. forms, buttons, charts).",
     "keywords": [
         "node-red"
@@ -41,6 +41,7 @@
         "dev:prod": "vite build --watch",
         "docs:build": "vitepress build docs",
         "docs:dev": "vitepress dev docs",
+        "generate-pwa-assets": "pwa-assets-generator",
         "lint": "npm run lint:js && npm run lint:package",
         "lint:fix": "npm run lint:js:fix && npm run lint:package:fix",
         "lint:js": "eslint --ext .js,.vue,.cjs,.mjs .",
@@ -59,7 +60,7 @@
         "core-js": "^3.32.0",
         "d3": "^7.8.5",
         "escodegen": "^2.1.0",
-        "express": "^4.18.2",
+        "express": "^4.19.2",
         "ncp": "^2.0.0",
         "socket.io": "^4.7.1",
         "vue": "^3.4.5"
@@ -67,6 +68,7 @@
     "devDependencies": {
         "@mdi/font": "^7.4.47",
         "@unhead/vue": "^1.7.4",
+        "@vite-pwa/assets-generator": "^0.2.4",
         "@vitejs/plugin-vue": "^4.5.0",
         "chart.js": "^4.4.0",
         "cypress": "^13.6.2",
@@ -89,7 +91,7 @@
         "medium-zoom": "^1.0.8",
         "mermaid": "^10.4.0",
         "mocha": "^10.2.0",
-        "node-red": "^3.1.0",
+        "node-red": "^3.1.9",
         "node-red-node-test-helper": "^0.3.3",
         "npm-run-all": "^4.1.5",
         "should": "^13.2.3",
@@ -101,7 +103,7 @@
         "vite-plugin-pwa": "^0.19.8",
         "vitepress": "^1.0.2",
         "vue-router": "^4.2.4",
-        "vuetify": "^3.5.15",
+        "vuetify": "^3.5.17",
         "vuex": "^4.1.0"
     },
     "engines": {

@@ -1,4 +1,5 @@
 import { loadEnv } from 'vite';
+const defaultMetaDescription = "Discover the features and benefits of Node-RED Dashboard 2.0, designed to streamline and enhance your Node-RED experience."
 
 export default ({ mode }) => {
   process.env = {...process.env, ...loadEnv(mode, process.cwd())};
@@ -9,7 +10,7 @@ export default ({ mode }) => {
         lang: 'en',
         label: 'English',
         title: 'Node-RED Dashboard 2.0',
-        description: 'Documentation for Node-RED Dashboard 2.0, a collection of nodes to build out data visualisations and dashboards in Node-RED',
+        description: defaultMetaDescription
       }
     },
     head: [
@@ -36,6 +37,14 @@ export default ({ mode }) => {
         {},
         "window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-MNGVF5NCF7');",
       ],
+      [
+        'script',
+        {
+          id: 'hs-script-loader',
+          async: true,
+          src: "//js-eu1.hs-scripts.com/26586079.js",
+        },
+      ]
     ],
     transformPageData(pageData) {
       const canonicalUrl = `https://dashboard.flowfuse.com/${pageData.relativePath}`
@@ -47,9 +56,19 @@ export default ({ mode }) => {
         'link',
         { rel: 'canonical', href: canonicalUrl }
       ])
+
+      const metaDescription = 
+        pageData.frontmatter.description === undefined
+        ? defaultMetaDescription
+        : pageData.frontmatter.description
+
+      pageData.frontmatter.head.push([
+        'meta',
+        { name: 'description', content: metaDescription}
+      ])
     },
     themeConfig: {
-      logo: '/logo.png',
+      logo: { src: '/logo.png', alt: 'Node-RED Dashboard 2.0 Logo' },
       nav: [
         { text: 'Docs', link: '/getting-started.html' },
         { text: 'Widgets', link: '/nodes/widgets.html' },

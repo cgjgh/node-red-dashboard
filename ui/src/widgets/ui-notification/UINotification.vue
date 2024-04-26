@@ -17,7 +17,7 @@
         <template v-if="props.allowDismiss" #actions>
             <v-btn
                 variant="text"
-                @click="close"
+                @click="close('clicked')"
             >
                 {{ props.dismissText || "Close" }}
             </v-btn>
@@ -84,7 +84,7 @@ export default {
 
             this.timeouts.close = setTimeout(() => {
                 // close the notification after time has elapsed
-                this.close()
+                this.close('timeout')
             }, time)
 
             // update the progress bar every 100ms
@@ -96,8 +96,9 @@ export default {
                 this.countdown = 100 - (elapsed / parseFloat(this.props.displayTime)) * 100
             }, 100)
         },
-        close () {
+        close (payload) {
             this.show = false
+            this.$socket.emit('widget-action', this.id, payload)
 
             clearTimeout(this.timeouts.close)
             clearInterval(this.timeouts.step)
@@ -109,7 +110,7 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 .nrdb-ui-notification {
     padding-top: 64px;
 }
@@ -120,7 +121,7 @@ export default {
     border-left: 6px solid var(--nrdb-ui-notification-color);
 }
 .nrdb-ui-notification .v-snackbar__content {
-    padding-left: 8px;
+    padding: 8px 12px;
 }
 
 .nrdb-ui-notification-countdown {

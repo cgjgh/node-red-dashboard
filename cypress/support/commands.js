@@ -55,6 +55,10 @@ Cypress.Commands.add('loadFlows', loadFlows)
 Cypress.Commands.add('deployFlow', deployFlow)
 
 Cypress.Commands.add('deployFixture', (fixture) => {
+    // disables service worker in testing due to ongoing issue with cypress - https://github.com/cypress-io/cypress/issues/27501
+    cy.intercept('/dashboard/sw.js', {
+        body: undefined
+    })
     let helperApi = null
     let rev = null
     // eslint-disable-next-line promise/catch-or-return
@@ -78,9 +82,9 @@ Cypress.Commands.add('resetContext', () => {
     cy.request('POST', '/context/reset')
 })
 
-Cypress.Commands.add('checkOutput', (key, value) => {
+Cypress.Commands.add('checkOutput', (key, value, comparator = 'eq') => {
     const parentKey = key.split('.')[0]
-    cy.request('GET', '/context/flow?key=' + parentKey).its(`body.${key}`).should('eq', value)
+    cy.request('GET', '/context/flow?key=' + parentKey).its(`body.${key}`).should(comparator, value)
 })
 
 Cypress.Commands.add('setGlobalVar', (key, value) => {
