@@ -33,6 +33,7 @@
         "build": "vite build",
         "build:dev": "NODE_ENV=development npm run build",
         "copy": "rimraf \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
+        "copy-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
         "cy:open": "cypress open",
         "cy:run": "cypress run",
         "cy:server": "node-red -u ./cypress/fixtures/user-dir/ -p 1881",
