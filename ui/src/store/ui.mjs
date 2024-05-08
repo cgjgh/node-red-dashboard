@@ -4,7 +4,8 @@ const state = () => ({
     pages: null,
     groups: null,
     themes: null,
-    widgets: null
+    widgets: null,
+    connectionStatus: false // Added connectionStatus with a default value of false
 })
 
 // getters
@@ -101,6 +102,9 @@ const getters = {
             return sorted
         }
     },
+    connectionStatus (state) {
+        return state.connectionStatus
+    },
     /**
      *
      * @param {*} item - 'page' || 'group' || 'widget'
@@ -164,6 +168,9 @@ const mutations = {
         if ('class' in data) {
             state.widgets[wId].state.class = data.class
         }
+    },
+    connectionStatus (state, status) {
+        state.connectionStatus = status
     },
     /**
      *

@@ -273,6 +273,17 @@ main {
     border: 1px solid #d1d1d1; /* should use theme variable? */
 }
 
+/*
+*Styles for the connection status indicator
+*/
+.nrdb-connection-status {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: auto;
+}
+
 /**
 * Navigation Drawer (Side Menu) Overrides
 */

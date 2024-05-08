@@ -14,7 +14,10 @@
             </template>
             <v-app-bar-title>{{ pageTitle }}</v-app-bar-title>
             <template #append>
-                <div id="app-bar-actions" />
+                <div id="app-bar-actions">
+                    <!-- Add a circle indicator for connection status -->
+                    <span class="nrdb-connection-status" :style="{ backgroundColor: connectionStatus ? '#1BC318' : 'red' }" />
+                </div>
             </template>
         </v-app-bar>
 
@@ -159,6 +162,9 @@ export default {
                 return 'default'
             }
             return style
+        },
+        connectionStatus: function () {
+            return this.$store.getters['ui/connectionStatus']
         }
     },
     watch: {
@@ -245,3 +251,14 @@ export default {
     }
 }
 </script>
+
+<!-- <style>
+/* Add styles for the connection status indicator */
+.connection-status {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: auto;
+}
+</style> -->
