@@ -289,7 +289,7 @@ main {
 */
 
 .v-list-item--active {
-    background-color: var(--v-theme-background);
+    background-color: rgb(var(--v-theme-background));
 }
 
 /* Override the default Vuetify theme by making 'primary' the main colour for widgets, rather than 'surface' */

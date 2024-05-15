@@ -25,12 +25,6 @@ import './stylesheets/common.css'
 
 import store from './store/index.mjs'
 
-// PWA
-import { registerSW } from 'virtual:pwa-register'
-
-// register service worker
-registerSW({ immediate: true })
-
 // set a base theme on which we will add our custom NR-defined theme
 const theme = {
     dark: false,
@@ -72,7 +66,7 @@ const vuetify = createVuetify({
 // if our scoket disconnects, we should inform the user when it reconnects
 
 // GET our SocketIO Config from Node-RED & any other bits plugins have added to the _setup endpoint
-fetch('_setup')
+fetch('_setup', { mode: 'no-cors' })
     .then(async (response) => {
         const url = new URL(response.url)
         const basePath = url.pathname.replace('/_setup', '')
@@ -175,4 +169,6 @@ fetch('_setup')
     })
     .catch((err) => {
         console.log('auth error:', err)
+        console.log('redirecting to:', window.location.origin + '/dashboard')
+        window.location.replace(window.location.origin + '/dashboard')
     })

@@ -1,3 +1,7 @@
+<script setup>
+import PWABadge from './components/PWABadge.vue'
+</script>
+
 <template>
     <v-app>
         <div v-if="loading" class="nrdb-splash-loading">
@@ -13,11 +17,12 @@
                 <p :class="'status-' + status.type" v-html="status.msg" />
             </div>
         </div>
+        <PWABadge />
     </v-app>
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState } from 'vuex' // eslint-disable-line import/order
 import { markRaw } from 'vue' // eslint-disable-line import/order
 
 import DashboardLoading from './components/loading.vue'
