@@ -172,5 +172,8 @@ fetch('_setup', { mode: 'no-cors' })
     .catch((err) => {
         console.log('auth error:', err)
         console.log('redirecting to:', window.location.origin + '/dashboard')
-        window.location.replace(window.location.origin + '/dashboard')
+
+        // window.location.replace(window.location.origin + '/dashboard') //Original, seems to have no issues with Edge and Chrome on Windows, doesn't work on Android (Not tested on Linux browser)
+        // window.location.href = window.location.origin + window.location.pathname + window.location.search + (window.location.search ? '&' : '?') + 'reloadTime=' + Date.now().toString() + window.location.hash; // Also works on Edge + Chrome on windows, doesn't work on android
+        window.location.replace(window.location.origin + '/dashboard' + '?' + 'reloadTime=' + Date.now().toString() + Math.random()) // Seems to work on Edge and Chrome on Windows Chromium and Firefox on Linux, and also on Chrome Android (an also as PWA App)
     })
