@@ -32,6 +32,7 @@ main {
 #app-bar-actions {
     display: flex;
     gap: 6px;
+    height: 100%;
 }
 
 /**
@@ -364,3 +365,7 @@ main {
     background: rgb(var(--v-theme-navigation-background));
     color: rgba(var(--v-theme-on-navigation-background), var(--v-high-emphasis-opacity));
 }
+
+.v-toolbar__append {
+    margin-inline: auto 0px !important;
+  }
