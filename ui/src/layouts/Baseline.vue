@@ -14,7 +14,10 @@
             </template>
             <v-app-bar-title>{{ pageTitle }}</v-app-bar-title>
             <template #append>
-                <div id="app-bar-actions" />
+                <div id="app-bar-actions">
+                    <!-- Add a circle indicator for connection status -->
+                    <status-indicator :connected="connectionStatus" />
+                </div>
             </template>
         </v-app-bar>
 
@@ -67,6 +70,8 @@
 <script>
 import { mapGetters, mapState } from 'vuex'
 
+// import StatusIndicator from '../components/statusIndicStripe.vue'
+import StatusIndicator from '../components/statusIndicCircle.vue'
 import Alerts from '../services/alerts'
 import UINotification from '../widgets/ui-notification/UINotification.vue'
 
@@ -101,7 +106,8 @@ function getContrast (bg) {
 export default {
     name: 'BaslineLayout',
     components: {
-        'ui-notification': UINotification
+        'ui-notification': UINotification,
+        'status-indicator': StatusIndicator
     },
     props: {
         pageTitle: {
@@ -167,6 +173,9 @@ export default {
         },
         navPosition: function () {
             return this.appBarStyle === 'fixed' ? 'fixed' : 'absolute'
+        },
+        connectionStatus: function () {
+            return this.$store.getters['ui/connectionStatus']
         }
     },
     watch: {

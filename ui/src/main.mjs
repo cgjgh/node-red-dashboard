@@ -101,6 +101,7 @@ fetch('_setup', { mode: 'no-cors' })
                 disconnectedAt = new Date()
                 disconnected = true
             }
+            store.commit('ui/connectionStatus', false)
             // tell the user we're trying to connect
             Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
                 displayTime: 0,
@@ -113,6 +114,7 @@ fetch('_setup', { mode: 'no-cors' })
 
         socket.on('connect', () => {
             console.log('SIO connected')
+            store.commit('ui/connectionStatus', true)
             // if we've just disconnected (i.e. aren't connecting for the first time)
             if (disconnected) {
                 // send a notification/alert to the user to let them know the connection is live again
