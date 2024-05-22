@@ -8,7 +8,7 @@
             <template #append>
                 <div id="app-bar-actions">
                     <!-- Add a circle indicator for connection status -->
-                    <status-indicator :connected="connectionStatus" />
+                    <status-indicator :connected="connectionStatus" @click="reloadPage" />
                 </div>
             </template>
         </v-app-bar>
@@ -250,6 +250,9 @@ export default {
             if (this.navigationStyle === 'default') {
                 this.drawer = false
             }
+        },
+        reloadPage () {
+            window.location.reload()
         }
     }
 }
