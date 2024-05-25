@@ -35,7 +35,7 @@
         "copy": "rimraf \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
         "copy-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
        
-        "build-deploy2": "npm run build && npm run copy2 && npm run copy-icon2",
+        "build-deploy2": "npm run build && npm run replace-css-version && npm run copy2 && npm run copy-icon2",
         "copy2": "rimraf \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
         "copy-icon2": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
         
