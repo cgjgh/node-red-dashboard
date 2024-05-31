@@ -2,7 +2,7 @@
   "name": "Node-RED Dashboard 2.0",
   "short_name": "Dashboard",
   "description": "Node-RED Dashboard 2.0",
-  "theme_color": "#ffffff",
+  "theme_color": "#111",
 
   "icons": [
     {

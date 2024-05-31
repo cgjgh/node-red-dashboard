@@ -26,7 +26,7 @@ import './stylesheets/common.css'
 import store from './store/index.mjs'
 
 // set a base theme on which we will add our custom NR-defined theme
-const theme = {
+const themeLight = {
     dark: false,
     colors: {
         background: '#fff',
@@ -43,6 +43,22 @@ const theme = {
     }
 }
 
+const themeDark = {
+    dark: true,
+    colors: {
+        background: '#303030',
+        'navigation-background': '#0D0D0D',
+        'group-background': '##1F1F1F',
+        primary: '#0000ff',
+        accent: '#ff6b99',
+        secondary: '#26ff8c',
+        success: '#a5d64c',
+        surface: '#ffffff',
+        info: '#ff53d0',
+        warning: '#ff8e00',
+        error: '#ff5252'
+    }
+}
 const vuetify = createVuetify({
     components: {
         ...components,
@@ -54,7 +70,8 @@ const vuetify = createVuetify({
     theme: {
         defaultTheme: 'nrdb',
         themes: {
-            nrdb: theme
+            nrdb: themeDark,
+            nrdb2: themeLight
         }
     }
 })

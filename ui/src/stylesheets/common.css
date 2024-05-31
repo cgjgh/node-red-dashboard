@@ -3,8 +3,10 @@
 */
 
 :root {
-    --nrdb-bg-color: #eee;
-    --nrdb-text-color: #222;
+    /* --nrdb-bg-color: #eee;
+    --nrdb-text-color: #222; */
+    --nrdb-bg-color: var(--nrdb-bg-color);
+    --nrdb-text-color: var(--nrdb-text-color);
     --nrdb-font-family: Helvtiva;
     /* header */
     --nrdb-header-bg: red;
