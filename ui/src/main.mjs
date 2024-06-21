@@ -138,6 +138,7 @@ const fetchSetup = () => {
 
             // handle final disconnection
             socket.on('disconnect', (reason) => {
+                store.commit('ui/connectionStatus', false)
                 if (!disconnected) {
                     retryCount = 0
                     disconnected = true
