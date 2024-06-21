@@ -30,7 +30,7 @@
         "nodes/*"
     ],
     "scripts": {
-        "build-launch": "npm run build && npm run cy:clean-install && npm run cy:server",
+        "build-launch": "npm run build && npm run cy:server",
         "build-deploy": "npm run build && npm run replace-mdi-version && npm run copy && npm run copy-icon",
         "copy": "rimraf \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
         "copy-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
@@ -39,7 +39,8 @@
         "copy2": "rimraf \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
         "copy-icon2": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
         
-        "cy:clean-install": "rimraf ./cypress/fixtures/user-dir/node_modules/@flowfuse && cd ./cypress/fixtures/user-dir && npm install",
+        "deploy2X": "npm run replace-mdi-version && npm run copy && npm run copy-icon && npm run copy2 && npm run copy-icon2",
+
         "replace-mdi-version": "node replace-mdi-version.js",
 
         "build": "vite build",

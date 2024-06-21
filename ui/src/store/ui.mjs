@@ -5,7 +5,7 @@ const state = () => ({
     groups: null,
     themes: null,
     widgets: null,
-    connectionStatus: false // Added connectionStatus with a default value of false
+    connectionStatus: true // Added connectionStatus with a default value of false
 })
 
 // getters
