@@ -5,6 +5,8 @@
         :class="className"
         :label="label"
         :multiple="multiple"
+        :chips="chips"
+        :clearable="clearable"
         :items="options"
         item-title="label"
         item-value="value"
@@ -34,7 +36,9 @@ export default {
             items: null,
             dynamic: {
                 label: null,
-                multiple: null
+                multiple: null,
+                chips: null,
+                clearable: null
             }
         }
     },
@@ -66,6 +70,12 @@ export default {
         multiple: function () {
             return this.dynamic.multiple === null ? this.props.multiple : this.dynamic.multiple
         },
+        chips: function () {
+            return this.dynamic.chips === null ? this.props.chips : this.dynamic.chips
+        },
+        clearable: function () {
+            return this.dynamic.clearable === null ? this.props.clearable : this.dynamic.clearable
+        },
         label: function () {
             return this.dynamic.label !== null ? this.dynamic.label : this.props.label
         }
@@ -92,18 +102,18 @@ export default {
             // 1. add/replace the dropdown options (to support dynamic options e.g: nested dropdowns populated from a database)
             // 2. update the selected value(s)
 
-            const payload = msg.payload
-            if (payload !== undefined) {
-                // 2. update the selected value(s)
-                this.select(payload)
-            }
-
             // keep options out for backward compatibility
             const options = msg.options
             if (options) {
                 // 1. add/replace the dropdown options
                 // TODO: Error handling if options is not an array
                 this.items = options
+            }
+
+            const payload = msg.payload
+            if (payload !== undefined) {
+                // 2. update the selected value(s)
+                this.select(payload)
             }
 
             // update the UI with any other changes

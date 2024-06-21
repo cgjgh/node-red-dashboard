@@ -15,7 +15,7 @@
     /* main */
     --nrdb-main-padding: 12px;
     /* widget sizing */
-    --widget-row-height: 42px;
+    --widget-row-height: 48px;
 }
 
 body {
@@ -31,7 +31,14 @@ main {
     padding: var(--nrdb-main-padding);
 }
 
-#app-bar-actions {
+.v-toolbar-title__placeholder {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#app-bar-actions,
+#app-bar-title {
     display: flex;
     gap: 6px;
     height: 100%;
@@ -54,6 +61,18 @@ main {
 
 .nrdb-loading {
     fill: #bbb;
+}
+
+/**
+* Anchor
+*/
+
+.nrdb-anchor {
+    cursor: pointer;
+    color: rgb(var(--v-theme-primary));
+}
+.nrdb-anchor:hover {
+    color: rgb(var(--v-theme-primary-darken-1));
 }
 
 /**
@@ -337,14 +356,15 @@ main {
     background: rgb(var(--v-theme-background));
     color: rgb(var(--v-theme-on-background));
 }
-
 .v-slider-track__background,
 .v-slider-track__fill,
-.v-slider-track__tick,
-.v-slider-thumb__surface {
+.v-slider-track__tick {
     background-color: rgb(var(--v-theme-primary));
 }
 
+.v-slider-thumb__surface {
+   color: rgb(var(--v-theme-primary));
+}
 /* switch thumb */
 
 .v-switch__track {

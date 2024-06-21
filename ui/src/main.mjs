@@ -77,7 +77,7 @@ const vuetify = createVuetify({
 const host = new URL(window.location.href)
 
 function forcePageReload (err) {
-    console.log('auth error:', err)
+    console.log('Reloading page:', err)
     console.log('redirecting to:', window.location.origin + '/dashboard')
 
     // Reloading dashboard without using cache by appending a cache-busting string to fully reload page to allow redirecting to auth
@@ -93,7 +93,6 @@ function forcePageReload (err) {
 // GET our SocketIO Config from Node-RED & any other bits plugins have added to the _setup endpoint
 const fetchSetup = () => {
     return fetch('_setup')
-
         .then(async (response) => {
             switch (true) {
             case !response.ok && response.status === 401:
@@ -113,20 +112,13 @@ const fetchSetup = () => {
             const url = new URL(response.url)
             const basePath = url.pathname.replace('/_setup', '')
 
-            // Check if the response was redirected
-            if (response.redirected) {
-                console.log('Response was redirected to auth')
-            } else {
-                console.log('Response came from the original request source')
-            }
-
             // get the setup JSON from the server
             const setup = await response.json()
             setup.basePath = basePath
 
             if (setup.socketio?.path) {
-                // get text before /socket.io and replace it with the calculated basePath
-                // basePath would have taken into account any proxy and/or httpNodeRoot settings
+            // get text before /socket.io and replace it with the calculated basePath
+            // basePath would have taken into account any proxy and/or httpNodeRoot settings
                 const replace = setup.socketio.path.split('/socket.io')[0]
                 setup.socketio.path = setup.socketio.path.replace(replace, basePath)
             }
@@ -134,10 +126,10 @@ const fetchSetup = () => {
             store.commit('setup/set', setup)
 
             let disconnected = false
-            let disconnectedAt = null
+            let retryCount = 0 // number of reconnection attempts made
 
             let reconnectTO = null
-            const MAX_TIMER = 300000 // 5 minutes
+            const MAX_RETRIES = 22 // 4 at 2.5 seconds, 10 at 5 secs then 8 at 30 seconds
 
             const socket = io({
                 ...setup.socketio,
@@ -147,10 +139,9 @@ const fetchSetup = () => {
             // handle final disconnection
             socket.on('disconnect', (reason) => {
                 if (!disconnected) {
-                    disconnectedAt = new Date()
+                    retryCount = 0
                     disconnected = true
                 }
-                store.commit('ui/connectionStatus', false)
                 // tell the user we're trying to connect
                 Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
                     displayTime: 0,
@@ -166,7 +157,7 @@ const fetchSetup = () => {
                 store.commit('ui/connectionStatus', true)
                 // if we've just disconnected (i.e. aren't connecting for the first time)
                 if (disconnected) {
-                    // send a notification/alert to the user to let them know the connection is live again
+                // send a notification/alert to the user to let them know the connection is live again
                     Alerts.emit('Connected', 'Connection re-established.', '#1BC318', {
                         displayTime: 1,
                         allowDismiss: true,
@@ -178,22 +169,36 @@ const fetchSetup = () => {
             })
 
             socket.on('connect_error', (err) => {
-                console.error('SIO connect error:', err, err.data)
+                console.error('SIO connect error:', err, `err: ${JSON.stringify(err)}`)
+                if (err?.code === 'parser error') {
+                // There has been a 'parser error' during the attempt to connect. This means that socket.io
+                // does not like the response from the server from the attempt to connect.
+                // This happens if there is a proxy server in front of node red that has redirected to
+                // a login page. There may also be other situations under which this error occurs, but whatever the
+                // cause it doesn't seem that we can do much other than force a reload.
+                    forcePageReload('parser error')
+                }
             })
 
-            // default interval - every 5 seconds
-            function reconnect (interval = 5000) {
+            // default interval - every 2.5 seconds
+            function reconnect (interval = 2500) {
                 if (disconnected) {
                     socket.connect()
-                    const now = new Date()
-                    if (now - disconnectedAt > 60000) {
-                        // trying for over 1 minute
+                    if (retryCount >= 14) {
+                    // trying for over 1 minute
                         interval = 30000 // interval at 30 seconds
+                    } else if (retryCount >= 4) {
+                    // trying for over 10 seconds
+                        interval = 5000 // interval at 5 seconds
                     }
-                    // if still within our maximum timer
-                    if (now - disconnectedAt < MAX_TIMER) {
-                        // check for a connection again in <interval> milliseconds
+                    retryCount++
+                    // if still within our maximum retry count
+                    if (retryCount <= MAX_RETRIES) {
+                    // check for a connection again in <interval> milliseconds
                         reconnectTO = setTimeout(reconnect, interval)
+                    } else {
+                    // we have been retrying for 5 minutes so give up and reload the page
+                        forcePageReload('Too many retries')
                     }
                 }
             }
@@ -227,6 +232,7 @@ const fetchSetup = () => {
             }
         })
 }
+
 fetchSetup()
 
 window.addEventListener('focus', () => {
