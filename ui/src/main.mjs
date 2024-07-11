@@ -19,6 +19,7 @@ import * as directives from 'vuetify/directives'
 // Labs Imports
 import { VNumberInput } from 'vuetify/labs/VNumberInput'
 import { VTreeview } from 'vuetify/labs/VTreeview'
+import { VTimePicker } from 'vuetify/labs/VTimePicker'
 
 import './stylesheets/common.css'
 
@@ -62,7 +63,8 @@ const vuetify = createVuetify({
     components: {
         ...components,
         VNumberInput,
-        VTreeview
+        VTreeview,
+        VTimePicker
     },
     directives,
     theme: {
@@ -144,11 +146,11 @@ const fetchSetup = () => {
                     disconnected = true
                 }
                 // tell the user we're trying to connect
-                Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
-                    displayTime: 0,
-                    allowDismiss: false,
-                    showCountdown: false
-                })
+                // Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
+                //     displayTime: 0,
+                //     allowDismiss: false,
+                //     showCountdown: false
+                // })
                 // attempt to reconnect
                 reconnect()
             })
@@ -236,8 +238,8 @@ const fetchSetup = () => {
 
 fetchSetup()
 
-window.addEventListener('focus', () => {
-    if (!store.state.ui.connectionStatus) {
-        fetchSetup()
-    }
-})
+// window.addEventListener('focus', () => {
+//     if (!store.state.ui.connectionStatus) {
+//         fetchSetup()
+//     }
+// })

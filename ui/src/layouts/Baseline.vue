@@ -60,6 +60,7 @@
                     :props="{position: 'top right', showCountdown: alert.showCountdown, displayTime: alert.displayTime, raw: true, allowDismiss: alert.allowDismiss}"
                 />
             </div>
+            <status-dialog :connected="connectionStatus" />
         </v-main>
     </v-app>
 </template>
@@ -68,6 +69,7 @@
 import { mapGetters, mapState } from 'vuex'
 
 // import StatusIndicator from '../components/statusIndicStripe.vue'
+import StatusDialog from '../components/statusDialog.vue'
 import StatusIndicator from '../components/statusIndicCircle.vue'
 import Alerts from '../services/alerts'
 import UINotification from '../widgets/ui-notification/UINotification.vue'
@@ -104,7 +106,8 @@ export default {
     name: 'BaslineLayout',
     components: {
         'ui-notification': UINotification,
-        'status-indicator': StatusIndicator
+        'status-indicator': StatusIndicator,
+        'status-dialog': StatusDialog
     },
     props: {
         pageTitle: {
