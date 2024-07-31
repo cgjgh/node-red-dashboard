@@ -371,12 +371,37 @@ module.exports = function (RED) {
                 }
             }
 
+            // get user info from socket
+            const userInfo = addConnectionCredentials(RED, {}, socket, n)
+
+            // Retrieve user allowed pages from global context
+            const store = node.context().global.get('store')
+            const userId = userInfo?._client?.user.email
+            // eslint-disable-next-line prefer-const
+            let userPages = new Map(node.ui.pages) // Create a shallow copy of node.ui.pages
+            let data = null
+
+            try {
+                data = store[userId]?.allowedPages
+            } catch (error) {
+                node.warn('error getting user allowed pages')
+            }
+
             // loop over pages - check statestore if we've had any dynamic properties set
             for (const [id, page] of node.ui.pages) {
                 const state = statestore.getAll(id)
                 if (state) {
                     // merge the statestore with our props to account for dynamically set properties:
-                    node.ui.pages.set(id, { ...page, ...state })
+                    userPages.set(id, { ...page, ...state })
+                }
+                if (data) {
+                    try {
+                        if (!(data.includes(page.name))) {
+                            userPages.delete(id)
+                        }
+                    } catch (error) {
+                        node.warn(error)
+                    }
                 }
             }
 
@@ -393,7 +418,7 @@ module.exports = function (RED) {
             socket.emit('ui-config', node.id, {
                 dashboards: Object.fromEntries(node.ui.dashboards),
                 heads: Object.fromEntries(node.ui.heads),
-                pages: Object.fromEntries(node.ui.pages),
+                pages: Object.fromEntries(userPages),
                 themes: Object.fromEntries(node.ui.themes),
                 groups: Object.fromEntries(node.ui.groups),
                 widgets: Object.fromEntries(node.ui.widgets)
