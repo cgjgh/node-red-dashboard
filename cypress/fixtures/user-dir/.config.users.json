@@ -13,7 +13,7 @@
                 "view-show-welcome-tours": true
             },
             "tours": {
-                "welcome": "3.1.0-git"
+                "welcome": "4.0.2-git"
             },
             "dialog": {
                 "export": {
