@@ -24,6 +24,7 @@ import { VTimePicker } from 'vuetify/labs/VTimePicker'
 import './stylesheets/common.css'
 
 import store from './store/index.mjs'
+import { useDataTracker } from './widgets/data-tracker.mjs' // eslint-disable-line import/order
 
 // set a base theme on which we will add our custom NR-defined theme
 const themeLight = {
@@ -222,6 +223,7 @@ const fetchSetup = () => {
 
             // make the socket service available app-wide via this.$socket
             app.provide('$socket', socket)
+            app.provide('$dataTracker', useDataTracker)
 
             // mount the VueJS app into <div id="app"></div> in /ui/public/index.html
             app.mount('#app')

@@ -10,17 +10,17 @@
         <template v-if="appendIcon" #append>
             <v-icon :color="iconColor" />
         </template>
+        <!-- eslint-disable-next-line vue/no-v-html -->
         <span v-if="label" :style="{'color': textColor}" v-html="label" />
     </v-btn>
 </template>
 
 <script>
-import { useDataTracker } from '../data-tracker.mjs' // eslint-disable-line import/order
 import { mapState } from 'vuex' // eslint-disable-line import/order
 
 export default {
     name: 'DBUIButton',
-    inject: ['$socket'],
+    inject: ['$socket', '$dataTracker'],
     props: {
         id: { type: String, required: true },
         props: { type: Object, default: () => ({}) },
@@ -70,7 +70,7 @@ export default {
         }
     },
     created () {
-        useDataTracker(this.id, null, null, this.onDynamicProperties)
+        this.$dataTracker(this.id, null, null, this.onDynamicProperties)
     },
     methods: {
         action ($evt) {

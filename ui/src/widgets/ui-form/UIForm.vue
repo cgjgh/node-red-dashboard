@@ -27,13 +27,11 @@
 </template>
 
 <script>
-
-import { useDataTracker } from '../data-tracker.mjs' // eslint-disable-line import/order
 import { mapState } from 'vuex' // eslint-disable-line import/order
 
 export default {
     name: 'DBUIForm',
-    inject: ['$socket'],
+    inject: ['$socket', '$dataTracker'],
     props: {
         id: { type: String, required: true },
         props: { type: Object, default: () => ({}) },
@@ -63,16 +61,26 @@ export default {
     },
     created () {
         // can't do this in setup as we are using custom onInput function that needs access to 'this'
-        useDataTracker(this.id, this.onInput, null, this.onDynamicProperties)
+        this.$dataTracker(this.id, this.onInput, null, this.onDynamicProperties)
     },
     mounted () {
         this.reset()
     },
     methods: {
         onSubmit: function () {
+            const options = this.options
+            // Clear unused keys from `input`, to prevent sending old keys on next submit
+            const allowed = options.map(opt => opt.key)
+            this.input = Object.keys(this.input)
+                .filter(key => allowed.includes(key))
+                .reduce((obj, key) => {
+                    return {
+                        ...obj,
+                        [key]: this.input[key]
+                    }
+                }, {})
             // Prevent sending null for switch and combobox, if type number send as Number or null if nothing present on text field and if other fields not present, send empty string
-            const option = this.options
-            option.forEach(opt => {
+            options.forEach(opt => {
                 if (opt.type === 'checkbox' || opt.type === 'switch') {
                     if (typeof (this.input[opt.key]) === 'undefined' || this.input[opt.key] === null) {
                         this.input[opt.key] = false
