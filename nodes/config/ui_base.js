@@ -921,6 +921,18 @@ module.exports = function (RED) {
                 // ensure we have the latest instance of the page's node
                 const { _users, ...p } = page
                 node.ui.pages.set(page.id, p)
+
+                // get D2 pages from store
+                let pages = node.context().global.get('store.pages') || {}
+
+                if (!pages) {
+                    pages = {}
+                }
+                // save page.name and page.id to the pages map
+                pages[page.id] = { name: page.name, id: page.id }
+
+                // update the global store
+                node.context().global.set('store.pages', pages)
             }
 
             // map groups on a page-by-page basis
