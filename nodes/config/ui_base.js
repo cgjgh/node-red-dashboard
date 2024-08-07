@@ -379,6 +379,17 @@ module.exports = function (RED) {
 
                 // Assign allowed pages or null if not found
                 allowedPages = user?.allowedPages ?? null
+
+                // Add userId to global.store.detectedUsers array if userId is not undefined
+                if (userId) {
+                    // eslint-disable-next-line prefer-const
+                    let detectedUsers = store?.detectedUsers || []
+                    if (!detectedUsers.includes(userId)) {
+                        detectedUsers.push(userId)
+                        // update the global store
+                        node.context().global.set('store.detectedUsers', detectedUsers)
+                    }
+                }
             }
 
             // Initialize userPages based on filter disabled or zeroTrust value - start with empty map for zero trust
