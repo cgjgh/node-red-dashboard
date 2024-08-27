@@ -8,6 +8,7 @@ import App from './App.vue'
 import { io } from 'socket.io-client'
 import router from './router.mjs'
 import Alerts from './services/alerts.js'
+import Resize from './directives/resize.js'
 
 // Vuetify
 import '@mdi/font/css/materialdesignicons.css'
@@ -67,7 +68,10 @@ const vuetify = createVuetify({
         VTreeview,
         VTimePicker
     },
-    directives,
+    directives: {
+        ...directives,
+        resize: Resize
+    },
     theme: {
         defaultTheme: 'nrdb',
         themes: {
