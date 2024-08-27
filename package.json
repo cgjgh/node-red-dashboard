@@ -41,6 +41,8 @@
         
         "deploy2X": "npm run replace-mdi-version && npm run copy && npm run copy-icon && npm run copy2 && npm run copy-icon2",
 
+        "replace-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \".\\dist\\apple-touch-icon.png\"",
+
         "replace-mdi-version": "node replace-mdi-version.js",
 
         "build": "vite build",
