@@ -5,6 +5,7 @@ props:
     Size: Controls the width of the button with respect to the parent group. Maximum value is the width of the group.
     Label: The text shown within the button.
     Max Rows: Defines the maximum number of data-rows to render in the table. Excess rows will be available through pagination control. Set to "0" for no pagination.
+    Breakpoint: Controls when a table will render, instead, as a card, with each column from a row rendering as a row in a larger, contain a row, for a single entry.The breakpoint is measured based on the <b>width of the table</b>, not the width of the screen.
     Selection: Provides three options for table interaction - "None", "Click" and "Checkbox"
     Show Search: Defines whether or not to show a search bar above the table. Will permit searching and filtering across all columns.
     Auto Columns: If checked, then the columns are calculated automatically based on the contents of received messages.
@@ -63,6 +64,33 @@ The table will be rendered with colums `colA`, `colB` and `colC`, unless "Column
 - **Checkbox**: Each row has a checkbox, and the `ui-table` node will _output an array of objects_ associated to the checked rows when a checkbox is selected.
 
 
+The respective events will output the following:
+
+```json
+{
+    "payload": <full row object>,
+    "action": "row_click" | "multiselect"
+}
+```
+
+You can also add a [Button](#interaction-buttons) cell type and have events emitted that way too.
+
+### Responsiveness <AddedIn version="1.15.0" />
+
+The _"Breakpoint"_ property for UI table gives you control over when a table will switch to "mobile" mode, and render reach row of data as a card. This is useful when you have a lot of columns, and the table is too wide to fit on a mobile screen. The breakpoint is measured based on the **width of the table**, not the width of the screen.
+
+![Desktop View of a UI Table example](/images/node-examples/ui-table-responsiveness-desktop.png)
+_Desktop View of a UI Table example_
+
+![Mobile View of the same UI Table](/images/node-examples/ui-table-responsiveness-mobile.png)
+_Mobile View of the same UI Table_
+
+The breakpoint can be defined in one of three ways:
+
+- **defaults**: Select from one of the predefined breakpoints (xs, sm, md, lg).
+- **px**: Manually define a `px` value that the table will switch to mobile mode at once it breaches that width.
+- **none**: Always render as rows of data in a table, never switch to "Mobile" view.
+
 ### Configuring Columns
 
 ![Screenshot of the configuration options available for column types in Node-RED](/images/node-examples/ui-table-column-config.png "Screenshot of the configuration options available for column types in Node-RED"){data-zoomable}
@@ -89,7 +117,22 @@ _An example of a ui-table displaying various of the cell types available_
 - **Progress**: Renders the cell as a progress bar. The `Value` field should contain a number between 0 and 100.
 - **Sparkline - Trend**: Renders the cell as a small line chart without axes. The `Value` field should contain an array of numbers to be plotted.
 - **Sparkline - Bar**: Renders the cell as a small bar chart without axes. The `Value` field should contain an array of numbers to be plotted.
+- **Button**: Renders a clickable button in the cell. The label of the button will be the `row[key]` value.
 - **Row Number**: Renders the row number into the cell.
+
+#### Interaction: Buttons
+
+The `Button` cell type will render a clickable button in the cell. The label of the button will be the corresponding value in your row for the provided `key`. When the button is clicked, the `ui-table` node will output:
+
+```
+{
+    "payload": <full row object>
+    "column": <column key>
+    "action": "button_click"
+}
+```
+
+Given the `action` and `column` keys, you can determine which button was clicked and use the `payload` to determine which row it was associated with.
 
 #### Example
 

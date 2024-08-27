@@ -162,15 +162,12 @@ const mutations = {
     },
     widgetState (state, data) {
         const wId = data.widgetId
+        const config = data.config
 
-        if ('enabled' in data) {
-            state.widgets[wId].state.enabled = data.enabled
-        }
-        if ('visible' in data) {
-            state.widgets[wId].state.visible = data.visible
-        }
-        if ('class' in data) {
-            state.widgets[wId].state.class = data.class
+        for (const prop in config) {
+            if (state.widgets[wId]) {
+                state.widgets[wId].state[prop] = config[prop]
+            }
         }
     },
     connectionStatus (state, status) {
@@ -183,6 +180,11 @@ const mutations = {
      */
     setProperty (state, { item, itemId, property, value }) {
         state[item + 's'][itemId][property] = value
+    },
+    setProperties (state, { item, itemId, config }) {
+        for (const prop in config) {
+            state[item + 's'][itemId][prop] = config[prop]
+        }
     }
 }
 
