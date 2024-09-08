@@ -22,6 +22,9 @@ import { VNumberInput } from 'vuetify/labs/VNumberInput'
 import { VTreeview } from 'vuetify/labs/VTreeview'
 import { VTimePicker } from 'vuetify/labs/VTimePicker'
 
+// 3rd Party Imports
+import SlideUnlock from '@j2only/slide-unlock'
+
 import './stylesheets/common.css'
 
 import store from './store/index.mjs'
@@ -66,7 +69,8 @@ const vuetify = createVuetify({
         ...components,
         VNumberInput,
         VTreeview,
-        VTimePicker
+        VTimePicker,
+        SlideUnlock
     },
     directives: {
         ...directives,
