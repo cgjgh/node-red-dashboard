@@ -4,7 +4,6 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "@cgjgh/node-red-dashboard-2-authentik-auth": "file:nodes/cgjgh-node-red-dashboard-2-authentik-auth-1.2.3.tgz",
         "@flowfuse/node-red-dashboard": "file:../../..",
         "@node-red-contrib-themes/theme-collection": "~4.0.7"
     }
