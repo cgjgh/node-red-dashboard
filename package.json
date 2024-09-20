@@ -1,5 +1,5 @@
 {
-    "name": "@flowfuse/node-red-dashboard",
+    "name": "@cgjgh/node-red-dashboard",
     "version": "1.17.0",
     "description": "Dashboard 2.0 - A collection of Node-RED nodes that provide functionality to build your own UI applications (inc. forms, buttons, charts).",
     "keywords": [
@@ -8,7 +8,7 @@
     "homepage": "https://dashboard.flowfuse.com",
     "repository": {
         "type": "git",
-        "url": "https://github.com/FlowFuse/node-red-dashboard.git"
+        "url": "https://github.com/cgjgh/node-red-dashboard/tree/npm"
     },
     "license": "Apache-2.0",
     "author": {
@@ -31,18 +31,6 @@
     ],
     "scripts": {
         "build-launch": "npm run build && npm run cy:server",
-        "build-deploy": "npm run build && npm run replace-mdi-version && npm run copy && npm run copy-icon",
-        "copy": "rimraf \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
-        "copy-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
-       
-        "build-deploy2": "npm run build && npm run replace-mdi-version && npm run copy2 && npm run copy-icon2",
-        "copy2": "rimraf \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\" && ncp ./dist \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\"",
-        "copy-icon2": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \"I:\\api\\volumes\\nodered2\\nodered_data\\node_modules\\@flowfuse\\node-red-dashboard\\dist\\apple-touch-icon.png\"",
-        
-        "deploy2X": "npm run replace-mdi-version && npm run copy && npm run copy-icon && npm run copy2 && npm run copy-icon2",
-
-        "replace-icon": "copy \"C:\\Users\\cgjgh\\Documents\\Nodered\\Icons\\apple-touch-icon.png\" \".\\dist\\apple-touch-icon.png\"",
-
         "replace-mdi-version": "node replace-mdi-version.js",
 
         "build": "vite build",
@@ -166,5 +154,8 @@
         },
         "sharp": "0.32.6",
         "sharp-ico": "0.1.5"
+    },
+    "publishConfig": {
+        "access": "public"
     }
 }
