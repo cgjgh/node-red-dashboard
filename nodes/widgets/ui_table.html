@@ -58,8 +58,8 @@
             { value: 'row', label: 'Row Number' }
         ]
         RED.nodes.registerType('ui-table', {
-            category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
-            color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.medium'),
+            category: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.label.category'),
+            color: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.colors.medium'),
             defaults: {
                 group: { type: 'ui-group', required: true },
                 name: { value: '' },
@@ -178,24 +178,24 @@
                     // key
                     const keyRow = $('<div />', { class: 'node-input-column-row-property' }).appendTo(options)
                     $('<label/>', {
-                        text: `${RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.key')}:`
+                        text: `${RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.key')}:`
                     }).appendTo(keyRow)
                     $('<input/>', {
                         class: 'node-input-column-key',
                         type: 'text',
-                        placeholder: RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.key'),
+                        placeholder: RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.key'),
                         value: col.key
                     }).appendTo(keyRow)
     
                     // label
                     const labelRow = $('<div />', { class: 'node-input-column-row-property' }).appendTo(options)
                     $('<label/>', {
-                        text: `${RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.label')}:`
+                        text: `${RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.label')}:`
                     }).appendTo(labelRow)
                     $('<input/>', {
                         class: 'node-input-column-label',
                         type: 'text',
-                        placeholder: RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.label'),
+                        placeholder: RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.label'),
                         value: col.title
                     }).appendTo(labelRow)
 
@@ -204,31 +204,31 @@
                     // style - width
                     const widthRow = $('<div />', { class: 'node-input-column-row-property' }).appendTo(styleRow)
                     $('<label/>', {
-                        text: `${RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.width')}:`
+                        text: `${RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.width')}:`
                     }).appendTo(widthRow)
                     $('<input/>', {
                         type: 'text',
                         class: 'node-input-column-width',
-                        placeholder: RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.width'),
+                        placeholder: RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.width'),
                         value: col.width
                     }).appendTo(widthRow)
                     // style - align
                     const alignRow = $('<div />', { class: 'node-input-column-row-property' }).appendTo(styleRow)
                     $('<label/>', {
-                        text: `${RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.align')}:`
+                        text: `${RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.align')}:`
                     }).appendTo(alignRow)
                     const alignOptions = $('<select>', {
                         class: 'node-input-column-align'
                     }).appendTo(alignRow)
-                    alignOptions.append($('<option>').attr('value', 'start').text(RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.alignLeft')))
-                    alignOptions.append($('<option>').attr('value', 'center').text(RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.alignCenter')))
-                    alignOptions.append($('<option>').attr('value', 'end').text(RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.alignRight')))
+                    alignOptions.append($('<option>').attr('value', 'start').text(RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.alignLeft')))
+                    alignOptions.append($('<option>').attr('value', 'center').text(RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.alignCenter')))
+                    alignOptions.append($('<option>').attr('value', 'end').text(RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.alignRight')))
                     alignOptions.val(col.align).change()
 
                     // type
                     const typeRow = $('<div />', { class: 'node-input-column-row-property' }).appendTo(options)
                     $('<label/>', {
-                        text: `${RED._('@flowfuse/node-red-dashboard/ui-table:ui-table.label.type')}:`
+                        text: `${RED._('@cgjgh/node-red-dashboard/ui-table:ui-table.label.type')}:`
                     }).appendTo(typeRow)
                     const typeOptions = $('<select>', {
                         class: 'node-input-column-type'

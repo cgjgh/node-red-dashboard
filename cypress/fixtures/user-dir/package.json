@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "@flowfuse/node-red-dashboard": "file:../../..",
+        "@cgjgh/node-red-dashboard": "file:../../..",
         "@node-red-contrib-themes/theme-collection": "~4.0.7"
     }
 }

@@ -4,12 +4,12 @@
             return Object.prototype.hasOwnProperty.call(obj, prop)
         }
         RED.nodes.registerType('ui-button', {
-            category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
-            color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.light'),
+            category: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.label.category'),
+            color: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.colors.light'),
             defaults: {
                 group: { type: 'ui-group', required: true },
                 name: { value: '' },
-                label: { value: RED._('@flowfuse/node-red-dashboard/ui-button:ui-button.label.button') },
+                label: { value: RED._('@cgjgh/node-red-dashboard/ui-button:ui-button.label.button') },
                 order: { value: 0 },
                 width: {
                     value: 0,

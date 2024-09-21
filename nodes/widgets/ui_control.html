@@ -2,12 +2,12 @@
     (function () {
         // convert to i18 text
         function c_ (x) {
-            return RED._('@flowfuse/node-red-dashboard/ui-control:ui-control.' + x)
+            return RED._('@cgjgh/node-red-dashboard/ui-control:ui-control.' + x)
         }
     
         RED.nodes.registerType('ui-control', {
-            category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
-            color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.darkest'),
+            category: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.label.category'),
+            color: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.colors.darkest'),
             defaults: {
                 name: { value: '' },
                 ui: { type: 'ui-base', value: '', required: true },

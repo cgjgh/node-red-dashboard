@@ -87,7 +87,7 @@ export default ({ mode }) => {
           link: 'https://discourse.nodered.org/tag/dashboard-2',
           ariaLabel: 'Node-RED Forum'
         },
-        { icon: 'npm', link: 'https://www.npmjs.com/package/@flowfuse/node-red-dashboard'}
+        { icon: 'npm', link: 'https://www.npmjs.com/package/@cgjgh/node-red-dashboard'}
       ],
       outline: [2, 3],
       search: {

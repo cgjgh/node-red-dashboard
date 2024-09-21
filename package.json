@@ -1,6 +1,6 @@
 {
     "name": "@cgjgh/node-red-dashboard",
-    "version": "1.17.0",
+    "version": "1.17.2",
     "description": "Dashboard 2.0 - A collection of Node-RED nodes that provide functionality to build your own UI applications (inc. forms, buttons, charts).",
     "keywords": [
         "node-red"
@@ -53,7 +53,7 @@
         "test:debug": "mocha --inspect=9226 \"test/**/*.spec.js\"",
         "watch": "npm-run-all --parallel watch:dashboard watch:node-red",
         "watch:dashboard": "npm run dev",
-        "watch:node-red": "cd ~/.node-red && npx nodemon --watch $(realpath ./node_modules/@flowfuse/node-red-dashboard/nodes) --ext '*' --exec node-red"
+        "watch:node-red": "cd ~/.node-red && npx nodemon --watch $(realpath ./node_modules/@cgjgh/node-red-dashboard/nodes) --ext '*' --exec node-red"
     },
     "dependencies": {
         "@j2only/slide-unlock": "^0.5.8",

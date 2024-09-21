@@ -35,13 +35,13 @@
     (async function () {
         // convert to i18 text
         function c_ (x) {
-            return RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.' + x)
+            return RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.' + x)
         }
         RED.nodes.registerType('ui-page', {
             category: 'config',
             defaults: {
                 name: {
-                    value: RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.label.pageName'),
+                    value: RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.label.pageName'),
                     required: true
                 },
                 ui: {
@@ -97,10 +97,10 @@
                     types: [{
                         value: 'layout',
                         options: [
-                            { value: 'grid', label: RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.label.grid') },
-                            { value: 'flex', label: RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.label.fixed') },
-                            { value: 'tabs', label: RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.label.tabs') },
-                            { value: 'notebook', label: RED._('@flowfuse/node-red-dashboard/ui-page:ui-page.label.notebook') }
+                            { value: 'grid', label: RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.label.grid') },
+                            { value: 'flex', label: RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.label.fixed') },
+                            { value: 'tabs', label: RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.label.tabs') },
+                            { value: 'notebook', label: RED._('@cgjgh/node-red-dashboard/ui-page:ui-page.label.notebook') }
                         ]
                     }],
                     typeField: '#node-input-layoutType'

@@ -289,7 +289,7 @@
 
     // convert to i18 text
     function c_ (x) {
-        return RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.' + x)
+        return RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.' + x)
     }
 
     function hasProperty (obj, prop) {
@@ -1592,7 +1592,7 @@
         const coreLi = $('<li>').appendTo('#nrdb2-sb-client-data-providers-list')
         $('<i class="fa fa-bar-chart"></i>').appendTo(coreLi)
         $('<label></label>').text('Socket ID').appendTo(coreLi)
-        $('<span class="nrdb2-sb-client-data-provider-package"></span>').text('@flowfuse/node-red-dashboard').appendTo(coreLi)
+        $('<span class="nrdb2-sb-client-data-provider-package"></span>').text('@cgjgh/node-red-dashboard').appendTo(coreLi)
 
         // detail any auth providers we have
         // check for any third-party tab definitions
@@ -1709,7 +1709,7 @@
             pinned: true,
             disableOnEdit: true,
             iconClass: 'fa fa-bar-chart',
-            action: '@flowfuse/node-red-dashboard:show-dashboard-2.0-tab',
+            action: '@cgjgh/node-red-dashboard:show-dashboard-2.0-tab',
             onchange: () => {
                 sidebar.empty()
 
@@ -1764,7 +1764,7 @@
                 })
             }
         })
-        RED.actions.add('@flowfuse/node-red-dashboard:show-dashboard-2.0-tab', function () {
+        RED.actions.add('@cgjgh/node-red-dashboard:show-dashboard-2.0-tab', function () {
             RED.sidebar.show('flowfuse-nr-tools')
         })
     }
@@ -1776,7 +1776,7 @@
         _create: function () {
             // convert to i18 text
             function c_ (x) {
-                return RED._(`@flowfuse/node-red-dashboard/ui-base:ui-base.${x}`)
+                return RED._(`@cgjgh/node-red-dashboard/ui-base:ui-base.${x}`)
             }
 
             const thisWidget = this

@@ -39,10 +39,10 @@
 <script type="text/javascript">
     (function () {
         const l8n = function (property) {
-            return RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.' + property)
+            return RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.' + property)
         }
-        const noneType = { value: 'none', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.none'), hasValue: false }
-        const propertyType = { value: 'property', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.key') }
+        const noneType = { value: 'none', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.none'), hasValue: false }
+        const propertyType = { value: 'property', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.key') }
 
         function hexToRgb (hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -64,8 +64,8 @@
         }
 
         RED.nodes.registerType('ui-chart', {
-            category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
-            color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.medium'),
+            category: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.label.category'),
+            color: RED._('@cgjgh/node-red-dashboard/ui-base:ui-base.colors.medium'),
             defaults: {
                 group: { type: 'ui-group', required: true },
                 name: { value: '' },
@@ -208,13 +208,13 @@
                     default: 'auto',
                     typeField: $('#node-input-xAxisFormatType'),
                     types: [
-                        { value: 'HH:mm:ss', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.HHmmss'), hasValue: false },
-                        { value: 'HH:mm', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.HHmm'), hasValue: false },
-                        { value: 'y-L-d', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.yLd'), hasValue: false },
-                        { value: 'd/L', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.dL'), hasValue: false },
-                        { value: 'ccc HH:mm', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.cccHHmm'), hasValue: false },
-                        { value: 'custom', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.custom'), icon: 'fa fa-font' },
-                        { value: 'auto', label: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.auto'), hasValue: false }
+                        { value: 'HH:mm:ss', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.HHmmss'), hasValue: false },
+                        { value: 'HH:mm', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.HHmm'), hasValue: false },
+                        { value: 'y-L-d', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.yLd'), hasValue: false },
+                        { value: 'd/L', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.dL'), hasValue: false },
+                        { value: 'ccc HH:mm', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.cccHHmm'), hasValue: false },
+                        { value: 'custom', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.custom'), icon: 'fa fa-font' },
+                        { value: 'auto', label: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.auto'), hasValue: false }
                     ]
                 })
 
@@ -238,10 +238,10 @@
                     const $el = $('#node-input-xAxisType')
                     const currentValue = $el.val() || node.xAxisType
                     const allOptions = [
-                        { value: 'time', text: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.timescale') },
-                        { value: 'linear', text: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.linear') },
-                        { value: 'radial', text: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.radial') },
-                        { value: 'category', text: RED._('@flowfuse/node-red-dashboard/ui-chart:ui-chart.label.categorical') }
+                        { value: 'time', text: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.timescale') },
+                        { value: 'linear', text: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.linear') },
+                        { value: 'radial', text: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.radial') },
+                        { value: 'category', text: RED._('@cgjgh/node-red-dashboard/ui-chart:ui-chart.label.categorical') }
                     ]
                     const theseOptions = allOptions.filter((option) => options.indexOf(option.value) !== -1)
                     $el.css('pointer-events', 'none') // temporarily inhibit events
