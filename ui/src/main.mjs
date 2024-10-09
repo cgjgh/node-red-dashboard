@@ -159,13 +159,13 @@ const fetchSetup = () => {
                     retryCount = 0
                     disconnected = true
                 }
-            // // tell the user we're trying to connect
-            // Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
-            //     displayTime: 0, // displayTime 0 persists notifications until another notification closes it
-            //     allowDismiss: false,
-            //     showCountdown: false
-            // })
-            // // attempt to reconnect
+                // // tell the user we're trying to connect
+                // Alerts.emit('Connection Lost', 'Attempting to reconnect to server...', 'red', {
+                //     displayTime: 0, // displayTime 0 persists notifications until another notification closes it
+                //     allowDismiss: false,
+                //     showCountdown: false
+                // })
+                // // attempt to reconnect
                 reconnect()
             })
 
