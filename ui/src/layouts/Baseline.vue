@@ -6,7 +6,9 @@
             </template>
             <v-app-bar-title>
                 <template v-if="dashboard.showPageTitle === true || dashboard.showPageTitle === undefined">
-                    {{ pageTitle }}
+                    {{ pageTitle }}<v-chip v-if="showEditingIconInAppBar" v-tooltip="`${currentEditPage.name} is in edit mode`" color="warning" :to="currentEditPage.type === 'ui-page' ? { name: currentEditPage.route.name } : null">
+                        <v-icon>mdi-pencil</v-icon>
+                    </v-chip>
                 </template>
                 <div id="app-bar-title" />
             </v-app-bar-title>
@@ -40,7 +42,11 @@
                         :to="page.type === 'ui-page' ? { name: page.route.name } : null"
                         :data-nav="page.id"
                         @click="closeNavigationDrawer()"
-                    />
+                    >
+                        <template #append>
+                            <v-icon v-if="page.editMode" class="mdi-pencil mdi item-edit-mode-icon" />
+                        </template>
+                    </v-list-item>
                 </v-list>
             </v-navigation-drawer>
             <slot class="nrdb-layout" />
@@ -69,9 +75,10 @@
 <script>
 import { mapGetters, mapState } from 'vuex'
 
-// import StatusIndicator from '../components/statusIndicStripe.vue'
+import { editMode, editPage } from '../EditTracking.js'
 import StatusDialog from '../components/statusDialog.vue'
 import StatusIndicator from '../components/statusIndicCircle.vue'
+
 import Alerts from '../services/alerts'
 import UINotification from '../widgets/ui-notification/UINotification.vue'
 
@@ -140,7 +147,7 @@ export default {
             }
         },
         orderedPages: function () {
-            return Object.values(this.pages)
+            const pages = Object.values(this.pages)
                 .filter((p) => {
                     if ('visible' in p && !p.visible) {
                         return false
@@ -148,6 +155,15 @@ export default {
                     return true
                 })
                 .sort((a, b) => a.order - b.order)
+            if (editMode.value) {
+                return pages.map((p) => {
+                    return {
+                        ...p,
+                        editMode: p.id === editPage.value
+                    }
+                })
+            }
+            return pages
         },
         uiWidgets: function () {
             // get widgets scoped to the UI, not a group/page
@@ -182,6 +198,16 @@ export default {
         },
         density: function () {
             return this.theme?.sizes.density || 'default'
+        },
+        currentEditPage: function () {
+            if (editMode.value && this.orderedPages?.length) {
+                return this.orderedPages.find(p => p.id === editPage.value)
+            }
+            return null
+        },
+        showEditingIconInAppBar: function () {
+            // show the edit icon in the app bar if the page is in edit mode and the drawer is closed
+            return !!(this.currentEditPage && (this.drawer === false || this.rail === true))
         }
     },
     watch: {
@@ -315,3 +341,10 @@ export default {
     }
 }
 </script>
+
+<style scoped>
+.item-edit-mode-icon {
+    color: rgb(var(--v-theme-warning)) !important;
+    font-size: 1.25rem;
+}
+</style>

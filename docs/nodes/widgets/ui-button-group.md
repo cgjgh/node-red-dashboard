@@ -4,7 +4,7 @@ props:
     Group: Defines which group of the UI Dashboard this widget will render in.
     Size: Controls the width of the button with respect to the parent group. Maximum value is the width of the group.
     Label:  
-        description: The text shown within the button.
+        description: The text shown within the button.  Html content is allowed.
         dynamic: true
     Appearance: Specify whether the shape of the widget should be rectangular or have rounded corners.
     Use theme colors: Specify whether the theme colors should be used. If not active, custom colors can be specified for each option separately.
@@ -13,6 +13,9 @@ props:
         dynamic: true
     Topic: The text that needs to be send in the msg.topic field.
     Passthrough: Specify whether input messages should be passed through as output messages.
+    Class:
+        payload: msg.ui_update.class
+        structure: ["String"]
 controls:
     enabled:
         example: true | false

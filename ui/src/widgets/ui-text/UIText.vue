@@ -1,12 +1,14 @@
 <template>
-    <div class="nrdb-ui-text" :class="'nrdb-ui-text--' + layout" :style="style">
-        <label class="nrdb-ui-text-label">{{ label }}</label>
+    <div class="nrdb-ui-text" :class="['nrdb-ui-text--' + layout, wrapText ? 'nrdb-ui-text--wrap' : '']" :style="style">
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <label class="nrdb-ui-text-label" v-html="label" />
         <!-- eslint-disable-next-line vue/no-v-html -->
         <span class="nrdb-ui-text-value" v-html="value" />
     </div>
 </template>
 
 <script>
+import DOMPurify from 'dompurify'
 import { mapState } from 'vuex' // eslint-disable-line import/order
 
 export default {
@@ -22,15 +24,20 @@ export default {
         value: function () {
             const m = this.messages[this.id] || {}
             if (Object.prototype.hasOwnProperty.call(m, 'payload')) {
-                return m.payload
+                // Sanetize the html to avoid XSS attacks
+                return DOMPurify.sanitize(m.payload)
             }
             return ''
         },
         label () {
-            return this.getProperty('label')
+            // Sanetize the html to avoid XSS attacks
+            return DOMPurify.sanitize(this.getProperty('label'))
         },
         layout () {
             return this.getProperty('layout')
+        },
+        wrapText () {
+            return this.getProperty('wrapText')
         },
         style () {
             if (this.props.style) {
@@ -81,6 +88,9 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: initial;
+}
+.nrdb-ui-text.nrdb-ui-text--wrap .nrdb-ui-text-value {
+    white-space: normal;
 }
 
 /* Layouts */
