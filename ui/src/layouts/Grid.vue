@@ -109,8 +109,8 @@ export default {
         }
     },
     mounted () {
-        this.pageGroups = this.getPageGroups()
         if (this.editMode) { // mixin property
+            this.pageGroups = this.getPageGroups()
             this.initializeEditTracking() // Mixin method
         }
     },
@@ -197,6 +197,7 @@ export default {
         },
         discardEdits () {
             this.revertEdits() // Mixin method
+            this.pageGroups = this.getPageGroups()
         },
         async leaveEditMode () {
             let leave = true
@@ -237,11 +238,6 @@ export default {
     flex-wrap: wrap;
     padding: var(--page-padding);
     gap: var(--group-gap);
-}
-
-.nrdb-layout--grid > div {
-    width: 100%;
-    /* max-width: 100%; */
 }
 
 .v-card {
