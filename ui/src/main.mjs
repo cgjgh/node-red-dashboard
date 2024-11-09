@@ -284,12 +284,45 @@ const fetchSetup = () => {
             app.mount('#app')
         })
         .catch((err) => {
-            if (err instanceof TypeError && err.message === 'Failed to fetch') {
-                forcePageReload(err)
-            } else {
-            // handle general errors here
-                console.error('An error occurred:', err)
+            console.error('An error occurred:', err)
+
+            function handleOnline () {
+                console.log('Back online, reloading page...')
+                // remove the online event listener and reload the page
+                window.removeEventListener('online', handleOnline)
+                location.reload()
             }
+
+            let error = {}
+            if (navigator.onLine) {
+                error = { type: 'server unreachable', message: 'There was an error loading the Dashboard.' }
+                // Add timer to reload the page every 20 seconds
+                setInterval(() => {
+                    console.log('Reloading page...')
+                    location.reload()
+                }, 20000)
+            } else {
+                error = { type: 'no internet', message: 'Your Internet connection appears to be offline.' }
+                // Add event listener
+                window.addEventListener('online', handleOnline)
+            }
+
+            store.commit('setup/setError', error) // pass the error to the Vuex store
+
+            // load minimal VueJS app to display error message and options to user
+            window.Vue = Vue
+            window.vuex = vuex
+            const app = Vue.createApp(App)
+                .use(store)
+                .use(vuetify)
+                .use(router)
+
+            const head = createHead()
+            app.use(head)
+            app.mixin(VueHeadMixin)
+
+            // mount the VueJS app into <div id="app"></div> in /ui/public/index.html
+            app.mount('#app')
         })
 }
 
