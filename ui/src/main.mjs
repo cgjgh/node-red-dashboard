@@ -37,7 +37,7 @@ const themeLight = {
         background: '#fff',
         'navigation-background': '#ffffff',
         'group-background': '#ffffff',
-        primary: '#0000ff',
+        primary: '#0094CE',
         accent: '#ff6b99',
         secondary: '#26ff8c',
         success: '#a5d64c',
