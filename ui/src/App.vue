@@ -7,16 +7,18 @@
                 <img src="./assets/disconnected.png">
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <p :class="'status-warning'" v-html="error.message" />
+                <br>
                 <h4>What you can try:</h4>
                 <div v-if="error.type === 'server unreachable'" style="border: none" class="nrdb-placeholder">
                     <v-btn rounded class="nrdb-placeholder-btns" @click="reloadApp">
                         Reload App
                     </v-btn>
+                    <br>
                     <v-btn rounded class="nrdb-placeholder-btns" @click="contactAdmin">
                         Contact Admin
                     </v-btn>
                 </div>
-                <div v-else-if="error.type === 'no internet'">
+                <div v-else-if="error.type === 'no internet'" style="border: none" class="nrdb-placeholder">
                     <v-btn rounded class="nrdb-placeholder-btns" @click="reloadApp">
                         Reload App
                     </v-btn>
@@ -264,7 +266,7 @@ export default {
         },
         contactAdmin () {
             const email = ''
-            const subject = 'Nodered Dashboard Error'
+            const subject = 'Node-RED Dashboard Error'
             const body = 'Insert issue here...'
             const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
             window.open(mailtoLink, '_blank')
