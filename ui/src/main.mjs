@@ -30,40 +30,38 @@ import './stylesheets/common.css'
 import store from './store/index.mjs'
 import { useDataTracker } from './widgets/data-tracker.mjs' // eslint-disable-line import/order
 
-// set a base theme on which we will add our custom NR-defined theme
-const themeLight = {
-    dark: false,
+// Retrieve the "Default" theme from cache
+function retrieveDefaultThemeFromCache () {
+    const cachedTheme = localStorage.getItem('defaultNRDBTheme')
+    if (cachedTheme) {
+        console.log('Found cached theme in localStorage')
+        return JSON.parse(cachedTheme)
+    }
+    console.log('No cached theme found in localStorage')
+    return null
+}
+
+const defaultTheme = retrieveDefaultThemeFromCache()
+
+// set a base theme on which we will add our custom NR-defined theme (initially set to the default theme if exists in cache)
+const theme = {
+    dark: true,
     colors: {
-        background: '#fff',
-        'navigation-background': '#ffffff',
-        'group-background': '#ffffff',
-        primary: '#0094CE',
+        background: defaultTheme ? defaultTheme.colors.bgPage : '#fff',
+        'navigation-background': defaultTheme ? defaultTheme.colors.surface : '#ffffff',
+        'group-background': defaultTheme ? defaultTheme.colors.groupBg : '#ffffff',
+        'group-outline': defaultTheme ? defaultTheme.colors.groupOutline : '#d1d1d1',
+        primary: defaultTheme ? defaultTheme.colors.primary : '#0094CE',
         accent: '#ff6b99',
         secondary: '#26ff8c',
         success: '#a5d64c',
-        surface: '#ffffff',
+        surface: defaultTheme ? defaultTheme.colors.surface : '#ffffff',
         info: '#ff53d0',
         warning: '#ff8e00',
         error: '#ff5252'
     }
 }
 
-const themeDark = {
-    dark: true,
-    colors: {
-        background: '#303030',
-        'navigation-background': '#0D0D0D',
-        'group-background': '##1F1F1F',
-        primary: '#0094CE',
-        accent: '#ff6b99',
-        secondary: '#26ff8c',
-        success: '#a5d64c',
-        surface: '#ffffff',
-        info: '#ff53d0',
-        warning: '#ff8e00',
-        error: '#ff5252'
-    }
-}
 const vuetify = createVuetify({
     components: {
         ...components,
@@ -79,8 +77,7 @@ const vuetify = createVuetify({
     theme: {
         defaultTheme: 'nrdb',
         themes: {
-            nrdb: themeDark,
-            nrdb2: themeLight
+            nrdb: theme
         }
     },
     defaults: {
