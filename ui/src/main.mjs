@@ -121,7 +121,7 @@ const fetchSetup = () => {
                 return
             case !response.ok:
                 console.error('Failed to fetch setup data:', response)
-                return
+                throw new Error('Failed to fetch setup data:', response)
             case host.origin !== new URL(response.url).origin:
                 console.log('Following redirect:', response.url)
                 // eslint-disable-next-line no-case-declarations
