@@ -297,7 +297,7 @@ fetch('_setup')
                 location.reload()
             }, 20000)
         } else {
-            error = { type: 'no internet', message: 'Your Internet connection appears to be offline.' }
+            error = { type: 'no internet', message: 'Your device appears to be offline.' }
             // Add event listener
             window.addEventListener('online', handleOnline)
         }

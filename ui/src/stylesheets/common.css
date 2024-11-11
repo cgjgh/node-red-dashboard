@@ -97,6 +97,7 @@ main {
     justify-content: center;
     text-align: center;
     padding: 1.5rem 2rem;
+    margin: 1rem;
     border-radius: var(--group-border-radius, 6px);
     border: 1px solid rgb(var(--v-theme-group-outline, 209, 209, 209)); /* Fallback to light gray (#d1d1d1) */
     color: rgb(var(--v-theme-on-group-background, 34, 34, 34)); /* Fallback to dark gray (#222) */ 
