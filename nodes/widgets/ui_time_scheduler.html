@@ -1,0 +1,219 @@
+<script type="text/javascript">
+    (function () {
+        function hasProperty (obj, prop) {
+            return Object.prototype.hasOwnProperty.call(obj, prop)
+        }
+        RED.nodes.registerType('ui-time-scheduler', {
+            category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
+            color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.light'),
+            defaults: {
+                group: { type: 'ui-group', required: true },
+                name: { value: '' },
+                label: { value: 'Schedule' },
+                tooltip: { value: '' },
+                order: { value: 0 },
+                width: {
+                    value: 0,
+                    validate: function (v) {
+                        const width = v || 0
+                        const currentGroup = $('#node-input-group').val() || this.group
+                        const groupNode = RED.nodes.node(currentGroup)
+                        const valid = !groupNode || +width >= 0
+                        $('#node-input-size').toggleClass('input-error', !valid)
+                        return valid
+                    }
+                },
+                height: { value: 0 },
+                passthru: { value: false },
+                use24HourFormat: { value: false },
+                // on state
+                onvalue: { value: true, validate: (hasProperty(RED.validators, 'typedInput') ? RED.validators.typedInput('onvalueType') : function (v) { return true }) },
+                onvalueType: { value: 'bool' },
+                // off state
+                offvalue: { value: false, validate: (hasProperty(RED.validators, 'typedInput') ? RED.validators.typedInput('offvalueType') : function (v) { return true }) },
+                offvalueType: { value: 'bool' },
+                topic: { value: 'topic', validate: (hasProperty(RED.validators, 'typedInput') ? RED.validators.typedInput('topicType') : function (v) { return true }) },
+                topicType: { value: 'msg' },
+                persistSchedules: { value: true },
+                contextStore: { value: 'file' }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: 'font-awesome/fa-clock-o',
+            paletteLabel: 'time scheduler',
+            label: function () { return this.name || (~this.label.indexOf('{' + '{') ? null : this.label) || 'schedule' },
+            labelStyle: function () { return this.name ? 'node_label_italic' : '' },
+            oneditprepare: function () {
+                // if this groups parent is a subflow template, set the node-config-input-width and node-config-input-height up
+                // as typedInputs and hide the elementSizer (as it doesn't make sense for subflow templates)
+                if (RED.nodes.subflow(this.z)) {
+                    // change inputs from hidden to text & display them
+                    $('#node-input-width').attr('type', 'text')
+                    $('#node-input-height').attr('type', 'text')
+                    $('div.form-row.nr-db-ui-element-sizer-row').hide()
+                    $('div.form-row.nr-db-ui-manual-size-row').show()
+                } else {
+                    // not in a subflow, use the elementSizer
+                    $('div.form-row.nr-db-ui-element-sizer-row').show()
+                    $('div.form-row.nr-db-ui-manual-size-row').hide()
+                    $('#node-input-size').elementSizer({
+                        width: '#node-input-width',
+                        height: '#node-input-height',
+                        group: '#node-input-group'
+                    })
+                }
+
+                $('#node-input-topic').typedInput({
+                    default: 'str',
+                    typeField: $('#node-input-topicType'),
+                    types: ['str', 'msg', 'flow', 'global']
+                })
+
+                if (typeof this.use24HourFormat === 'undefined') {
+                    // backward compatibility
+                    this.use24HourFormat = false
+                }
+
+                if (typeof this.persistSchedules === 'undefined') {
+                    // backward compatibility
+                    this.persistSchedules = true
+                }
+
+                if (RED.settings.context && RED.settings.context.stores && RED.settings.context.stores.length > 1) {
+                    for (let i = 0; i < RED.settings.context.stores.length; i++) {
+                        const value = RED.settings.context.stores[i]
+                        $('#node-input-contextStore').append(new Option(value, value))
+                    }
+                    if (this.contextStore && RED.settings.context.stores.includes(this.contextStore)) {
+                        $('#node-input-contextStore').val(this.contextStore)
+                    }
+                    $('#node-input-name').css({ width: '25%', 'margin-right': '6px' })
+                } else {
+                    $('#node-input-contextStore').append(new Option('', ''))
+                    $('#node-div-contextStore').hide()
+                }
+
+                $('#node-input-onvalue').typedInput({
+                    default: 'str',
+                    typeField: $('#node-input-onvalueType'),
+                    types: ['str', 'num', 'bool', 'json', 'bin', 'date', 'flow', 'global']
+                })
+
+                $('#node-input-offvalue').typedInput({
+                    default: 'str',
+                    typeField: $('#node-input-offvalueType'),
+                    types: ['str', 'num', 'bool', 'json', 'bin', 'date', 'flow', 'global']
+                })
+
+                $('#node-input-passthru').on('change', function () {
+                    if (this.checked) {
+                        $('#node-field-decouple').val('false')
+                        $('.form-row-decouple').hide()
+                    } else {
+                        $('.form-row-decouple').show()
+                    }
+                })
+
+                if (typeof this.decouple === 'undefined') {
+                    // backward compatibility
+                    this.decouple = false
+                }
+                // set decouple option correctly
+                $('#node-field-decouple').val(this.decouple.toString()).change()
+
+                // use jQuery UI tooltip to convert the plain old title attribute to a nice tooltip
+                $('.ui-node-popover-title').tooltip({
+                    show: {
+                        effect: 'slideDown',
+                        delay: 150
+                    }
+                })
+            },
+            oneditsave: function () {
+                // eslint-disable-next-line no-unused-vars
+                const node = this
+            },
+            oneditresize: function () {
+            }
+        })
+    })()
+</script>
+
+<script type="text/html" data-template-name="ui-time-scheduler">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-group"><i class="fa fa-table"></i> Group</label>
+        <input type="text" id="node-input-group">
+    </div>
+    <div class="form-row nr-db-ui-element-sizer-row">
+        <label><i class="fa fa-object-group"></i> <span data-i18n="ui-time-scheduler.label.size">Size</label>
+        <button class="editor-button" id="node-input-size"></button>
+    </div>
+    <div class="form-row nr-db-ui-manual-size-row">
+        <label><i class="fa fa-arrows-h"></i> <span data-i18n="ui-time-scheduler.label.width">Width</label>
+        <input type="hidden" id="node-input-width">
+    </div>
+    <div class="form-row nr-db-ui-manual-size-row">
+        <label><i class="fa fa-arrows-v"></i> <span data-i18n="ui-time-scheduler.label.height">Height</label>
+        <input type="hidden" id="node-input-height">
+    </div>
+    <div class="form-row">
+        <label for="node-input-label"><i class="fa fa-tag"></i> Label</label>
+        <input type="text" id="node-input-label" placeholder="optional label">
+    </div>
+    <div class="form-row">
+        <label for="node-input-className"><i class="fa fa-code"></i> Class</label>
+        <div style="display: inline;">
+            <input style="width: 70%;" type="text" id="node-input-className" placeholder="Optional CSS class name(s)" style="flex-grow: 1;">
+            <a
+                data-html="true"
+                title="Dynamic Property: Send msg.class to append new classes to this widget. NOTE: classes set at runtime will be applied in addition to any class(es) set in the nodes class field."
+                class="red-ui-button ui-node-popover-title"
+                style="margin-left: 4px; cursor: help; font-size: 0.625rem; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; justify-content: center; align-items: center;">
+                <i style="font-family: ui-serif;">fx</i>
+            </a>
+        </div>
+    </div>
+    <!--<div class="form-row">
+        <label for="node-input-tooltip"><i class="fa fa-info-circle"></i> Tooltip</label>
+        <input type="text" id="node-input-tooltip" placeholder="optional tooltip">
+    </div>-->
+    <div class="form-row">
+        <label style="width:auto" for="node-input-use24HourFormat"><i class="fa fa-clock-o"></i> Use 24 Hour Format </label>
+        <input type="checkbox" checked id="node-input-use24HourFormat" style="display: inline-block; width: auto; margin: 0px 0px 0px 4px;">
+    </div>
+    <div class="form-row">
+        <label style="width:auto" for="node-input-onvalue"><i class="fa fa-envelope-o"></i> When clicked, send:</label>
+    </div>
+    <div class="form-row">
+        <label for="node-input-onvalue" style="padding-left:25px; margin-right:-25px">On Payload</label>
+        <input type="text" id="node-input-onvalue" style="width:70%">
+        <input type="hidden" id="node-input-onvalueType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-offvalue" style="padding-left:25px; margin-right:-25px">Off Payload</label>
+        <input type="text" id="node-input-offvalue" style="width:70%">
+        <input type="hidden" id="node-input-offvalueType">
+    </div>
+    <div class="form-row">
+        <label style="width:auto" for="node-input-passthru"><i class="fa fa-arrow-right"></i> If <code>msg</code> arrives on input, pass through to output: </label>
+        <input type="checkbox" checked id="node-input-passthru" style="display:inline-block; width:auto; vertical-align:top;">
+    </div>
+    <div class="form-row">
+        <label for="node-input-topic"><i class="fa fa-tasks"></i> Topic</label>
+        <input type="text" id="node-input-topic" style="width:70%" placeholder="optional msg.topic">
+        <input type="hidden" id="node-input-topicType">
+    </div>
+    <div class="form-row">
+        <label style="width:auto" for="node-input-persistSchedules"><i class="fa fa-hdd-o"></i> Persist Schedules </label>
+        <input type="checkbox" checked id="node-input-persistSchedules" style="display: inline-block; width: auto; margin: 0px 0px 0px 4px;">
+    </div>
+    <div class="form-row" id="node-div-contextStore"></div>
+            <label for="node-input-contextStore"><i class="fa fa-database"></i> Context Store</label>
+            <select id="node-input-contextStore" style="width:25%"></select>
+        </span>
+    </div>
+</script>
