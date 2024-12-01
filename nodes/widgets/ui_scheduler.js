@@ -214,7 +214,7 @@ function isDateSequence (data) {
     try {
         const ds = parseDateSequence(data)
         return (ds && ds.isDateSequence)
-    // eslint-disable-next-line no-empty
+        // eslint-disable-next-line no-empty
     } catch (error) { }
     return false
 }
@@ -766,7 +766,7 @@ function getTaskStatus (node, task, opts) {
     try {
         localTZ = Intl.DateTimeFormat().resolvedOptions().timeZone
         if (!tz) tz = localTZ
-    // eslint-disable-next-line no-empty
+        // eslint-disable-next-line no-empty
     } catch (error) { }
 
     const r = {
@@ -830,7 +830,7 @@ module.exports = function (RED) {
         // eslint-disable-next-line no-unused-vars
         // const base = group.getBase()
         node.payloadType = config.payloadType || config.type || 'default'
-        delete config.type
+        // delete config.type
         node.payload = config.payload
         node.crontab = config.crontab
         node.outputField = config.outputField || 'payload'
@@ -1462,7 +1462,7 @@ module.exports = function (RED) {
                                 index--
                             }
                         }
-                    // eslint-disable-next-line no-empty
+                        // eslint-disable-next-line no-empty
                     } catch (error) { }
                 }
             }
@@ -1483,8 +1483,8 @@ module.exports = function (RED) {
                 task.off('stopped')
                 task.stop()
                 task = null
-            // eslint-disable-next-line no-empty
-            } catch (error) {}
+                // eslint-disable-next-line no-empty
+            } catch (error) { }
         }
         async function updateTask (node, options, msg) {
             if (!options || typeof options !== 'object') {
@@ -1793,7 +1793,7 @@ module.exports = function (RED) {
                 } else if (node.tasks && node.tasks.length) {
                     node.status({ fill: 'grey', shape: indicator, text: 'All stopped' })
                 } else {
-                    node.status({ }) // no tasks
+                    node.status({}) // no tasks
                 }
             } else {
                 node.status({})
@@ -1879,7 +1879,7 @@ module.exports = function (RED) {
                 }
                 if (msg?.payload?.schedules) {
                     if (config.persistSchedules) {
-                    // store the latest msg passed to context storage
+                        // store the latest msg passed to context storage
                     }
                 }
                 return msg
@@ -1887,6 +1887,8 @@ module.exports = function (RED) {
         }
         if (group) {
             group.register(node, config, evts)
+        } else {
+            node.error('No group configured')
         }
     }
 
@@ -1939,7 +1941,7 @@ module.exports = function (RED) {
         return [...stores, ...Object.keys(RED.settings.contextStorage)]
     }
 
-    RED.httpAdmin.post('/schedulerinject/:id', RED.auth.needsPermission('scheduler.write'), function (req, res) {
+    RED.httpAdmin.post('/ui-schedulerinject/:id', RED.auth.needsPermission('ui-scheduler.write'), function (req, res) {
         const node = RED.nodes.getNode(req.params.id)
         if (node != null) {
             try {
@@ -1954,7 +1956,7 @@ module.exports = function (RED) {
         }
     })
 
-    RED.httpAdmin.post('/scheduler/:id/:operation', RED.auth.needsPermission('scheduler.read'), async function (req, res) {
+    RED.httpAdmin.post('/ui-scheduler/:id/:operation', RED.auth.needsPermission('ui-scheduler.read'), async function (req, res) {
         // console.log("/scheduler", req.body);
         try {
             const operation = req.params.operation
@@ -1973,7 +1975,7 @@ module.exports = function (RED) {
                         const fakeNode = () => {
                             const n = {
                                 id: req.body.nodeId,
-                                _flow: { } // something - get the flow object based on req.body.flowId fc65972c8d3b1d68
+                                _flow: {} // something - get the flow object based on req.body.flowId fc65972c8d3b1d68
                             }
                             return n
                         }
