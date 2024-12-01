@@ -1025,8 +1025,8 @@ copies or substantial portions of the Software.
                 initMap()
     
                 // inherit/upgrade deprecated properties from config
-                const hasStoreNameProperty = Object.prototype.hasOwnProperty.call(node, 'storeName') && typeof node.storeName === 'string'
-                const hasDeprecatedPersistDynamic = Object.prototype.hasOwnProperty.call(node, 'persistDynamic') && typeof node.persistDynamic === 'boolean'
+                const hasStoreNameProperty = hasProperty(node, 'storeName') && typeof node.storeName === 'string'
+                const hasDeprecatedPersistDynamic = hasProperty(node, 'persistDynamic') && typeof node.persistDynamic === 'boolean'
                 if (hasStoreNameProperty) {
                     // not an upgrade - accept node.storeName property value
                 } else if (hasDeprecatedPersistDynamic) {
@@ -1040,7 +1040,7 @@ copies or substantial portions of the Software.
                 $('#node-input-storeName').append('<option value="">None: Don\'t persist state</option>')
                 $('#node-input-storeName').append('<option value="file">File: local file system</option>')
                 RED.settings.context.stores.forEach(function (item) {
-                    const defaultStore = hasOwnProperty(RED.settings, 'context') ? RED.settings.context.default : ''
+                    const defaultStore = hasProperty(RED.settings, 'context') ? RED.settings.context.default : ''
                     if (!item) {
                         return // skip empty store names
                     }
