@@ -11,6 +11,7 @@ import UIMarkdown from './ui-markdown/UIMarkdown.vue'
 import UINotification from './ui-notification/UINotification.vue'
 import UINumberInput from './ui-number-input/UINumberInput.vue'
 import UIRadioGroup from './ui-radio-group/UIRadioGroup.vue'
+import UIScheduler from './ui-scheduler/UIScheduler.vue'
 import UISlider from './ui-slider/UISlider.vue'
 import UISpacer from './ui-spacer/UISpacer.vue'
 import UISwitch from './ui-switch/UISwitch.vue'
@@ -18,7 +19,6 @@ import UITable from './ui-table/UITable.vue'
 import UITemplate from './ui-template/UITemplate.vue'
 import UIText from './ui-text/UIText.vue'
 import UITextInput from './ui-text-input/UITextInput.vue'
-import UITimeScheduler from './ui-time-scheduler/UITimeScheduler.vue'
 
 // Named exports for use in other components
 export {
@@ -42,7 +42,7 @@ export {
     UITemplate,
     UIText,
     UITextInput,
-    UITimeScheduler
+    UIScheduler
 }
 
 // Component helpers
@@ -70,5 +70,5 @@ export default {
     'ui-template': UITemplate,
     'ui-text-input': UITextInput,
     'ui-text': UIText,
-    'ui-time-scheduler': UITimeScheduler
+    'ui-scheduler': UIScheduler
 }

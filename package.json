@@ -152,7 +152,7 @@
             "ui-template": "nodes/widgets/ui_template.js",
             "ui-event": "nodes/widgets/ui_event.js",
             "ui-control": "nodes/widgets/ui_control.js",
-            "ui-time-scheduler": "nodes/widgets/ui_time_scheduler.js"
+            "ui-scheduler": "nodes/widgets/ui_scheduler.js"
         }
     },
     "overrides": {

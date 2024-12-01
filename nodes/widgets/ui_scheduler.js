@@ -796,7 +796,7 @@ let userDir = ''
 let persistPath = ''
 let FSAvailable = false
 let contextAvailable = false
-const cronplusDir = 'cronplusdata'
+const schedulerDir = 'schedulerdata'
 
 module.exports = function (RED) {
     const STORE_NAMES = getStoreNames()
@@ -807,7 +807,7 @@ module.exports = function (RED) {
         contextAvailable = false
     } else {
         userDir = RED.settings.userDir || ''
-        persistPath = path.join(userDir, cronplusDir)
+        persistPath = path.join(userDir, schedulerDir)
         try {
             if (!fs.existsSync(persistPath)) {
                 fs.mkdirSync(persistPath)
@@ -815,7 +815,7 @@ module.exports = function (RED) {
             FSAvailable = fs.existsSync(persistPath)
         } catch (e) {
             if (e.code !== 'EEXIST') {
-                RED.log.error(`cron-plus: Error creating persistence folder '${persistPath}'. ${e.message}`)
+                RED.log.error(`scheduler: Error creating persistence folder '${persistPath}'. ${e.message}`)
                 FSAvailable = false
             }
         }
@@ -823,12 +823,12 @@ module.exports = function (RED) {
     }
 
     // #region Node-RED
-    function TimeSchedulerNode (config) {
+    function SchedulerNode (config) {
         RED.nodes.createNode(this, config)
         const node = this
         const group = RED.nodes.getNode(config.group)
         // eslint-disable-next-line no-unused-vars
-        const base = group.getBase()
+        // const base = group.getBase()
         node.payloadType = config.payloadType || config.type || 'default'
         delete config.type
         node.payload = config.payload
@@ -891,7 +891,7 @@ module.exports = function (RED) {
         }
         node.statusUpdatePending = false
 
-        const MAX_CLOCK_DIFF = Number(RED.settings.CRONPLUS_MAX_CLOCK_DIFF || process.env.CRONPLUS_MAX_CLOCK_DIFF || 5000)
+        const MAX_CLOCK_DIFF = Number(RED.settings.scheduler_MAX_CLOCK_DIFF || process.env.scheduler_MAX_CLOCK_DIFF || 5000)
         const clockMonitor = setInterval(async function timeChecker () {
             const oldTime = timeChecker.oldTime || new Date()
             const newTime = new Date()
@@ -952,13 +952,13 @@ module.exports = function (RED) {
             }
         }
         const sendMsg = async (node, task, cronTimestamp, manualTrigger) => {
-            const msg = { cronplus: {} }
+            const msg = { scheduler: {} }
             msg.topic = task.node_topic
-            msg.cronplus.triggerTimestamp = cronTimestamp
+            msg.scheduler.triggerTimestamp = cronTimestamp
             const se = task.node_expressionType === 'solar' ? node.nextEvent : ''
-            msg.cronplus.status = getTaskStatus(node, task, { includeSolarStateOffset: true })
-            if (se) msg.cronplus.status.solarEvent = se
-            msg.cronplus.config = exportTask(task)
+            msg.scheduler.status = getTaskStatus(node, task, { includeSolarStateOffset: true })
+            if (se) msg.scheduler.status.solarEvent = se
+            msg.scheduler.config = exportTask(task)
             if (manualTrigger) msg.manualTrigger = true
             msg.scheduledEvent = !msg.manualTrigger
             const indicator = node.nextIndicator || 'dot'
@@ -979,8 +979,8 @@ module.exports = function (RED) {
                     } else if (task.node_payloadType === 'bin' && Array.isArray(task.node_payload)) {
                         pl = Buffer.from(task.node_payload)
                     } else if (task.node_payloadType === 'default') {
-                        pl = msg.cronplus
-                        delete msg.cronplus // To delete or not?
+                        pl = msg.scheduler
+                        delete msg.scheduler // To delete or not?
                     } else {
                         pl = await evaluateNodeProperty(task.node_payload, task.node_payloadType, node, msg)
                     }
@@ -1754,7 +1754,7 @@ module.exports = function (RED) {
                         const state = JSON.parse(fileData)
                         await restoreState(state)
                     } else {
-                        RED.log.debug(`cron-plus: no persistence data found for node '${node.id}'.`)
+                        RED.log.debug(`scheduler: no persistence data found for node '${node.id}'.`)
                     }
                 } else {
                     // use context
@@ -1767,7 +1767,7 @@ module.exports = function (RED) {
                     await restoreState(state)
                 }
             } catch (error) {
-                node.error(`cron-plus: Error loading persistence data '${filePath}'. ${error.message}`)
+                node.error(`scheduler: Error loading persistence data '${filePath}'. ${error.message}`)
             }
         }
         function getPersistFilePath () {
@@ -1885,7 +1885,9 @@ module.exports = function (RED) {
                 return msg
             }
         }
-        group.register(node, config, evts)
+        if (group) {
+            group.register(node, config, evts)
+        }
     }
 
     // #endregion Node-RED
@@ -1937,7 +1939,7 @@ module.exports = function (RED) {
         return [...stores, ...Object.keys(RED.settings.contextStorage)]
     }
 
-    RED.httpAdmin.post('/cronplusinject/:id', RED.auth.needsPermission('cronplus.write'), function (req, res) {
+    RED.httpAdmin.post('/schedulerinject/:id', RED.auth.needsPermission('scheduler.write'), function (req, res) {
         const node = RED.nodes.getNode(req.params.id)
         if (node != null) {
             try {
@@ -1952,8 +1954,8 @@ module.exports = function (RED) {
         }
     })
 
-    RED.httpAdmin.post('/cronplus/:id/:operation', RED.auth.needsPermission('cronplus.read'), async function (req, res) {
-        // console.log("/cronplus", req.body);
+    RED.httpAdmin.post('/scheduler/:id/:operation', RED.auth.needsPermission('scheduler.read'), async function (req, res) {
+        // console.log("/scheduler", req.body);
         try {
             const operation = req.params.operation
             const node = RED.nodes.getNode(req.params.id)
@@ -2076,7 +2078,7 @@ module.exports = function (RED) {
         }
     })
 
-    RED.nodes.registerType('ui-time-scheduler', TimeSchedulerNode)
+    RED.nodes.registerType('ui-scheduler', SchedulerNode)
 }
 
 /**

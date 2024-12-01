@@ -1,4 +1,3 @@
-
 <!--
 MIT License
 
@@ -20,7 +19,7 @@ copies or substantial portions of the Software.
     /* global cartodb, L */
     (function ($) {
         /*
-            cronBuilder - adapted for cron-plus from https://github.com/juliacscai/jquery-cron-quartz - License...
+            cronBuilder - adapted for scheduler from https://github.com/juliacscai/jquery-cron-quartz - License...
             The MIT License (MIT)
             Copyright (c) 2016 Julia Cai
         */
@@ -351,17 +350,19 @@ copies or substantial portions of the Software.
             return Object.prototype.hasOwnProperty.call(obj, prop)
         }
 
-        RED._cron_plus_debug = false // set true at runtime to enable debug output
+        RED._cron_plus_debug = true // set true at runtime to enable debug output
         let map, mapPopup, selectedLocation, selectedLocationInput
         const filesAdded = [] // list of files already added
     
         function toggleFullscreen (selector, callback) {
             callback = callback || function () {}
-            const el = document.querySelector(selector || '#node-cronplus-tab-static-schedules')
+            const el = document.querySelector(selector || '#node-scheduler-tab-static-schedules')
             const $el = $(el)
             if (!document.fullscreenElement) {
+                // eslint-disable-next-line promise/always-return
                 el.requestFullscreen().then(() => {
-                    $el.addClass('cron-plus-fullscreen-element').removeClass('cron-plus-expanded-element')
+                    $el.addClass('scheduler-fullscreen-element').removeClass('scheduler-expanded-element')
+                    // eslint-disable-next-line promise/no-callback-in-promise
                     callback()
                 }).catch((err) => {
                     if (callback) {
@@ -371,7 +372,7 @@ copies or substantial portions of the Software.
                     }
                 })
             } else {
-                $el.removeClass('cron-plus-fullscreen-element').removeClass('cron-plus-expanded-element')
+                $el.removeClass('scheduler-fullscreen-element').removeClass('scheduler-expanded-element')
                 try {
                     document.exitFullscreen()
                 } finally {
@@ -464,12 +465,12 @@ copies or substantial portions of the Software.
     
         function showCronHelp () {
             showSidebarHelpPanel()
-            $('#cron-plus-expression-info').get(0).scrollIntoView()
+            $('#scheduler-expression-info').get(0).scrollIntoView()
         }
     
         function showSolarHelp () {
             showSidebarHelpPanel()
-            $('#cron-plus-solar-events-info').get(0).scrollIntoView()
+            $('#scheduler-solar-events-info').get(0).scrollIntoView()
         }
     
         const getIdealDialogHeight = function () {
@@ -478,9 +479,9 @@ copies or substantial portions of the Software.
     
         function initMap () {
             // create map popup dialog
-            $('#cron-plus-map-dialog').dialog({
+            $('#scheduler-map-dialog').dialog({
                 classes: {
-                    'ui-dialog-content': 'cron-plus-map-dialog-content'
+                    'ui-dialog-content': 'scheduler-map-dialog-content'
                 },
                 autoOpen: false,
                 height: getIdealDialogHeight(),
@@ -490,10 +491,10 @@ copies or substantial portions of the Software.
                 modal: true,
                 buttons: {
                     Cancel: function () {
-                        $('#cron-plus-map-dialog').dialog('close')
+                        $('#scheduler-map-dialog').dialog('close')
                     },
                     OK: function () {
-                        $('#cron-plus-map-dialog').dialog('close')
+                        $('#scheduler-map-dialog').dialog('close')
                         if (selectedLocation && selectedLocationInput) {
                             if (selectedLocationInput.typedInput('instance')) {
                                 selectedLocationInput.typedInput('value', selectedLocation.lat + ' ' + selectedLocation.lng)
@@ -517,8 +518,8 @@ copies or substantial portions of the Software.
                 open: function (event) {
                     $(this).css('padding', '0px 0px 0px 0px')
                     $('.ui-dialog-buttonpane').find('button:contains("OK")').addClass('primary')
-                    $('#cron-plus-map-dialog').dialog('option', 'height', getIdealDialogHeight())
-                    $('#cron-plus-dynamic-nodes-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
+                    $('#scheduler-map-dialog').dialog('option', 'height', getIdealDialogHeight())
+                    $('#scheduler-dynamic-nodes-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
                 },
                 hide: {
                     effect: 'explode',
@@ -536,14 +537,14 @@ copies or substantial portions of the Software.
             if (RED._cron_plus_debug) {
                 console.log('createMap', srcInput)
             }
-            $('.cron-plus-map-loading').hide()
+            $('.scheduler-map-loading').hide()
             if (!window.L || navigator.onLine === false) {
-                $('.cron-plus-map-not-loaded').show()
-                $('#cron-plus-map').hide()
+                $('.scheduler-map-not-loaded').show()
+                $('#scheduler-map').hide()
                 return
             }
-            $('#cron-plus-map').show()
-            $('.cron-plus-map-not-loaded').hide()
+            $('#scheduler-map').show()
+            $('.scheduler-map-not-loaded').hide()
             let lat, lon
             selectedLocationInput = srcInput
             function getInputValue () {
@@ -576,7 +577,7 @@ copies or substantial portions of the Software.
             if (RED._cron_plus_debug) console.log('selectedLocation', selectedLocation.lat, selectedLocation.lng)
     
             // create leaflet map
-            map = window.L.map('cron-plus-map', {
+            map = window.L.map('scheduler-map', {
                 zoomControl: true,
                 center: selectedLocation, // [selectedLocation.lat,selectedLocation.lng],
                 zoom
@@ -625,7 +626,7 @@ copies or substantial portions of the Software.
                 type: 'namedmap',
                 options: {
                     named_map: {
-                        name: 'node-red@cronplus',
+                        name: 'node-red@scheduler',
                         params: {
                             color: '#5CA2D1'
                         },
@@ -647,16 +648,16 @@ copies or substantial portions of the Software.
                     layer.on('featureClick', function (e, latlng, pos, data, layer) {
                         if (RED._cron_plus_debug) console.log('click', latlng, data)
                     })
-                    $('#cron-plus-map-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
+                    $('#scheduler-map-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
                 })
         }
     
         function showMap (srcInput) {
-            $('#cron-plus-map-dialog').dialog('open')
+            $('#scheduler-map-dialog').dialog('open')
             if (navigator.onLine === true) {
-                $('.cron-plus-map-not-loaded').show()
-                $('.cron-plus-map-loading').hide()
-                $('#cron-plus-map').hide()
+                $('.scheduler-map-not-loaded').show()
+                $('.scheduler-map-loading').hide()
+                $('#scheduler-map').hide()
                 const proto = location.protocol === 'https:' ? location.protocol : 'http:'
                 checkLoadJsCssFile(proto + '//libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css', 'css', function () {
                     checkLoadJsCssFile(proto + '//libs.cartocdn.com/cartodb.js/v3/3.11/cartodb.uncompressed.js', 'js', function () {
@@ -664,17 +665,17 @@ copies or substantial portions of the Software.
                     })
                 })
             } else {
-                $('.cron-plus-map-not-loaded').show()
-                $('.cron-plus-map-loading').hide()
-                $('#cron-plus-map').hide()
+                $('.scheduler-map-not-loaded').show()
+                $('.scheduler-map-loading').hide()
+                $('#scheduler-map').hide()
             }
         }
     
         function updateEditorLayout () {
             onSchedulesExpandCompress()
     
-            if (RED._cron_plus_debug) console.log('cronplus-updateEditorLayout')
-            const scheduleList = $('#node-cronplus-tab-static-schedules')
+            if (RED._cron_plus_debug) console.log('scheduler-updateEditorLayout')
+            const scheduleList = $('#node-scheduler-tab-static-schedules')
             const scheduleListFullScreen = scheduleList.css('position') === 'fixed' || document.fullscreenElement
             if (scheduleListFullScreen) {
                 return // don't update layout if schedules are fullscreen
@@ -691,7 +692,7 @@ copies or substantial portions of the Software.
                 expandRow.css('height', height + 'px')
             }
             const show = $('#node-input-defaultLocation').typedInput('type') === 'default' || !$('#node-input-defaultLocation').typedInput('type')
-            $('.cron-node-input-option-location-div').toggleClass('cron-plus-hide-per-location', !show)
+            $('.scheduler-node-input-option-location-div').toggleClass('scheduler-hide-per-location', !show)
         }
     
         $.widget('custom.combobox', {
@@ -923,13 +924,13 @@ copies or substantial portions of the Software.
             }
         })
     
-        RED.nodes.registerType('ui-time-scheduler', {
+        RED.nodes.registerType('ui-scheduler', {
             category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
             color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.light'),
             defaults: {
                 group: { type: 'ui-group', required: true },
                 name: { value: '' },
-                // FUTURE config: { type: "CRON-PLUS Config" },
+                // FUTURE config: { type: "scheduler Config" },
                 outputField: { value: 'payload' },
                 timeZone: { value: '' },
                 use24HourFormat: { value: false },
@@ -949,14 +950,14 @@ copies or substantial portions of the Software.
                                     value[i].name = value[i].topic
                                 }
                                 if (!value[i].name) {
-                                    console.warn('cron-plus: validation error - schedule name missing')
+                                    console.warn('scheduler: validation error - schedule name missing')
                                     $('#node-input-option-container > li:nth-child(' + (i + 1) + ')  .node-input-option-name').addClass('input-error')
                                     return false
                                 } else {
                                     $('#node-input-option-container > li:nth-child(' + (i + 1) + ')  .node-input-option-name').removeClass('input-error')
                                 }
                                 if (dupCheck[value[i].name]) {
-                                    console.warn("cron-plus: validation error - duplicate schedule named '" + value[i].name + "'")
+                                    console.warn("scheduler: validation error - duplicate schedule named '" + value[i].name + "'")
                                     $('#node-input-option-container > li:nth-child(' + (i + 1) + ')  .node-input-option-name').addClass('input-error')
                                     return false
                                 } else {
@@ -965,18 +966,18 @@ copies or substantial portions of the Software.
                                 dupCheck[value[i].name] = true
                                 if (!value[i].expressionType || value[i].expressionType === 'cron') {
                                     if (!value[i].expression) {
-                                        console.warn('cron-plus: validation error - expression missing')
+                                        console.warn('scheduler: validation error - expression missing')
                                         // $("#node-input-option-container > li:nth-child(" + (i+1) + ")  .node-input-option-expressionType").addClass("input-error");
                                         return false
                                     }
                                 } else if (value[i].expressionType === 'solar') {
                                     if (value[i].solarType !== 'all' && value[i].solarType !== 'selected') {
-                                        console.warn("cron-plus: validation error - solarType is not 'all' or 'selected'")
+                                        console.warn("scheduler: validation error - solarType is not 'all' or 'selected'")
                                         // $("#node-input-option-container > li:nth-child(" + (i+1) + ")  .node-input-option-solarType").addClass("input-error");
                                         return false
                                     }
                                     if (value[i].solarType === 'selected' && !value[i].solarEvents) {
-                                        console.warn('cron-plus: validation error - solarEvents missing')
+                                        console.warn('scheduler: validation error - solarEvents missing')
                                         return false
                                     }
                                 }
@@ -990,9 +991,9 @@ copies or substantial portions of the Software.
             inputs: 1,
             outputs: 1,
             icon: 'font-awesome/fa-clock-o',
-            paletteLabel: 'time scheduler',
+            paletteLabel: 'ui-scheduler',
             label: function () {
-                return this.name || 'cron-plus'
+                return this.name || 'ui-scheduler'
             },
             outputLabels: function (index) {
                 const node = this
@@ -1014,7 +1015,9 @@ copies or substantial portions of the Software.
             },
     
             oneditprepare: function () {
-                if (RED._cron_plus_debug) { console.log('oneditprepare - cronplus') }
+                console.log(RED)
+
+                if (RED._cron_plus_debug) { console.log('oneditprepare - scheduler') }
                 const node = this
                 const dupCheck = {}
                 const selectedLocationInput = null
@@ -1094,11 +1097,11 @@ copies or substantial portions of the Software.
                 $('#node-input-defaultLocation').typedInput('value', node.defaultLocation || '')
                 $('#node-input-defaultLocation').on('change', function () {
                     const show = $('#node-input-defaultLocation').typedInput('type') === 'default' || !$('#node-input-defaultLocation').typedInput('type')
-                    $('.cron-node-input-option-location-div').toggleClass('cron-plus-hide-per-location', !show)
+                    $('.scheduler-node-input-option-location-div').toggleClass('scheduler-hide-per-location', !show)
                 })
     
                 // create the popup dialog for the cron builder
-                $('#cron-plus-expression-builder-dialog').dialog({
+                $('#scheduler-expression-builder-dialog').dialog({
                     autoOpen: false,
                     height: 300,
                     width: 480,
@@ -1107,16 +1110,16 @@ copies or substantial portions of the Software.
                     modal: true,
                     buttons: {
                         Cancel: function () {
-                            $('#cron-plus-expression-builder-dialog').dialog('close')
+                            $('#scheduler-expression-builder-dialog').dialog('close')
                         },
                         OK: function () {
-                            const val = $('#cron-plus-expression-builder').data('cronBuilder').getExpression()
-                            const expressionField = $('#cron-plus-expression-builder-dialog').data('opener')
+                            const val = $('#scheduler-expression-builder').data('cronBuilder').getExpression()
+                            const expressionField = $('#scheduler-expression-builder-dialog').data('opener')
                             if (expressionField && expressionField.length) {
                                 expressionField.combobox('value', val || '')
                                 // expressionField.focus();
                             }
-                            $('#cron-plus-expression-builder-dialog').dialog('close')
+                            $('#scheduler-expression-builder-dialog').dialog('close')
                         }
                     },
                     show: {
@@ -1127,10 +1130,10 @@ copies or substantial portions of the Software.
                     open: function (event) {
                         // $(this).css('padding', '0px 0px 0px 0px');
                         $('.ui-dialog-buttonpane').find('button:contains("OK")').addClass('primary')
-                        $('#cron-plus-expression-builder .cron-period-select').change()// cause cronBuilder UI to update
+                        $('#scheduler-expression-builder .cron-period-select').change()// cause cronBuilder UI to update
                     },
                     close: function () {
-                        const expressionField = $('#cron-plus-expression-builder-dialog').data('opener')
+                        const expressionField = $('#scheduler-expression-builder-dialog').data('opener')
                         if (expressionField && expressionField.data('customCombobox') && expressionField.data('customCombobox').input) {
                             // expressionField.combobox("value", val || "");
                             expressionField.data('customCombobox').input.focus()
@@ -1143,8 +1146,8 @@ copies or substantial portions of the Software.
                 })
     
                 // build cron builder
-                if (!$('#cron-plus-expression-builder').data('cronBuilder')) {
-                    $('#cron-plus-expression-builder').cronBuilder()
+                if (!$('#scheduler-expression-builder').data('cronBuilder')) {
+                    $('#scheduler-expression-builder').cronBuilder()
                 }
     
                 function StringBuilder () {
@@ -1181,7 +1184,7 @@ copies or substantial portions of the Software.
                     $table.empty()
                     $.ajax({
                         type: 'POST',
-                        url: 'cronplus/' + nodeId + '/getDynamic',
+                        url: 'scheduler/' + nodeId + '/getDynamic',
                         headers: {
                             Accept: 'application/json',
                             'Content-Type': 'application/json'
@@ -1190,7 +1193,7 @@ copies or substantial portions of the Software.
                         data: '{}' // dummy data
                     })
                         .done(function (response) {
-                            if (RED._cron_plus_debug) console.log('cronplus/' + nodeId + '/getDynamic => response:', response)
+                            if (RED._cron_plus_debug) console.log('scheduler/' + nodeId + '/getDynamic => response:', response)
     
                             options = options || {}
                             if (options.width) $table.width(options.width)
@@ -1381,11 +1384,11 @@ copies or substantial portions of the Software.
                 const dnRepositionResize = function () {
                     const w = ($(document).width() < 1025) ? '95%' : '60%'
                     if (RED._cron_plus_debug) console.log('dialog-open-drawDynamicSchedulesTable done - should now center and resize width', w)
-                    $('#cron-plus-dynamic-nodes-dialog').dialog('option', 'width', w)
-                    $('#cron-plus-dynamic-nodes-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
+                    $('#scheduler-dynamic-nodes-dialog').dialog('option', 'width', w)
+                    $('#scheduler-dynamic-nodes-dialog').dialog('option', 'position', { my: 'center', at: 'center', of: window })
                 }
     
-                $('#cron-plus-dynamic-nodes-dialog').dialog({
+                $('#scheduler-dynamic-nodes-dialog').dialog({
                     autoOpen: false,
                     height: 630,
                     minHeight: 400,
@@ -1393,20 +1396,20 @@ copies or substantial portions of the Software.
                     modal: true,
                     buttons: {
                         Refresh: function () {
-                            const nodeId = $('#cron-plus-dynamic-nodes-dialog').data('_cron_node_id')
-                            drawDynamicSchedulesTable(nodeId, '#cron-plus-dynamic-nodes-table-placeholder', '#cron-plus-dynamic-nodes-loader', {}, dnRepositionResize)
+                            const nodeId = $('#scheduler-dynamic-nodes-dialog').data('_cron_node_id')
+                            drawDynamicSchedulesTable(nodeId, '#scheduler-dynamic-nodes-table-placeholder', '#scheduler-dynamic-nodes-loader', {}, dnRepositionResize)
                         },
                         Close: function () {
-                            $('#cron-plus-dynamic-nodes-dialog').dialog('close')
+                            $('#scheduler-dynamic-nodes-dialog').dialog('close')
                         }
                     },
                     // eslint-disable-next-line no-unused-vars
                     open: function (event) {
                         $(this).css('padding', '0px 0px 0px 0px')
                         $('.ui-dialog-buttonpane').find('button:contains("Close")').addClass('primary')
-                        const nodeId = $('#cron-plus-dynamic-nodes-dialog').data('_cron_node_id')
+                        const nodeId = $('#scheduler-dynamic-nodes-dialog').data('_cron_node_id')
                         dnRepositionResize()
-                        drawDynamicSchedulesTable(nodeId, '#cron-plus-dynamic-nodes-table-placeholder', '#cron-plus-dynamic-nodes-loader', dnRepositionResize)
+                        drawDynamicSchedulesTable(nodeId, '#scheduler-dynamic-nodes-table-placeholder', '#scheduler-dynamic-nodes-loader', dnRepositionResize)
                     },
                     show: {
                         effect: 'fade',
@@ -1418,13 +1421,13 @@ copies or substantial portions of the Software.
                     }
                 })
     
-                $('#cron-plus-dynamic-nodes-dialog').data('_cron_node_id', node.id)
+                $('#scheduler-dynamic-nodes-dialog').data('_cron_node_id', node.id)
                 dnRepositionResize()
     
                 let tzData
                 $.ajax({
                     type: 'POST',
-                    url: 'cronplus/0/tz',
+                    url: 'scheduler/0/tz',
                     headers: {
                         Accept: 'application/json',
                         'Content-Type': 'application/json'
@@ -1581,14 +1584,14 @@ copies or substantial portions of the Software.
                     applyOptionDefaults(optionIndex, option)
                     function buildExpressionTip (title, desc, text, type) {
                         const helpFunc = type === 'solar' ? 'showSolarHelp();' : 'showCronHelp();'
-                        const helpFuncPopOut = type === 'solar' ? "_popoutCronPlusHelp('cron-plus-solar-events-info');" : "_popoutCronPlusHelp('cron-plus-expression-info');"
+                        const helpFuncPopOut = type === 'solar' ? "_popoutschedulerHelp('scheduler-solar-events-info');" : "_popoutschedulerHelp('scheduler-expression-info');"
                         const helpFuncHtml = '<span style="float: right">' +
-                            '<button id="cron-plus-tt-help-button" class="cron-plus-link-button" onclick="' + helpFunc + '">help </button>&nbsp;' +
-                            '<button class="cron-plus-link-button" onclick="' + helpFuncPopOut + '"> <i class="fa fa-external-link"></i></button></span>'
+                            '<button id="scheduler-tt-help-button" class="scheduler-link-button" onclick="' + helpFunc + '">help </button>&nbsp;' +
+                            '<button class="scheduler-link-button" onclick="' + helpFuncPopOut + '"> <i class="fa fa-external-link"></i></button></span>'
                         return '<div style="min-height:190px"><span style="font-size: 12px; font-weight: bold">' + title + '</span>' +
                             helpFuncHtml +
                             '<hr><div>' + desc + '</div>' +
-                            '<pre class="cron-plus-form-tip form-tips">' + text + '</pre></div>'
+                            '<pre class="scheduler-form-tip form-tips">' + text + '</pre></div>'
                     }
                     function initTooltip (selector, type, pos) {
                         if (selector.typedInput('instance') && selector.typedInput('instance').input) {
@@ -1599,7 +1602,7 @@ copies or substantial portions of the Software.
                         $selector.attr('title', ' ')
                         $selector.off('mouseenter').tooltip({
                             show: { effect: 'fade' },
-                            tooltipClass: 'cron-plus-expression-tip form-tips',
+                            tooltipClass: 'scheduler-expression-tip form-tips',
                             position: pos,
                             content: function () {
                                 return buildExpressionTip('Expression...', 'Getting description...', '', type)
@@ -1616,8 +1619,8 @@ copies or substantial portions of the Software.
                             }
                         }).on('blur', function (e) {
                             if (RED._cron_plus_debug) console.log('initTooltip-->on-blur.  relatedTarget:', e.relatedTarget)
-                            if (e.relatedTarget && e.relatedTarget.id === 'cron-plus-tt-help-button') {
-                                if (RED._cron_plus_debug) console.log('blur-->e.relatedTarget.relatedTarget.className == "cron-plus-link-button"')
+                            if (e.relatedTarget && e.relatedTarget.id === 'scheduler-tt-help-button') {
+                                if (RED._cron_plus_debug) console.log('blur-->e.relatedTarget.relatedTarget.className == "scheduler-link-button"')
                                 if (type === 'cron') { showCronHelp() } else if (type === 'solar') { showSolarHelp() }
                                 $(this).focus()
                                 return false
@@ -1669,7 +1672,7 @@ copies or substantial portions of the Software.
                                     if (timeZone) e.timeZone = timeZone
                                     if (expressionType === 'solar') {
                                         titleHtml = (expr) => {
-                                            const title = '<b>solar events</b> at <span class="cron-plus-expression">' + expr.slice(0, 100) + (expr.length > 100 ? '...' : '') + '</span>'
+                                            const title = '<b>solar events</b> at <span class="scheduler-expression">' + expr.slice(0, 100) + (expr.length > 100 ? '...' : '') + '</span>'
                                             // eslint-disable-next-line eqeqeq
                                             if (offset != null && offset !== '0' && offset !== 0) {
                                                 titleHtml += '<b>'
@@ -1707,13 +1710,13 @@ copies or substantial portions of the Software.
                                         }
                                         e.env = env
                                     } else {
-                                        titleHtml = (expr) => 'Description of <span class="cron-plus-expression">' + expr.slice(0, 50) + (expr.length > 50 ? '...' : '') + '</span>'
+                                        titleHtml = (expr) => 'Description of <span class="scheduler-expression">' + expr.slice(0, 50) + (expr.length > 50 ? '...' : '') + '</span>'
                                         e.expression = expression
                                     }
                                     if (RED._cron_plus_debug) console.log('initTooltip-->Ajax start, e...', e)
                                     $.ajax({
                                         type: 'POST',
-                                        url: `cronplus/${node.id}/expressionTip`,
+                                        url: `scheduler/${node.id}/expressionTip`,
                                         headers: {
                                             Accept: 'application/json',
                                             'Content-Type': 'application/json'
@@ -1872,8 +1875,8 @@ copies or substantial portions of the Software.
                             options: {
                                 beforeSelect: function (opt) {
                                     if (opt && opt.value === 'EEB') {
-                                        $('#cron-plus-expression-builder-dialog').data('opener', expressionField)
-                                        $('#cron-plus-expression-builder-dialog').dialog('open')
+                                        $('#scheduler-expression-builder-dialog').data('opener', expressionField)
+                                        $('#scheduler-expression-builder-dialog').dialog('open')
                                         return true // return true to let widget know - we have handled this
                                     }
                                 }
@@ -1920,7 +1923,7 @@ copies or substantial portions of the Software.
                     solarEventsField.typedInput('value', option.solarEvents || '')// added as setting value on invocation doesnt seem to set the "2 selected" text of the widget!
     
                     // generate location
-                    const locationFieldDiv = $('<div/>', { class: 'cron-node-input-option-location-div', style: locationStyle }).appendTo(cell2Solar)
+                    const locationFieldDiv = $('<div/>', { class: 'scheduler-node-input-option-location-div', style: locationStyle }).appendTo(cell2Solar)
                     const locationField = $('<input/>', { class: 'node-input-option-location', type: 'text', style: 'width: 100%', placeholder: 'lat lng', value: option.location || '' }).appendTo(locationFieldDiv)
                     locationField.typedInput({
                         default: 'fixed',
@@ -1955,12 +1958,12 @@ copies or substantial portions of the Software.
                     // locationGroup.appendTo(cell2)
     
                     // locationButton.on('click', function () {
-                    //     $('#cron-plus-map-dialog').dialog('open')
+                    //     $('#scheduler-map-dialog').dialog('open')
                     //     selectedLocationInput = $(this).closest('li').find('.node-input-option-location')
                     //     if (navigator.onLine === true) {
-                    //         $('.cron-plus-map-not-loaded').show()
-                    //         $('.cron-plus-map-loading').hide()
-                    //         $('#cron-plus-map').hide()
+                    //         $('.scheduler-map-not-loaded').show()
+                    //         $('.scheduler-map-loading').hide()
+                    //         $('#scheduler-map').hide()
                     //         const proto = location.protocol === 'https:' ? location.protocol : 'http:'
                     //         checkLoadJsCssFile(proto + '//libs.cartocdn.com/cartodb.js/v3/3.11/themes/css/cartodb.css', 'css', function () {
                     //             checkLoadJsCssFile(proto + '//libs.cartocdn.com/cartodb.js/v3/3.11/cartodb.uncompressed.js', 'js', function () {
@@ -1968,9 +1971,9 @@ copies or substantial portions of the Software.
                     //             createMap(selectedLocationInput)
                     //         })
                     //     } else {
-                    //         $('.cron-plus-map-not-loaded').show()
-                    //         $('.cron-plus-map-loading').hide()
-                    //         $('#cron-plus-map').hide()
+                    //         $('.scheduler-map-not-loaded').show()
+                    //         $('.scheduler-map-loading').hide()
+                    //         $('#scheduler-map').hide()
                     //     }
                     // })
     
@@ -2026,7 +2029,7 @@ copies or substantial portions of the Software.
                     scheduleTypeField.change(function () {
                         const value = scheduleTypeField.val()
                         const showLocationGroup = $('#node-input-defaultLocation').typedInput('type') === 'default' || !$('#node-input-defaultLocation').typedInput('type')
-                        locationFieldDiv.toggleClass('cron-plus-hide-per-location', !showLocationGroup)
+                        locationFieldDiv.toggleClass('scheduler-hide-per-location', !showLocationGroup)
                         switch (value) {
                         case 'solar':
                             cell2Cron.hide()
@@ -2058,14 +2061,14 @@ copies or substantial portions of the Software.
                 })
     
                 $('#node-input-show-dynamic').click(function () {
-                    $('#cron-plus-dynamic-nodes-dialog').dialog('open')
+                    $('#scheduler-dynamic-nodes-dialog').dialog('open')
                 })
     
                 removeEventListener('fullscreenchange', onSchedulesExpandCompress)
                 addEventListener('fullscreenchange', onSchedulesExpandCompress)
     
-                $('#cronplus-expand-schedules-button').click(function (evt) {
-                    const selector = '#node-cronplus-tab-static-schedules'
+                $('#scheduler-expand-schedules-button').click(function (evt) {
+                    const selector = '#node-scheduler-tab-static-schedules'
                     if (evt) {
                         // prevent the default behaviour - we will handle it
                         evt.preventDefault()
@@ -2083,10 +2086,10 @@ copies or substantial portions of the Software.
                         const isSmall = el.css('position') !== 'fixed' && !document.fullscreenElement
                         if (isSmall) {
                             // is small - make it big
-                            el.addClass('cron-plus-expanded-element').removeClass('cron-plus-fullscreen-element')
+                            el.addClass('scheduler-expanded-element').removeClass('scheduler-fullscreen-element')
                         } else {
                             // is big - make it small
-                            el.removeClass('cron-plus-expanded-element').removeClass('cron-plus-fullscreen-element')
+                            el.removeClass('scheduler-expanded-element').removeClass('scheduler-fullscreen-element')
                         }
                         updateEditorLayout()
                     }
@@ -2119,11 +2122,11 @@ copies or substantial portions of the Software.
     
                 // give the form a chance to render then remove the max width restriction
                 setTimeout(function () {
-                    $('#node-cronplus-tab-static-schedules').css('max-width', '')
+                    $('#node-scheduler-tab-static-schedules').css('max-width', '')
                 }, 200)
             },
             oneditsave: function () {
-                if (RED._cron_plus_debug) { console.log('oneditsave - cronplus') }
+                if (RED._cron_plus_debug) { console.log('oneditsave - scheduler') }
                 removeEventListener('fullscreenchange', onSchedulesExpandCompress)
                 const node = this
                 const options = $('#node-input-option-container').children()
@@ -2167,7 +2170,7 @@ copies or substantial portions of the Software.
                 $('#node-input-crontab').off()
             },
             oneditcancel: function () {
-                if (RED._cron_plus_debug) { console.log('oneditcancel - cronplus') }
+                if (RED._cron_plus_debug) { console.log('oneditcancel - scheduler') }
                 removeEventListener('fullscreenchange', onSchedulesExpandCompress)
                 $('#node-input-timeZone').off()
                 $('#node-input-crontab').off()
@@ -2183,7 +2186,7 @@ copies or substantial portions of the Software.
                     return !this.changed
                 },
                 onclick: function () {
-                    if (RED._cron_plus_debug) { console.log('button.onclick - cronplus') }
+                    if (RED._cron_plus_debug) { console.log('button.onclick - scheduler') }
                     const node = this
                     if (node.changed) {
                         return RED.notify(RED._('notification.warning', { message: RED._('notification.warnings.undeployedChanges') }), 'warning')
@@ -2194,7 +2197,7 @@ copies or substantial portions of the Software.
                     }
                     label = label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                     $.ajax({
-                        url: 'cronplusinject/' + node.id,
+                        url: 'schedulerinject/' + node.id,
                         type: 'POST',
                         // eslint-disable-next-line no-unused-vars
                         success: function (response) {
@@ -2234,13 +2237,13 @@ copies or substantial portions of the Software.
         })
     })(jQuery)
     
-    function _popoutCronPlusHelp (tag) {
+    function _popoutschedulerHelp (tag) {
         const startTag = (name) => `<${name}>`
         const endTag = (name) => `</${name}>`
         const winHtml = `
             ${startTag('html')}
                 ${startTag('head')}
-                    ${startTag('title')}cron-plus help${endTag('title')}
+                    ${startTag('title')}scheduler help${endTag('title')}
                     ${startTag('style')}
                     .fade-in {
                         transition: opacity 1.5s ease-in-out;
@@ -2267,10 +2270,10 @@ copies or substantial portions of the Software.
                             <div class="red-ui-sidebar-help-stack red-ui-panels" style="height: 100%;">
                                 <div class="red-ui-panel" style="overflow-y: auto;height: 100%;">
                                     <div class="red-ui-help" style="padding: 6px;height: 100%;">
-                                        <h1 class="red-ui-help-title">cron-plus</h1>
+                                        <h1 class="red-ui-help-title">scheduler</h1>
                                         <div class="red-ui-help">
                                             <span class="red-ui-text-bidi-aware">
-                                                ${RED.nodes.getNodeHelp('cronplus')}
+                                                ${RED.nodes.getNodeHelp('scheduler')}
                                             </span>
                                         </div>
                                     </div>
@@ -2280,17 +2283,17 @@ copies or substantial portions of the Software.
                     </div>
                     ${startTag('script')}
                         if (navigator.clipboard) {
-                            document.querySelector('.cron-plus-link-button').classList.add('hidden')
+                            document.querySelector('.scheduler-link-button').classList.add('hidden')
                             const content = document.querySelector('.help-content');
                             content.classList.add('hidden')
                             content.classList.remove('hidden')
                             content.classList.add('fade-in')
                             const copyButtonLabel = "Copy"
-                            const blocks = document.querySelectorAll("pre.cron-plus-code")
+                            const blocks = document.querySelectorAll("pre.scheduler-code")
                             blocks.forEach((block) => {
                                 const button = document.createElement("button")
                                 button.innerText = copyButtonLabel
-                                button.classList.add('cron-plus-copy-button')
+                                button.classList.add('scheduler-copy-button')
                                 button.addEventListener("click", copyCode)
                                 block.appendChild(button)
                             })
@@ -2318,31 +2321,31 @@ copies or substantial portions of the Software.
     }
     
     function onSchedulesExpandCompress () {
-        const selector = '#node-cronplus-tab-static-schedules'
+        const selector = '#node-scheduler-tab-static-schedules'
         const el = $(selector)
-        const $buttonExpandIcon = $('#cronplus-expand-schedules-button').find('i.fa')
+        const $buttonExpandIcon = $('#scheduler-expand-schedules-button').find('i.fa')
         const isBig = el.css('position') === 'fixed' || document.fullscreenElement
         if (isBig) {
             // is big - set the icon to compress & hide certain elements
             $buttonExpandIcon.removeClass('fa-expand').addClass('fa-compress')
-            $('#node-input-show-dynamic').addClass('cron-plus-vanish-element')
+            $('#node-input-show-dynamic').addClass('scheduler-vanish-element')
         } else {
             // is small - set the icon to expand & show elements
             $buttonExpandIcon.removeClass('fa-compress').addClass('fa-expand')
-            $('#node-input-show-dynamic').removeClass('cron-plus-vanish-element')
+            $('#node-input-show-dynamic').removeClass('scheduler-vanish-element')
         }
     }
         </script>
     
-    <script type="text/html" data-template-name="cronplus">
+    <script type="text/html" data-template-name="scheduler">
         <style>
-            #cron-plus-map > div.leaflet-map-pane > div.leaflet-objects-pane > div.leaflet-popup-pane > div > div.leaflet-popup-content-wrapper,
-            #cron-plus-map > div.leaflet-map-pane > div.leaflet-objects-pane > div.leaflet-popup-pane > div > div.leaflet-popup-tip-container > div {
+            #scheduler-map > div.leaflet-map-pane > div.leaflet-objects-pane > div.leaflet-popup-pane > div > div.leaflet-popup-content-wrapper,
+            #scheduler-map > div.leaflet-map-pane > div.leaflet-objects-pane > div.leaflet-popup-pane > div > div.leaflet-popup-tip-container > div {
                 background-color: var(--red-ui-primary-background);
                 color: var(--red-ui-primary-text-color);
             }
-            #cron-plus-map > div.leaflet-control-container > div.leaflet-top.leaflet-left > div > a.leaflet-control-zoom-in,
-            #cron-plus-map > div.leaflet-control-container > div.leaflet-top.leaflet-left > div > a.leaflet-control-zoom-out {
+            #scheduler-map > div.leaflet-control-container > div.leaflet-top.leaflet-left > div > a.leaflet-control-zoom-in,
+            #scheduler-map > div.leaflet-control-container > div.leaflet-top.leaflet-left > div > a.leaflet-control-zoom-out {
                 background-color: var(--red-ui-primary-background);
                 color: var(--red-ui-primary-text-color);
             }
@@ -2363,28 +2366,28 @@ copies or substantial portions of the Software.
                 margin-right: 5px;
             }        
     
-            table.cron-plus-table {
+            table.scheduler-table {
                 border: solid 1px var(--red-ui-secondary-background);
                 border-collapse: collapse;
                 border-spacing: 0;
             }
-            table.cron-plus-table th {
+            table.scheduler-table th {
                 background-color: var(--red-ui-primary-background);
                 border: solid 1px var(--red-ui-secondary-background);
                 color: var(--red-ui-primary-text-color);
                 text-align: left;
             }
-            table.cron-plus-table > tr > td {
+            table.scheduler-table > tr > td {
                 font-family: monospace;
                 font-size: 10pt;
                 border: solid 1px var(--red-ui-secondary-background);
                 color: var(--red-ui-primary-text-color);
                 background: var(--red-ui-tertiary-background);
             }
-            .cron-plus-form-row > label {
+            .scheduler-form-row > label {
                 width: 120px !important;
             }
-            .cron-plus-expression-tip {
+            .scheduler-expression-tip {
                 background: var(--red-ui-primary-background);
                 color: var(--red-ui-primary-text-color);
                 width: 100%;
@@ -2393,7 +2396,7 @@ copies or substantial portions of the Software.
                 overflow: auto;
                 font-size: 10px;
             }
-            .cron-plus-form-tip {
+            .scheduler-form-tip {
                 background: var(--red-ui-primary-background);
                 color: var(--red-ui-primary-text-color);
                 padding: 6px 6px;
@@ -2404,20 +2407,20 @@ copies or substantial portions of the Software.
                 overflow: auto;
                 word-break: keep-all;
             }
-            .cron-plus-form-tip > div {
+            .scheduler-form-tip > div {
                 white-space: pre-wrap;
             }
-            span .cron-plus-form-tip {
+            span .scheduler-form-tip {
                 border-radius: 2px;
                 border: 1px solid var(--red-ui-secondary-background);
                 border-radius: 4px;
                 display: inline-block;
             }
-            .cron-plus-form-tip-spacer {
+            .scheduler-form-tip-spacer {
                 display: inline-block;
                 width: 100px
             }
-            .cron-plus-expression {
+            .scheduler-expression {
                 font-family: monospace;
                 padding-left: 5px;
                 padding-right: 5px;
@@ -2426,25 +2429,25 @@ copies or substantial portions of the Software.
                 vertical-align: middle;
                 border-bottom: 1px solid var(--red-ui-primary-text-color)
             }
-            #cron-plus-map {
+            #scheduler-map {
                 height: 100%;
                 padding: 0;
                 margin: 0;
             }
-            .cron-plus-hide-per-location {
+            .scheduler-hide-per-location {
                 display: none !important;
                 visibility: hidden;
             }
-            .cron-plus-hide-location {
+            .scheduler-hide-location {
                 display: none !important;
                 visibility: hidden;
             }
-            .cron-plus-fullscreen-element {
+            .scheduler-fullscreen-element {
                 padding: 15px;
                 z-index: 99999;
                 background-color: var(--red-ui-form-background);
             }
-            .cron-plus-expanded-element {
+            .scheduler-expanded-element {
                 position: fixed;
                 z-index: 99999;
                 top: 0px;
@@ -2458,20 +2461,20 @@ copies or substantial portions of the Software.
                 margin: 0px;
                 background-color: var(--red-ui-form-background);
             }
-            .cron-plus-vanish-element {
+            .scheduler-vanish-element {
                 display: none !important;
                 visibility: hidden !important;
             }
-            .cron-plus-map-dialog-content {
+            .scheduler-map-dialog-content {
                 padding: 0px 0px 0px 0px;
             }
-            .cron-plus-map-not-loaded {
+            .scheduler-map-not-loaded {
                 padding: 2px 10px 2px 10px;
             }
-            .cron-plus-map-loading {
+            .scheduler-map-loading {
                 padding: 2px 10px 2px 10px;
             }
-            .cron-plus-coordinates {
+            .scheduler-coordinates {
                 font-family: monospace;
                 background: var(--red-ui-primary-text-color);
                 color: var(--red-ui-primary-background);
@@ -2479,14 +2482,14 @@ copies or substantial portions of the Software.
                 padding-right: 5px;
                 border: 1px solid var(--red-ui-secondary-background);
             }
-            .cron-plus-link-button {
+            .scheduler-link-button {
                 background: none!important;
                 border: none!important;
                 padding: 0!important;
                 cursor: pointer!important;
                 color: var(--red-ui-primary-text-color);
             }
-            .cron-plus-solar-events-table {
+            .scheduler-solar-events-table {
                 font-size: smaller;
                 padding: 0px !important;
                 margin: 0px !important;
@@ -2494,14 +2497,14 @@ copies or substantial portions of the Software.
                 overflow-wrap: break-word;
                 border: 1px solid;
             }
-            .cron-plus-solar-events-table tr td {
+            .scheduler-solar-events-table tr td {
                 border: 1px dotted;
             }
-            .cron-plus-solar-events-table tr th {
+            .scheduler-solar-events-table tr th {
                 text-align: left;
                 border: 1px dotted;
             }
-            pre.cron-plus-code {
+            pre.scheduler-code {
                 white-space: pre;
                 font-size: 9px;
                 position: relative;
@@ -2512,13 +2515,13 @@ copies or substantial portions of the Software.
             }
         </style>  
     
-        <div id="cron-plus-map-dialog" style="display: none;" title="Choose location...">
-            <div class="cron-plus-map-loading" >
+        <div id="scheduler-map-dialog" style="display: none;" title="Choose location...">
+            <div class="scheduler-map-loading" >
                 <h3>Attempting to load map... <i class="fa fa-spinner fa-spin" style="font-size:24px"></i></h3>
                 <p>The interactive Map is loaded via CDN at client side (to minimise installation size) and therefore requires an internet connection. Please wait 1 moment.</p>
                 <h4>Alternative ways to get coordinates...</h4>
                 <ul> 
-                    <li>Visit <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer">www.latlong.net</a> (on another device if required) then copy the "Lat Long" value provided into the cron-plus coordinates box</li>
+                    <li>Visit <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer">www.latlong.net</a> (on another device if required) then copy the "Lat Long" value provided into the scheduler coordinates box</li>
                     <li>Visit google maps, MSN maps, almost any other maps website on another device to get GPS or longitude latitude value</li>
                     <li>Try one of the many longitude latitude apps available in the app store on your mobile phone</li>
                     <li>Check your satnav device - it may show coordinates</li>
@@ -2527,18 +2530,18 @@ copies or substantial portions of the Software.
                 </ul>
                 <h4>Accepted formats...</h4> 
                 <ul>
-                    <li>Decimal Degrees E.g: <code class="cron-plus-coordinates">54.9992500,-1.4170300</code> or <code class="cron-plus-coordinates">54.9992500° N 1.4170300° W</code></li>
-                    <li>Degrees Minutes Seconds E.g: <code class="cron-plus-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
-                    <li>Decimal Minutes E.g: <code class="cron-plus-coordinates">54° 59.955' , -1° 25.0218'</code></li>
-                    <li>GPS E.g: <code class="cron-plus-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="cron-plus-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="cron-plus-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="cron-plus-coordinates">54:59:57.3N 1:25:1.308W</code></li>
+                    <li>Decimal Degrees E.g: <code class="scheduler-coordinates">54.9992500,-1.4170300</code> or <code class="scheduler-coordinates">54.9992500° N 1.4170300° W</code></li>
+                    <li>Degrees Minutes Seconds E.g: <code class="scheduler-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
+                    <li>Decimal Minutes E.g: <code class="scheduler-coordinates">54° 59.955' , -1° 25.0218'</code></li>
+                    <li>GPS E.g: <code class="scheduler-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="scheduler-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="scheduler-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="scheduler-coordinates">54:59:57.3N 1:25:1.308W</code></li>
                 </ul>    
             </div>
-            <div class="cron-plus-map-not-loaded"  style="display:hidden" >
+            <div class="scheduler-map-not-loaded"  style="display:hidden" >
                 <h3>No internet on this device?</h3>
                 <p>The interactive Map is loaded via CDN at client side (to minimise installation size) and therefore requires an internet connection. As you are seeing this message, it is likely this device does not have access to the internet.</p>
                 <h4>Alternative ways to get coordinates...</h4>
                 <ul> 
-                    <li>Visit <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer">www.latlong.net</a> (on another device if required) then copy the "Lat Long" value provided into the cron-plus coordinates box</li>
+                    <li>Visit <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer">www.latlong.net</a> (on another device if required) then copy the "Lat Long" value provided into the scheduler coordinates box</li>
                     <li>Visit google maps, MSN maps, almost any other maps website on another device to get GPS or longitude latitude value</li>
                     <li>Try one of the many longitude latitude apps available in the app store on your mobile phone</li>
                     <li>Check your satnav device - it may show coordinates</li>
@@ -2547,50 +2550,50 @@ copies or substantial portions of the Software.
                 </ul>
                 <h4>Accepted formats...</h4>
                 <ul>
-                    <li>Decimal Degrees E.g: <code class="cron-plus-coordinates">54.9992500,-1.4170300</code> or <code class="cron-plus-coordinates">54.9992500° N 1.4170300° W</code></li>
-                    <li>Degrees Minutes Seconds E.g: <code class="cron-plus-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
-                    <li>Decimal Minutes E.g: <code class="cron-plus-coordinates">54° 59.955' , -1° 25.0218'</code></li>
-                    <li>GPS E.g: <code class="cron-plus-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="cron-plus-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="cron-plus-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="cron-plus-coordinates">54:59:57.3N 1:25:1.308W</code></li>
+                    <li>Decimal Degrees E.g: <code class="scheduler-coordinates">54.9992500,-1.4170300</code> or <code class="scheduler-coordinates">54.9992500° N 1.4170300° W</code></li>
+                    <li>Degrees Minutes Seconds E.g: <code class="scheduler-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
+                    <li>Decimal Minutes E.g: <code class="scheduler-coordinates">54° 59.955' , -1° 25.0218'</code></li>
+                    <li>GPS E.g: <code class="scheduler-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="scheduler-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="scheduler-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="scheduler-coordinates">54:59:57.3N 1:25:1.308W</code></li>
                 </ul>
             </div>
-            <div id="cron-plus-map"></div>
+            <div id="scheduler-map"></div>
         </div>
     
-        <div id="cron-plus-dynamic-nodes-dialog" style="display: none;" title="Dynamic schedules...">
-            <div id="cron-plus-dynamic-nodes-table-placeholder"  style="display: flex;align-items: center;/*justify-content: center;*/">
+        <div id="scheduler-dynamic-nodes-dialog" style="display: none;" title="Dynamic schedules...">
+            <div id="scheduler-dynamic-nodes-table-placeholder"  style="display: flex;align-items: center;/*justify-content: center;*/">
             </div>
-            <div id="cron-plus-dynamic-nodes-loader" style="position: absolute;  left: 46%;  top: 46%;">
+            <div id="scheduler-dynamic-nodes-loader" style="position: absolute;  left: 46%;  top: 46%;">
                 <i class="fa fa-spinner fa-spin" style="font-size:48px"></i>
             </div>
         </div>
     
-        <div id="cron-plus-expression-builder-dialog" style="display: none;" title="Easy Expression Builder...">
-            <div id="cron-plus-expression-builder" >
+        <div id="scheduler-expression-builder-dialog" style="display: none;" title="Easy Expression Builder...">
+            <div id="scheduler-expression-builder" >
             </div>
         </div>
     
         <!-- For Rows -->
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="common.label.name">Name</span></label>
             <input type="text" id="node-input-name" style="width: calc(100% - 130px)" placeholder="Name">
         </div>
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-outputField"><i class="fa fa-sign-out"></i> Output property</label>
             <input type="text" id="node-input-outputField" style="width: calc(100% - 130px)" placeholder="payload">
         </div>
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-timeZone"><i class="fa fa-globe"></i> Timezone</label>
             <input type="text" id="node-input-timeZone" style="width: calc(100% - 130px)" placeholder="Leave empty for none/system">
         </div>
-        <div class="cron-plus-form-row">
+        <div class="scheduler-form-row">
             <label style="width:auto" for="node-input-use24HourFormat"><i class="fa fa-clock-o"></i> Use 24 Hour Format </label>
             <input type="checkbox" id="node-input-use24HourFormat" style="display: inline-block; width: auto; margin: 0px 0px 0px 4px;">
         </div>
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-defaultLocation"><i class="fa fa-map-marker"></i> Location</label>
             <input type="text" id="node-input-defaultLocation" style="width: calc(100% - 130px)" placeholder="lat lng (optional)">
         </div>
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-commandResponseMsgOutput"><i class="fa fa-dot-circle-o"></i> Outputs</label>
             <select style="width: calc(100% - 130px)" id="node-input-commandResponseMsgOutput">
               <option value="output1">1 output: All messages to output 1</option>
@@ -2598,12 +2601,12 @@ copies or substantial portions of the Software.
               <option value="fanOut" >Fan out: Separate outputs for static, dynamic and command messages</option>
             </select>
         </div>
-        <div class="form-row cron-plus-form-row">
+        <div class="form-row scheduler-form-row">
             <label for="node-input-storeName"><i class="fa fa-database"></i> Save State</label>
             <select type="text" id="node-input-storeName" style="width: calc(100% - 130px);"></select>
         </div>
     
-        <div id="node-cronplus-tab-static-schedules" class="form-row cron-plus-form-row form-row-auto-height"
+        <div id="node-scheduler-tab-static-schedules" class="form-row scheduler-form-row form-row-auto-height"
             style="width: 100%; min-height: 200px; display: flex; flex-flow: column nowrap; max-width: min-content">
             <!-- Row 1 -->
             <div style="display: flex; justify-content: space-between;">
@@ -2619,7 +2622,7 @@ copies or substantial portions of the Software.
                     <a href="#"  accesskey="s" title="Show dynamic schedules [S]" class="editor-button editor-button-small" id="node-input-show-dynamic">
                         <span><i class="fa fa-table" style="margin-right: 2px;"></i> dynamic <u>s</u>chedules</span>
                     </a>
-                    <a href="#" accesskey="x" class="editor-button editor-button-small" id="cronplus-expand-schedules-button" title="Hold the shift key for fullscreen [X]" style="margin-left: auto;">
+                    <a href="#" accesskey="x" class="editor-button editor-button-small" id="scheduler-expand-schedules-button" title="Hold the shift key for fullscreen [X]" style="margin-left: auto;">
                         <span class="expand-icon"><i class="fa fa-expand" style="margin-right: 2px;"></i> e<u>x</u>pand</span>
                     </a>
                 </div>
@@ -2633,16 +2636,16 @@ copies or substantial portions of the Software.
     
     </script>
     
-    <script type="text/html" data-help-name="cronplus">
+    <script type="text/html" data-help-name="scheduler">
         <style>
-            .cron-plus-link-button {
+            .scheduler-link-button {
                 background: none!important;
                 border: none!important;
                 padding: 0!important;
                 cursor: pointer!important;
                 color: var(--red-ui-primary-text-color);
             }
-            pre.cron-plus-code button.cron-plus-copy-button {
+            pre.scheduler-code button.scheduler-copy-button {
                 position: absolute;
                 padding: 2px;
                 background-color: var(--red-ui-primary-text-color);
@@ -2655,15 +2658,15 @@ copies or substantial portions of the Software.
                 scale: 70%;
                 transform-origin: right;
             }
-            pre.cron-plus-code button.cron-plus-copy-button:hover{
+            pre.scheduler-code button.scheduler-copy-button:hover{
                 cursor: pointer;
                 opacity: 0.9;
             }
-            .red-ui-help pre.cron-plus-code {
+            .red-ui-help pre.scheduler-code {
                 position: relative;
             }
         </style>
-        <p>Schedule the injection of a payload to start a flow <span style="float: right"><button class="cron-plus-link-button" onclick="_popoutCronPlusHelp()">pop out <i class="fa fa-external-link"></i></button></span></p>
+        <p>Schedule the injection of a payload to start a flow <span style="float: right"><button class="scheduler-link-button" onclick="_popoutschedulerHelp()">pop out <i class="fa fa-external-link"></i></button></span></p>
         <h3>Properties</h3>
         <dl class="message-properties">
             <h4>Output property</h4>
@@ -2690,16 +2693,16 @@ copies or substantial portions of the Software.
             </div>    
             <h4>Persist dynamic schedules</h4>
             <div style="padding-left: 15px">
-                Enabling this option causes dynamic schedules to be saved to file and re-loaded when the cron-plus node is loaded or re-deployed. <br>
+                Enabling this option causes dynamic schedules to be saved to file and re-loaded when the scheduler node is loaded or re-deployed. <br>
                 NOTES...
                 <ul>
                     <li>Any time an update to any dynamic schedule occurs, all dynamic schedules are saved to file</li>
-                    <li>The schedules are saved in a directory called <code>cronplusdata</code> under your node-red folder</li>
+                    <li>The schedules are saved in a directory called <code>schedulerdata</code> under your node-red folder</li>
                 </ul>
             </div>    
             <h4>Schedules</h4>
             <div style="padding-left: 15px">
-                A table of schedules. Entries here are considered static and will be reloaded when node-red starts or the cron-plus node is (re)deployed.
+                A table of schedules. Entries here are considered static and will be reloaded when node-red starts or the scheduler node is (re)deployed.
             </div>
             <h4>Schedules - Name</h4>
             <div style="padding-left: 15px">
@@ -2717,7 +2720,7 @@ copies or substantial portions of the Software.
             <div style="padding-left: 15px">
                 The type determines what type of schedule. Options are <code>cron</code>, <code>dates sequence</code> or <code>solar events</code>
             </div>
-            <h4 id="cron-plus-expression-info">Schedules - Expression</h4>
+            <h4 id="scheduler-expression-info">Schedules - Expression</h4>
             <div style="padding-left: 15px">
                 <i>NOTE: Only displayed when the type is set to <b>cron</b> or <b>date sequence</b></i><br>
                 A CRON expression, a date, a comma separated list of dates or an array of dates<br><br>
@@ -2764,12 +2767,12 @@ copies or substantial portions of the Software.
                     <li>See <a href="https://github.com/jaclarke/cronosjs">here</a> for more examples and info</li>
                 </ul>
             </div>
-            <h4 id="cron-plus-solar-events-info">Schedules - Solar Events</h4>
+            <h4 id="scheduler-solar-events-info">Schedules - Solar Events</h4>
             <div style="padding-left: 15px">
                 <i>NOTE: Only displayed when the type is set to <b>solar events</b></i><br>
                 The Solar Events field permits you to chose which solar events you want a schedule to fire upon.<br>
                 Solar Events...
-                <table class="cron-plus-solar-events-table">
+                <table class="scheduler-solar-events-table">
                     <tr><th>Event ID</th><th>Event</th><th>Information</th></tr>
                     <tr><td>nightEnd</td><td>night end / astronomical dawn</td><td>night ends, astronomical twilight starts (-18°)</td></tr>
                     <!-- <tr><td>astronomicalDawn</td><td>astronomical dawn</td><td>night ends, astronomical twilight starts (-18°)")</td></tr> -->
@@ -2797,10 +2800,10 @@ copies or substantial portions of the Software.
                 The location field is expected to contain longitude and latitude coordinates for the calculation of solar events.<br>
                 Accepted formats...
                 <ul>
-                    <li>Decimal Degrees E.g: <code class="cron-plus-coordinates">54.9992500,-1.4170300</code> or <code class="cron-plus-coordinates">54.9992500° N 1.4170300° W</code></li>
-                    <li>Degrees Minutes Seconds E.g: <code class="cron-plus-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
-                    <li>Decimal Minutes E.g: <code class="cron-plus-coordinates">54° 59.955' , -1° 25.0218'</code></li>
-                    <li>GPS E.g: <code class="cron-plus-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="cron-plus-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="cron-plus-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="cron-plus-coordinates">54:59:57.3N 1:25:1.308W</code></li>
+                    <li>Decimal Degrees E.g: <code class="scheduler-coordinates">54.9992500,-1.4170300</code> or <code class="scheduler-coordinates">54.9992500° N 1.4170300° W</code></li>
+                    <li>Degrees Minutes Seconds E.g: <code class="scheduler-coordinates">54° 59' 57.3'' N 1° 25' 1.308'' W</code></li>
+                    <li>Decimal Minutes E.g: <code class="scheduler-coordinates">54° 59.955' , -1° 25.0218'</code></li>
+                    <li>GPS E.g: <code class="scheduler-coordinates">N54°59'57.3, W1°25'1.308"</code>, <code class="scheduler-coordinates">54°59'57.3"N, 1°25'1.308"W</code>, <code class="scheduler-coordinates">54d 59' 57" N 1d 25' 1" W</code> or <code class="scheduler-coordinates">54:59:57.3N 1:25:1.308W</code></li>
                 </ul>
             </div>        
             <h4>Schedules - Offset</h4>
@@ -2833,7 +2836,7 @@ copies or substantial portions of the Software.
                             <li>start</li>
                 </ul>
                 This includes the <code>-all</code>, <code>-all-dynamic</code>, <code>-all-static</code>, <code>-active</code>,  <code>-active-dynamic</code>,  <code>-active-static</code>, <code>-inactive</code>, <code>-inactive-dynamic</code> and <code>-inactive-static</code> command topics (e.g. export-all, stop-all-dynamic, start-all-static, remove-inactive-dynamic)<br>
-                See <a href="#cron-plus-commands-info">commands</a> below for details.
+                See <a href="#scheduler-commands-info">commands</a> below for details.
             </dd>
         </dl>
         <dl class="message-properties">
@@ -2842,7 +2845,7 @@ copies or substantial portions of the Software.
             <dd>
                 <p><b>Adding one (or more) schedules</b><br>
                     Example...<br>
-                    <pre class="cron-plus-code"><code>payload: [
+                    <pre class="scheduler-code"><code>payload: [
       {
         "command": "add",
         "name": "every 6",
@@ -2905,7 +2908,7 @@ copies or substantial portions of the Software.
                             <li>topic: (string|required) This will be used as the topic when the schedule triggers</li>
                             <li>expressionType: (string|required) specify the schedule type. Set to "solar" for solar events</li>
                             <li>solarType: (string|required) specify the events to fire.  Accepted values are "all" or "selected"</li>
-                            <li>solarEvents: (string|optional) specify the events to fire. Only required when solarType == "selected". Accepted values are listed under <b>Schedules - Solar Events</b> <a href="#cron-plus-solar-events-info">see above</a> </li>
+                            <li>solarEvents: (string|optional) specify the events to fire. Only required when solarType == "selected". Accepted values are listed under <b>Schedules - Solar Events</b> <a href="#scheduler-solar-events-info">see above</a> </li>
                             <li>location: (string|required) longitude latitude, DNS, DMM or GPS coordinates for sunrise or sunset</li>
                             <li>offset: (number|optional) number of minutes to offset a sunrise or sunset</li>
                             <li>payloadType: (string|optional) The payload type (e.g. 'default', 'flow', 'global', 'str', 'num', 'bool', 'json', 'bin', 'date' or 'env')</li>
@@ -2920,12 +2923,12 @@ copies or substantial portions of the Software.
                     </ul>
                 </p>
     
-                <p id="cron-plus-commands-info"><b>Getting status of a schedule or removing / stopping / pausing / starting a schedule</b><br><br>
+                <p id="scheduler-commands-info"><b>Getting status of a schedule or removing / stopping / pausing / starting a schedule</b><br><br>
                     Topic Method...<br>
-                    <pre class="cron-plus-code"><code>msg.topic = "command"; // command name - *see details below*,
+                    <pre class="scheduler-code"><code>msg.topic = "command"; // command name - *see details below*,
     msg.payload = "name"; //  name of the schedule</code></pre>
                     Payload Method...<br>
-                    <pre class="cron-plus-code"><code>payload: {
+                    <pre class="scheduler-code"><code>payload: {
       "command": "*see details below*",
       "name": "* name of schedule",
     }</code></pre>
@@ -2967,25 +2970,25 @@ copies or substantial portions of the Software.
                     </p>
                     <p><i>Examples...</i><br>
                         Example : Using a simple topic command to manually trigger a schedule named "schedule1"<br>
-                        <pre class="cron-plus-code"><code>msg: {
+                        <pre class="scheduler-code"><code>msg: {
       "topic": "trigger",
       "payload": "schedule1"
     }</code></pre>                    
                         Example : Using a simple topic command to export all dynamically added schedules...<br>
-                        <pre class="cron-plus-code"><code>msg: {
+                        <pre class="scheduler-code"><code>msg: {
       "topic": "export-all-dynamic"
     }</code></pre>                    
                         Example : Using a simple topic command to delete a schedule named "schedule1"<br>
-                        <pre class="cron-plus-code"><code>msg: {
+                        <pre class="scheduler-code"><code>msg: {
       "topic": "remove",
       "payload": "schedule1"
     }</code></pre>                    
                         Example : Using a cmd payload to pause all schedules...<br>
-                        <pre class="cron-plus-code"><code>payload: {
+                        <pre class="scheduler-code"><code>payload: {
       "command": "pause-all"
     }</code></pre> 
                         Example : Using a simple topic command to delete all dynamic schedules that have finished <br>
-                        <pre class="cron-plus-code"><code>msg: {
+                        <pre class="scheduler-code"><code>msg: {
       "topic": "remove-inactive-dynamic"
     }</code></pre>                    
                     </p>
@@ -2996,14 +2999,14 @@ copies or substantial portions of the Software.
     
                 <p><b>Describe</b><br>
                     Example : cmd payload to describe a cron expression...<br>
-                    <pre class="cron-plus-code"><code>{
+                    <pre class="scheduler-code"><code>{
       "command": "describe",
       "expressionType": "cron",
       "expression": "0 */5 * * * MON *",
       "timeZone": "Europe/London"
     }</code></pre>
                     Example : cmd payload to get all solar event times + solar state at this time...<br>
-    <pre class="cron-plus-code"><code>{
+    <pre class="scheduler-code"><code>{
       "command": "describe",
       "expressionType": "solar",
       "location": "54.9992500,-1.4170300",
@@ -3011,7 +3014,7 @@ copies or substantial portions of the Software.
       "timeZone": "Europe/London"
     }</code></pre>
                     Example : cmd payload to get 4 solar event times + solar for a specific point in time...<br>
-        <pre class="cron-plus-code"><code>{
+        <pre class="scheduler-code"><code>{
       "command": "describe",
       "expressionType": "solar",
       "time": "2020-03-22 18:40",
@@ -3035,11 +3038,11 @@ copies or substantial portions of the Software.
                     <li>Adding a schedule with the same name as an existing schedule will replace the existing one</li>
                     <li>Adding a schedule with property <code>"limit":3</code> will cause that schedule to be stopped after the third trigger. It can be started again by injecting a payload of <code>{"command":"start" "name": "schedule name"}</code></li>
                     <li>Static (UI added) schedules can be also be updated by using the name specified in the UI</li>
-                    <li>When a cron-plus-plus node is modified and deployed (or node-red is restarted), dynamic entries are discarded and must be injected again</li>
-                    <li>When a cron-plus-plus node outputs a msg in response to a command, <code>msg.commandResponse</code> will be <code>true</code> to indicate the message is in response to a command and not a scheduled event</li>
-                    <li>When a cron-plus-plus node outputs a msg for a cron/solar event, <code>msg.scheduledEvent</code> will be <code>true</code> to indicate the message is due to a scheduled event and not a control response</li>
+                    <li>When a scheduler-plus node is modified and deployed (or node-red is restarted), dynamic entries are discarded and must be injected again</li>
+                    <li>When a scheduler-plus node outputs a msg in response to a command, <code>msg.commandResponse</code> will be <code>true</code> to indicate the message is in response to a command and not a scheduled event</li>
+                    <li>When a scheduler-plus node outputs a msg for a cron/solar event, <code>msg.scheduledEvent</code> will be <code>true</code> to indicate the message is due to a scheduled event and not a control response</li>
                     <li>The status indicator will be shown as a "ring" for dynamic schedules or shown as a "dot" for static schedules</li>
-                    <li>if the payload is to "Default Payload", then the content of <code>msg.cronplus</code> is moved to <code>msg.payload</code></li>
+                    <li>if the payload is to "Default Payload", then the content of <code>msg.scheduler</code> is moved to <code>msg.payload</code></li>
                 </ul>
             </dd>
         </dl>
