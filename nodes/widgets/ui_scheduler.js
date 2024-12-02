@@ -827,8 +827,7 @@ module.exports = function (RED) {
         RED.nodes.createNode(this, config)
         const node = this
         const group = RED.nodes.getNode(config.group)
-        // eslint-disable-next-line no-unused-vars
-        // const base = group.getBase()
+        const base = group.getBase()
         node.payloadType = config.payloadType || config.type || 'default'
         // delete config.type
         node.payload = config.payload
@@ -1866,9 +1865,9 @@ module.exports = function (RED) {
             arr[idx] = msg
             return arr
         }
-
+        // region D2
         const evts = {
-            onAction: true,
+            onChange: true,
             beforeSend: function (msg) {
                 if (msg.ui_update) {
                     const update = msg.ui_update
@@ -1877,14 +1876,51 @@ module.exports = function (RED) {
                         statestore.set(group.getBase(), node, msg, 'label', update.label)
                     }
                 }
-                if (msg?.payload?.schedules) {
-                    if (config.persistSchedules) {
-                        // store the latest msg passed to context storage
+
+                return msg
+            },
+
+            onSocket: {
+                // subscribe to custom events
+                submit: function (conn, id, msg) {
+                    if (msg?.payload?.schedules) {
+                        const scheduleArray = msg.payload.schedules
+                        scheduleArray.forEach(schedule => {
+                            let cronExpression
+                            switch (schedule.frequency) {
+                            case 'daily':
+                                const daysOfWeekDaily = schedule.days.length === 7 ? '*' : schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${daysOfWeekDaily}`
+                                break
+                            case 'weekly':
+                                const daysOfWeekWeekly = schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${daysOfWeekWeekly}`
+                                break
+                            case 'monthly':
+                                const daysOfMonth = schedule.days.join(',')
+                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${daysOfMonth} * *`
+                                break
+                            default:
+                                cronExpression = ''
+                            }
+
+                            schedule.cronExpression = cronExpression
+                            schedule.description = cronstrue.toString(cronExpression)
+                            if (schedule.hasEndTime) {
+                                schedule.endTimeCron = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * *`
+                                schedule.endTimeDescription = cronstrue.toString(schedule.endTimeCron)
+                            }
+                        })
+                        console.log('schedules', msg.payload.schedules)
+                        const m = { payload: { schedules: msg.payload.schedules } }
+                        base.emit('msg-input:' + node.id, m, node)
+                        base.stores.data.save(base, node, m)
+                        node.send(msg)
                     }
                 }
-                return msg
             }
         }
+
         if (group) {
             group.register(node, config, evts)
         } else {
@@ -1892,6 +1928,7 @@ module.exports = function (RED) {
         }
     }
 
+    // #endregion D2
     // #endregion Node-RED
 
     function evaluateNodeProperty (value, type, node, msg) {

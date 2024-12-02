@@ -6,34 +6,55 @@
             <v-spacer />
             <v-btn @click="openDialog()">New</v-btn>
         </v-toolbar>
-        <v-data-table :headers="headers" :items="schedules" hide-default-footer @click:row="editSchedule">
-            <template #item.days="{ item }">
-                <span v-if="item.frequency === 'daily' && item.days.length === 7">
-                    Every Day
-                </span>
-                <span v-else-if="item.frequency === 'monthly'">
-                    {{ item.days.join(', ') }}
-                </span>
-                <span v-else>
-                    {{ item.days.map(day => day.slice(0, 3)).join(', ') }}
-                </span>
-            </template>
-            <template #item.time="{ item }"> {{ formatTime(item.time) }} </template>
-            <template #item.hasEndTime="{ item }">
-                {{ item.hasEndTime ? formatTime(item.endTime) : '-' }}
-            </template>
+        <v-data-table
+            :headers="headers"
+            :items="schedules"
+            hide-default-footer
+            item-value="name"
+            show-expand
+            @click:row="editSchedule"
+        >
             <template #item.action="{ item }">
                 <v-icon @click.stop="toggleSchedule(item)">
                     {{ item.enabled ? 'mdi-toggle-switch' : 'mdi-toggle-switch-off' }}
                 </v-icon>
             </template>
-            <template #item.frequency="{ item }">
-                {{ toTitleCase(item.frequency) }}
+            <template #expanded-row="{ columns, item }">
+                <tr>
+                    <td :colspan="columns.length">
+                        Info
+                        <v-card>
+                            <v-card-text>
+                                <v-row>
+                                    <v-col cols="12" sm="6">
+                                        <strong>Start Time:</strong> {{ formatTime(item.time) }}
+                                    </v-col>
+                                    <v-col cols="12" sm="6">
+                                        <strong>End Time:</strong> {{ item.hasEndTime ?
+                                            formatTime(item.endTime) : '-' }}
+                                    </v-col>
+                                </v-row>
+                                <v-row>
+                                    <v-col cols="12" sm="6">
+                                        <strong>Frequency:</strong> {{ toTitleCase(item.frequency)
+                                        }}
+                                    </v-col>
+                                    <v-col cols="12" sm="6">
+                                        <strong>Days:</strong> {{ item.frequency === 'monthly' ?
+                                            item.days.join(', ') : item.days.map(day => day.slice(0,
+                                                                                                  3)).join(', ') }}
+                                    </v-col>
+                                </v-row>
+                            </v-card-text>
+                        </v-card>
+                    </td>
+                </tr>
             </template>
             <template #no-data>
                 <div class="text-center my-4">No Schedules</div>
             </template>
         </v-data-table>
+
         <v-dialog v-model="dialog" max-width="600px">
             <v-card>
                 <v-card-title class="d-flex align-items-center justify-space-between">
@@ -131,10 +152,7 @@ export default {
             schedules: [],
             headers: [
                 { title: 'Name', align: 'start', key: 'name' },
-                { title: 'Start Time', align: 'start', key: 'time' },
-                { title: 'End Time', align: 'start', key: 'hasEndTime' },
-                { title: 'Frequency', align: 'start', key: 'frequency' },
-                { title: 'Days', align: 'start', key: 'days' },
+                { title: 'Description', align: 'start', key: 'description' },
                 { title: 'Enabled', align: 'start', key: 'action' }
             ],
             currentSchedule: null,
@@ -188,7 +206,7 @@ export default {
     },
     created () {
         // can't do this in setup as we are using custom onInput function that needs access to 'this'
-        this.$dataTracker(this.id, null, this.onLoad, this.onDynamicProperties)
+        this.$dataTracker(this.id, this.onInput, this.onLoad, this.onDynamicProperties)
 
         // let Node-RED know that this widget has loaded
         this.$socket.emit('widget-load', this.id)
@@ -203,6 +221,20 @@ export default {
                     widgetId: this.id,
                     msg
                 })
+                if (msg.payload !== undefined) {
+                    this.schedules = msg.payload?.schedules || []
+                }
+            }
+        },
+        onInput (msg) {
+            // update our vuex store with the value retrieved from Node-RED
+            this.$store.commit('data/bind', {
+                widgetId: this.id,
+                msg
+            })
+            console.log('onInput', msg)
+            // make sure our v-model is updated to reflect the value from Node-RED
+            if (msg.payload !== undefined) {
                 this.schedules = msg.payload?.schedules || []
             }
         },
@@ -222,7 +254,7 @@ export default {
                 msg
             })
             console.log('sendSchedules', msg)
-            this.$socket.emit('widget-action', this.id, msg)
+            this.$socket.emit('submit', this.id, msg)
         },
         formatTime (time) {
             if (!time) return ''
