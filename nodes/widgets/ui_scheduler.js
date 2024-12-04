@@ -720,7 +720,8 @@ function exportTask (task, includeStatus) {
         payloadType: task.node_payloadType,
         payload: task.node_payload,
         limit: task.node_limit || null,
-        expressionType: task.node_expressionType
+        expressionType: task.node_expressionType,
+        ...(task?.node_opt?.schedule && { schedule: task.node_opt.schedule })
     }
     if (o.expressionType === 'solar') {
         o.solarType = task.node_solarType
@@ -1722,6 +1723,7 @@ module.exports = function (RED) {
                         state.dynamicSchedules = state.schedules
                     }
                     if (state.dynamicSchedules && state.dynamicSchedules.length) {
+                        const uiSchedules = []
                         for (let iOpt = 0; iOpt < state.dynamicSchedules.length; iOpt++) {
                             const opt = state.dynamicSchedules[iOpt]
                             let task
@@ -1742,8 +1744,15 @@ module.exports = function (RED) {
                                     startTask(node, opt.name)
                                 }
                             }
+                            if (opt?.schedule) {
+                                uiSchedules.push(opt.schedule)
+                            }
                         }
                         updateNodeNextInfo(node)
+                        const msg = { ui_update: { schedules: uiSchedules } }
+                        console.log('msg', msg)
+                        base.emit('msg-input:' + node.id, msg, node)
+                        statestore.set(base, node, msg, 'schedules', uiSchedules)
                     }
                 }
                 if (node.storeName === 'file') {
@@ -1873,7 +1882,11 @@ module.exports = function (RED) {
                     const update = msg.ui_update
                     if (typeof update.label !== 'undefined') {
                         // dynamically set "label" property
-                        statestore.set(group.getBase(), node, msg, 'label', update.label)
+                        statestore.set(base, node, msg, 'label', update.label)
+                    }
+                    if (typeof update.schedules !== 'undefined') {
+                        // dynamically set "schedules" property
+                        statestore.set(base, node, msg, 'schedules', update.schedules)
                     }
                 }
 
@@ -1882,9 +1895,10 @@ module.exports = function (RED) {
 
             onSocket: {
                 // subscribe to custom events
-                submit: function (conn, id, msg) {
+                submit: async function (conn, id, msg) {
                     if (msg?.payload?.schedules) {
                         const scheduleArray = msg.payload.schedules
+                        const cmds = []
                         scheduleArray.forEach(schedule => {
                             let cronExpression
                             switch (schedule.frequency) {
@@ -1910,14 +1924,96 @@ module.exports = function (RED) {
                                 schedule.endTimeCron = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * *`
                                 schedule.endTimeDescription = cronstrue.toString(schedule.endTimeCron)
                             }
+                            const cmd = {
+                                command: 'add',
+                                name: schedule.name,
+                                expression: schedule.cronExpression,
+                                expressionType: 'cron',
+                                payload: schedule?.payload || true,
+                                type: 'str',
+                                schedule,
+                                dontStartTheTask: !schedule.enabled
+                            }
+
+                            cmds.push(cmd)
                         })
                         console.log('schedules', msg.payload.schedules)
-                        const m = { payload: { schedules: msg.payload.schedules } }
+                        const m = { ui_update: { schedules: msg.payload.schedules } }
                         base.emit('msg-input:' + node.id, m, node)
-                        base.stores.data.save(base, node, m)
+                        statestore.set(base, node, m, 'schedules', msg.payload.schedules)
+                        await updateTask(node, cmds, msg)
+                        updateNextStatus(node, true)
+                        requestSerialisation()// update persistence
                         node.send(msg)
                     }
+                },
+                remove: function (conn, id, msg) {
+                    if (msg?.payload?.name) {
+                        // Get the schedules property
+                        const schedules = statestore.getProperty(node.id, 'schedules') || []
+
+                        // Find the index of the task to delete
+                        const index = schedules.findIndex(schedule => schedule.name === msg.payload.name)
+
+                        if (index !== -1) {
+                            // Remove the task from the schedules array if it exists
+                            schedules.splice(index, 1)
+
+                            // Update the schedules property
+                            statestore.set(base, node, msg, 'schedules', schedules)
+
+                            // Update task and persist changes
+                            deleteTask(node, msg.payload.name)
+                            updateNextStatus(node, true)
+                            requestSerialisation() // Update persistence
+                            console.log('Task removed')
+
+                            // Send the updated schedules
+                            const m = { ui_update: { schedules } }
+                            base.emit('msg-input:' + node.id, m, node)
+                            node.send(msg)
+                        } else {
+                            console.log('Task not found in schedules')
+                        }
+                    }
+                },
+                setEnabled: function (conn, id, msg) {
+                    console.log('setEnabled', msg)
+                    if (msg?.payload?.name) {
+                        // Get the schedules property
+                        const enabled = msg.payload.enabled
+                        const schedules = statestore.getProperty(node.id, 'schedules') || []
+
+                        // Find the schedule
+                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === msg.payload.name)
+
+                        if (scheduleIndex !== -1) {
+                            // Update the enabled property
+                            schedules[scheduleIndex].enabled = enabled
+
+                            // Update the schedules property
+                            statestore.set(base, node, msg, 'schedules', schedules)
+                            if (enabled) {
+                                startTask(node, msg.payload.name)
+                                console.log('Task started')
+                            } else {
+                                stopTask(node, msg.payload.name, true)
+                                console.log('Task stopped')
+                            }
+
+                            updateNextStatus(node, true)
+                            requestSerialisation() // update persistence
+
+                            // Send the updated schedules
+                            const m = { ui_update: { schedules } }
+                            base.emit('msg-input:' + node.id, m, node)
+                            node.send(msg)
+                        } else {
+                            console.log('Task not found in schedules')
+                        }
+                    }
                 }
+
             }
         }
 

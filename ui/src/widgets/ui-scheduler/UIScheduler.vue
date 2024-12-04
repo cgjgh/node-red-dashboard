@@ -67,7 +67,7 @@
                     </div>
                 </v-card-title>
                 <v-card-text>
-                    <v-text-field v-model="name" label="Schedule Name" :rules="[rules.required]" required />
+                    <v-text-field v-model="name" label="Schedule Name" :rules="[rules.required]" required :disabled="isEditing" />
                     <v-btn-toggle v-model="frequency" label="Frequency" mandatory>
                         <v-btn value="daily">Daily</v-btn>
                         <v-btn value="weekly">Weekly</v-btn>
@@ -149,7 +149,7 @@ export default {
             modalTime: false,
             modalEndTime: false,
             isEditing: false,
-            schedules: [],
+            items: null,
             headers: [
                 { title: 'Name', align: 'start', key: 'name' },
                 { title: 'Description', align: 'start', key: 'description' },
@@ -195,6 +195,15 @@ export default {
 
     computed: {
         ...mapState('data', ['messages']),
+        schedules: {
+            get () {
+                const items = this.items || this.getProperty('schedules')
+                return items
+            },
+            set (value) {
+                this.items = value
+            }
+        },
         formattedTime () {
             if (!this.time) return ''
             return this.formatTime(this.time)
@@ -233,12 +242,14 @@ export default {
                 msg
             })
             console.log('onInput', msg)
-            // make sure our v-model is updated to reflect the value from Node-RED
-            if (msg.payload !== undefined) {
-                this.schedules = msg.payload?.schedules || []
-            }
         },
         onDynamicProperties (msg) {
+            const schedules = msg.ui_update?.schedules
+            if (schedules) {
+                if (Array.isArray(schedules)) {
+                    this.schedules = msg.ui_update?.schedules || []
+                }
+            }
             // update the UI with any other changes
             const updates = msg.ui_update
 
@@ -353,8 +364,10 @@ export default {
             return []
         },
         toggleSchedule (item) {
-            item.enabled = !item.enabled
-            this.sendSchedules()
+            const enabled = !item.enabled
+            if (item.name) {
+                this.$socket.emit('setEnabled', this.id, { _event: 'setEnabled', payload: { name: item.name, enabled } })
+            }
         },
         editSchedule (event, row) {
             const item = row.item
@@ -411,7 +424,7 @@ export default {
             if (this.currentSchedule) {
                 const index = this.schedules.indexOf(this.currentSchedule)
                 if (index > -1) {
-                    this.schedules.splice(index, 1)
+                    this.$socket.emit('remove', this.id, { _event: 'remove', payload: { name: this.currentSchedule.name } })
                 }
                 this.closeDialog()
             }
