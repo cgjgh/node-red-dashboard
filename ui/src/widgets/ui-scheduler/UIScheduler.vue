@@ -15,10 +15,15 @@
             @click:row="editSchedule"
         >
             <template #item.action="{ item }">
-                <v-icon @click.stop="toggleSchedule(item)">
-                    {{ item.enabled ? 'mdi-toggle-switch' : 'mdi-toggle-switch-off' }}
-                </v-icon>
+                <div>
+                    <v-switch
+                        v-model="item.enabled"
+                        hide-details
+                        @update:model-value.stop="toggleSchedule(item)"
+                    />
+                </div>
             </template>
+
             <template #expanded-row="{ columns, item }">
                 <tr>
                     <td :colspan="columns.length">
@@ -29,7 +34,7 @@
                                     <v-col cols="12" sm="6">
                                         <strong>Start Time:</strong> {{ formatTime(item.time) }}
                                     </v-col>
-                                    <v-col cols="12" sm="6">
+                                    <v-col v-if="item.hasEndTime" cols="12" sm="6">
                                         <strong>End Time:</strong> {{ item.hasEndTime ?
                                             formatTime(item.endTime) : '-' }}
                                     </v-col>
