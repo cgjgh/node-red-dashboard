@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 /* eslint-disable no-console */
 /*
 MIT License
@@ -103,9 +104,9 @@ addExtendedControlTopics('debug')
  * @returns {string}
  * A human readable version of the expression
  */
-const humanizeCron = function (expression, locale) {
+const humanizeCron = function (expression, locale, use24HourFormat = true) {
     try {
-        const opt = { use24HourTimeFormat: true }
+        const opt = { use24HourTimeFormat: use24HourFormat }
         if (locale) opt.locale = locale
         return cronstrue.toString(expression, opt)
     } catch (error) {
@@ -229,7 +230,7 @@ function isDateSequence (data) {
  * @param {string} solarEvents a CSV of solar events to be included
  * @param {date} time Optional time to use (defaults to Date.now() if excluded)
  */
-function _describeExpression (expression, expressionType, timeZone, offset, solarType, solarEvents, time, opts) {
+function _describeExpression (expression, expressionType, timeZone, offset, solarType, solarEvents, time, opts, use24HourFormat = true) {
     const now = time ? new Date(time) : new Date()
     opts = opts || {}
     let result = { description: undefined, nextDate: undefined, nextDescription: undefined, prettyNext: 'Never' }
@@ -305,9 +306,9 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
                 }
             } else {
                 if (count === 1) {
-                    result.description = 'One time at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone)
+                    result.description = 'One time at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone, use24HourFormat)
                 } else {
-                    result.description = count + ' Date Sequences starting at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone)
+                    result.description = count + ' Date Sequences starting at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone, use24HourFormat)
                 }
                 result.nextDates = dsFutureDates.slice(0, 5)
             }
@@ -326,7 +327,7 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
                 console.debug(error)
             }
         }
-        result.description = humanizeCron(expression)
+        result.description = humanizeCron(expression, null, use24HourFormat)
         result.nextDate = next
     }
     return result
@@ -340,7 +341,7 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
  * @returns {string}
  * The formatted date or empty string if `date` is null|undefined
  */
-function formatShortDateTimeWithTZ (date, tz) {
+function formatShortDateTimeWithTZ (date, tz, use24HourFormat = true) {
     if (!date) {
         return ''
     }
@@ -348,13 +349,13 @@ function formatShortDateTimeWithTZ (date, tz) {
     const o = {
         timeZone: tz || undefined,
         timeZoneName: 'short',
-        hourCycle: 'h23',
         year: 'numeric',
         month: 'short',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
-        second: '2-digit'
+        second: '2-digit',
+        hourCycle: use24HourFormat ? 'h23' : 'h12'
     }
     try {
         dateString = new Intl.DateTimeFormat('default', o).format(new Date(date))
@@ -447,8 +448,8 @@ function applyOptionDefaults (node, option, optionIndex) {
     if (option.expressionType === 'solar') {
         if (!option.solarType) option.solarType = option.solarEvents ? 'selected' : 'all'
         if (!option.solarEvents) option.solarEvents = 'sunrise,sunset'
-        if (!option.location) option.location = ''
-        option.locationType = node.defaultLocationType
+        if (!option.location) option.location = node.defaultLocation || ''
+        option.locationType = node.defaultLocationType || 'fixed'
     }
 }
 function parseDateSequence (expression) {
@@ -753,7 +754,7 @@ function getTaskStatus (node, task, opts) {
     opts.defaultLocationType = node.defaultLocationType
     const sol = task.node_expressionType === 'solar'
     const exp = sol ? task.node_location : task.node_expression
-    const h = _describeExpression(exp, task.node_expressionType, node.timeZone, task.node_offset, task.node_solarType, task.node_solarEvents, null, opts)
+    const h = _describeExpression(exp, task.node_expressionType, node.timeZone, task.node_offset, task.node_solarType, task.node_solarEvents, null, opts, node.use24HourFormat)
     let nextDescription = null
     let nextDate = null
     const running = !isTaskFinished(task)
@@ -778,7 +779,7 @@ function getTaskStatus (node, task, opts) {
         limit: task.node_limit,
         nextDescription,
         nextDate: running ? nextDate : null,
-        nextDateTZ: running ? formatShortDateTimeWithTZ(nextDate, tz) : null,
+        nextDateTZ: running ? formatShortDateTimeWithTZ(nextDate, tz, node.use24HourFormat) : null,
         timeZone: tz,
         serverTime: new Date(),
         serverTimeZone: localTZ,
@@ -835,6 +836,7 @@ module.exports = function (RED) {
         node.crontab = config.crontab
         node.outputField = config.outputField || 'payload'
         node.timeZone = config.timeZone
+        node.use24HourFormat = config.use24HourFormat
 
         node.options = config.options
         node.commandResponseMsgOutput = config.commandResponseMsgOutput || 'output1'
@@ -937,7 +939,7 @@ module.exports = function (RED) {
             if (task) {
                 indicator = node.nextIndicator || 'dot'
             }
-            node.status({ fill: 'green', shape: indicator, text: 'Done: ' + formatShortDateTimeWithTZ(Date.now(), node.timeZone) })
+            node.status({ fill: 'green', shape: indicator, text: 'Done: ' + formatShortDateTimeWithTZ(Date.now(), node.timeZone, node.use24HourFormat) })
             // node.nextDate = getNextTask(node.tasks);
             const now = new Date()
             updateNodeNextInfo(node, now)
@@ -1149,7 +1151,7 @@ module.exports = function (RED) {
                         {
                             const exp = (cmd.expressionType === 'solar') ? cmd.location : cmd.expression
                             applyOptionDefaults(node, cmd)
-                            newMsg.payload.result = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, { includeSolarStateOffset: true, locationType: node.node_locationType })
+                            newMsg.payload.result = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, { includeSolarStateOffset: true, locationType: node.node_locationType }, node.use24HourFormat)
                             sendCommandResponse(newMsg)
                         }
                         break
@@ -1591,7 +1593,7 @@ module.exports = function (RED) {
             task.on('run', (timestamp) => {
                 node.debug(`running '${task.name}' ~ '${task.node_topic}'\n now time ${new Date()}\n crontime ${new Date(timestamp)}`)
                 const indicator = task.isDynamic ? 'ring' : 'dot'
-                node.status({ fill: 'green', shape: indicator, text: 'Running ' + formatShortDateTimeWithTZ(timestamp, node.timeZone) })
+                node.status({ fill: 'green', shape: indicator, text: 'Running ' + formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
                 if (isTaskFinished(task)) {
                     process.nextTick(function () {
                         // using nextTick is a work around for an issue (#3) in cronosjs where the job restarts itself after this event handler has exited
@@ -1619,11 +1621,37 @@ module.exports = function (RED) {
                     process.nextTick(function () {
                         updateNextStatus(node)
                     })
+                    if (task.node_opt.schedule) {
+                        task.node_opt.schedule.enabled = true
+                    }
+                    // update state store
+                    const schedules = statestore.getProperty(node.id, 'schedules') || []
+                    const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
+
+                    if (scheduleIndex !== -1) {
+                        schedules[scheduleIndex].enabled = true
+                        statestore.set(base, node, {}, 'schedules', schedules)
+                    }
+                    const m = { ui_update: { schedules } }
+                    base.emit('msg-input:' + node.id, m, node)
                     requestSerialisation()// request persistent state be written
                 })
                 .on('stopped', () => {
                     node.debug(`stopped '${task.name}' ~ '${task.node_topic}'`)
                     updateNextStatus(node)
+                    if (task.node_opt.schedule) {
+                        task.node_opt.schedule.enabled = false
+                    }
+                    // update state store
+                    const schedules = statestore.getProperty(node.id, 'schedules') || []
+                    const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
+
+                    if (scheduleIndex !== -1) {
+                        schedules[scheduleIndex].enabled = false
+                        statestore.set(base, node, {}, 'schedules', schedules)
+                    }
+                    const m = { ui_update: { schedules } }
+                    base.emit('msg-input:' + node.id, m, node)
                     requestSerialisation()// request persistent state be written
                 })
             task.stop()// prevent bug where calling start without first calling stop causes events to bunch up
@@ -1796,7 +1824,7 @@ module.exports = function (RED) {
             if (node.tasks) {
                 const indicator = node.nextIndicator || 'dot'
                 if (node.nextDate) {
-                    const d = formatShortDateTimeWithTZ(node.nextDate, node.timeZone) || 'Never'
+                    const d = formatShortDateTimeWithTZ(node.nextDate, node.timeZone, node.use24HourFormat) || 'Never'
                     node.status({ fill: 'blue', shape: indicator, text: (node.nextEvent || 'Next') + ': ' + d })
                 } else if (node.tasks && node.tasks.length) {
                     node.status({ fill: 'grey', shape: indicator, text: 'All stopped' })
@@ -1889,6 +1917,21 @@ module.exports = function (RED) {
                         statestore.set(base, node, msg, 'schedules', update.schedules)
                     }
                 }
+                console.log('msg', msg)
+                const results = []
+                if (node.tasks) {
+                    for (let index = 0; index < node.tasks.length; index++) {
+                        const task = node.tasks[index]
+                        console.log('task', task)
+                        if (task) {
+                            const result = {}
+                            result.name = task.name
+                            result.status = getTaskStatus(node, task, { includeSolarStateOffset: true })
+                            results.push(result)
+                        }
+                    }
+                }
+                console.log('results', results)
 
                 return msg
             },
@@ -1897,53 +1940,144 @@ module.exports = function (RED) {
                 // subscribe to custom events
                 submit: async function (conn, id, msg) {
                     if (msg?.payload?.schedules) {
+                        console.log('schedules', msg?.payload?.schedules)
                         const scheduleArray = msg.payload.schedules
                         const cmds = []
                         scheduleArray.forEach(schedule => {
-                            let cronExpression
-                            switch (schedule.frequency) {
-                            case 'daily':
-                                const daysOfWeekDaily = schedule.days.length === 7 ? '*' : schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
-                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${daysOfWeekDaily}`
-                                break
-                            case 'weekly':
-                                const daysOfWeekWeekly = schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
-                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${daysOfWeekWeekly}`
-                                break
-                            case 'monthly':
-                                const daysOfMonth = schedule.days.join(',')
-                                cronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${daysOfMonth} * *`
-                                break
-                            default:
-                                cronExpression = ''
-                            }
+                            if (schedule.scheduleType === 'time') {
+                                let startCronExpression
+                                let endCronExpression
 
-                            schedule.cronExpression = cronExpression
-                            schedule.description = cronstrue.toString(cronExpression)
-                            if (schedule.hasEndTime) {
-                                schedule.endTimeCron = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * *`
-                                schedule.endTimeDescription = cronstrue.toString(schedule.endTimeCron)
-                            }
-                            const cmd = {
-                                command: 'add',
-                                name: schedule.name,
-                                expression: schedule.cronExpression,
-                                expressionType: 'cron',
-                                payload: schedule?.payload || true,
-                                type: 'str',
-                                schedule,
-                                dontStartTheTask: !schedule.enabled
-                            }
+                                switch (schedule.period) {
+                                case 'minutes':
+                                    startCronExpression = `*/${schedule.minutesInterval} * * * *`
+                                    if (schedule.hasDuration) {
+                                        const offsetMinute = schedule.duration % 60
+                                        endCronExpression = `${offsetMinute}-59/${schedule.minutesInterval} * * * *`
+                                    }
+                                    break
+                                case 'hourly':
+                                    startCronExpression = `0 */${schedule.hourlyInterval} * * *`
+                                    if (schedule.hasDuration) {
+                                        const offsetHour = schedule.duration % 24
+                                        endCronExpression = `0 ${offsetHour}-23/${schedule.hourlyInterval} * * *`
+                                    }
+                                    break
 
-                            cmds.push(cmd)
+                                case 'daily':
+                                    const dailyDaysOfWeek = schedule.days.length === 7 ? '*' : schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                    startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${dailyDaysOfWeek}`
+                                    if (schedule.hasEndTime) {
+                                        endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${dailyDaysOfWeek}`
+                                    }
+                                    break
+                                case 'weekly':
+                                    const weeklyDaysOfWeek = schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                    startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${weeklyDaysOfWeek}`
+                                    if (schedule.hasEndTime) {
+                                        endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${weeklyDaysOfWeek}`
+                                    }
+                                    break
+                                case 'monthly':
+                                    const monthlyDays = schedule.days.join(',')
+                                    startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${monthlyDays} * *`
+                                    if (schedule.hasEndTime) {
+                                        endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${monthlyDays} * *`
+                                    }
+                                    break
+                                case 'yearly':
+                                    startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
+                                    if (schedule.hasEndTime) {
+                                        endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
+                                    }
+                                    break
+                                default:
+                                    startCronExpression = '0 0 31 2 ? *' // Default to never
+                                }
+
+                                const startCmd = {
+                                    command: 'add',
+                                    name: schedule.name,
+                                    expression: startCronExpression,
+                                    expressionType: 'cron',
+                                    payload: schedule?.payload || true,
+                                    type: 'str',
+                                    schedule,
+                                    dontStartTheTask: !schedule.enabled
+                                }
+
+                                const endCmd = {
+                                    ...startCmd,
+                                    name: `${schedule.name}_end`,
+                                    topic: schedule.name,
+                                    expression: endCronExpression,
+                                    payload: schedule?.payloadEnd || false,
+                                    schedule: null
+                                }
+
+                                applyOptionDefaults(node, startCmd)
+                                schedule.description = _describeExpression(
+                                    startCmd.expression,
+                                    startCmd.expressionType,
+                                    startCmd.timeZone || node.timeZone,
+                                    startCmd.offset,
+                                    startCmd.solarType,
+                                    startCmd.solarEvents,
+                                    startCmd.time,
+                                    startCmd,
+                                    node.use24HourFormat
+                                ).description
+
+                                // if (schedule.hasEndTime) {
+                                //     schedule.endCronExpression = endCronExpression
+                                //     schedule.endTimeDescription = _describeExpression(
+                                //         schedule.endCronExpression,
+                                //         'cron',
+                                //         schedule.timeZone || node.timeZone,
+                                //         schedule.offset,
+                                //         schedule.solarType,
+                                //         schedule.solarEvents,
+                                //         schedule.endTime,
+                                //         schedule,
+                                //         node.use24HourFormat
+                                //     ).description
+                                // }
+
+                                schedule.startCronExpression = startCronExpression
+                                cmds.push(startCmd)
+                                if (schedule.hasEndTime || schedule.hasDuration) {
+                                    schedule.endCronExpression = endCronExpression
+                                    cmds.push(endCmd)
+                                }
+                            } else if (schedule.scheduleType === 'solar') {
+                                const cmd = {
+                                    command: 'add',
+                                    name: schedule.name,
+                                    expressionType: 'solar',
+                                    solarType: 'selected',
+                                    solarEvents: schedule.solarEvent,
+                                    offset: schedule.offset,
+                                    locationType: 'fixed',
+                                    payload: schedule?.payload || true,
+                                    type: 'default',
+                                    schedule,
+                                    dontStartTheTask: !schedule.enabled
+                                }
+                                applyOptionDefaults(node, cmd)
+                                const exp = (cmd.expressionType === 'solar') ? cmd.location : cmd.expression
+                                schedule.description = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat).description
+                                cmds.push(cmd)
+                            }
                         })
                         console.log('schedules', msg.payload.schedules)
                         const m = { ui_update: { schedules: msg.payload.schedules } }
                         base.emit('msg-input:' + node.id, m, node)
                         statestore.set(base, node, m, 'schedules', msg.payload.schedules)
-                        await updateTask(node, cmds, msg)
-                        updateNextStatus(node, true)
-                        requestSerialisation()// update persistence
+                        if (cmds.length > 0) {
+                            await updateTask(node, cmds, msg)
+                            updateNextStatus(node, true)
+                            requestSerialisation()// update persistence
+                        }
                         node.send(msg)
                     }
                 },
@@ -1956,6 +2090,9 @@ module.exports = function (RED) {
                         const index = schedules.findIndex(schedule => schedule.name === msg.payload.name)
 
                         if (index !== -1) {
+                            // Get the schedule
+                            const schedule = schedules[index]
+
                             // Remove the task from the schedules array if it exists
                             schedules.splice(index, 1)
 
@@ -1964,9 +2101,16 @@ module.exports = function (RED) {
 
                             // Update task and persist changes
                             deleteTask(node, msg.payload.name)
+                            console.log('Task removed')
+
+                            // Remove the end task if it exists
+                            if (schedule.hasEndTime || schedule.hasDuration) {
+                                deleteTask(node, `${schedule.name}_end`)
+                                console.log('End task removed')
+                            }
+
                             updateNextStatus(node, true)
                             requestSerialisation() // Update persistence
-                            console.log('Task removed')
 
                             // Send the updated schedules
                             const m = { ui_update: { schedules } }
@@ -1977,29 +2121,78 @@ module.exports = function (RED) {
                         }
                     }
                 },
+
                 setEnabled: function (conn, id, msg) {
                     console.log('setEnabled', msg)
                     if (msg?.payload?.name) {
-                        // Get the schedules property
-                        const enabled = msg.payload.enabled
+                        // Get the schedules property from the statestore
                         const schedules = statestore.getProperty(node.id, 'schedules') || []
 
                         // Find the schedule
                         const scheduleIndex = schedules.findIndex(schedule => schedule.name === msg.payload.name)
 
                         if (scheduleIndex !== -1) {
-                            // Update the enabled property
-                            schedules[scheduleIndex].enabled = enabled
+                            // Get the schedule
+                            const schedule = schedules[scheduleIndex]
 
-                            // Update the schedules property
-                            statestore.set(base, node, msg, 'schedules', schedules)
+                            // Get the enable status from the message payload
+                            const enabled = msg.payload.enabled
+
+                            // Start or stop the task based on the enabled status
                             if (enabled) {
                                 startTask(node, msg.payload.name)
                                 console.log('Task started')
+                                // Start end task if schedule has end time
+                                if (schedule.hasEndTime || schedule.hasDuration) {
+                                    startTask(node, `${schedule.name}_end`)
+                                    console.log('End task started')
+                                }
                             } else {
                                 stopTask(node, msg.payload.name, true)
                                 console.log('Task stopped')
+                                // Stop end task if schedule has end time
+                                if (schedule.hasEndTime || schedule.hasDuration) {
+                                    stopTask(node, `${schedule.name}_end`, true)
+                                    console.log('End task stopped')
+                                }
                             }
+
+                            updateNextStatus(node, true)
+                            requestSerialisation() // Update persistence
+
+                            // Send the updated schedules
+                            node.send(msg)
+                        }
+                    }
+                },
+
+                requestStatus: function (conn, id, msg) {
+                    console.log('requestStatus', msg)
+                    if (msg?.payload?.name) {
+                        // Get the schedules property
+                        const schedules = statestore.getProperty(node.id, 'schedules') || []
+
+                        // Find the schedule
+                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === msg.payload.name)
+
+                        if (scheduleIndex !== -1) {
+                            // Request task status
+                            const task = getTask(node, msg.payload.name)
+                            if (task) {
+                                const result = {
+                                    // config: exportTask(task, true),
+                                    status: getTaskStatus(node, task, { includeSolarStateOffset: true })
+                                }
+
+                                // Update schedule with the status information
+                                schedules[scheduleIndex].nextDate = result.status.nextDateTZ
+                                schedules[scheduleIndex].nextDescription = result.status.nextDescription
+                            } else {
+                                console.log('Task not found')
+                            }
+
+                            // Update the schedules property
+                            statestore.set(base, node, msg, 'schedules', schedules)
 
                             updateNextStatus(node, true)
                             requestSerialisation() // update persistence

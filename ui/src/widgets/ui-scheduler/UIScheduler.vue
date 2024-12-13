@@ -7,47 +7,72 @@
             <v-btn @click="openDialog()">New</v-btn>
         </v-toolbar>
         <v-data-table
-            :headers="headers"
-            :items="schedules"
-            hide-default-footer
-            item-value="name"
-            show-expand
-            @click:row="editSchedule"
+            v-model:expanded="expanded" :headers="headers" :items="schedules" hide-default-footer
+            item-value="name" show-expand :expand="expandedItem" @click:row="handleRowClick"
         >
             <template #item.action="{ item }">
                 <div>
-                    <v-switch
-                        v-model="item.enabled"
-                        hide-details
-                        @update:model-value.stop="toggleSchedule(item)"
-                    />
+                    <v-switch v-model="item.enabled" color="primary" hide-details @click.stop="toggleSchedule(item)" />
                 </div>
             </template>
-
             <template #expanded-row="{ columns, item }">
-                <tr>
+                <tr v-if="item">
                     <td :colspan="columns.length">
-                        Info
                         <v-card>
+                            <v-card-title class="d-flex align-items-center justify-space-between">
+                                <div v-if="item && item.name">
+                                    <strong>Name:</strong> {{ item.name }}
+                                </div>
+                                <div v-else>
+                                    <em>No item selected</em>
+                                </div>
+                                <v-btn v-if="item" icon @click="editSchedule(item)">
+                                    <v-icon>mdi-pencil</v-icon>
+                                </v-btn>
+                            </v-card-title>
                             <v-card-text>
                                 <v-row>
-                                    <v-col cols="12" sm="6">
+                                    <v-col v-if="item.period" cols="12" sm="6">
+                                        <strong>Period:</strong> {{ toTitleCase(item.period) }}
+                                    </v-col>
+                                    <v-col v-if="item.yearlyMonth" cols="12" sm="6">
+                                        <strong>Month:</strong> {{ item.yearlyMonth }}
+                                    </v-col>
+                                    <v-col v-if="item.days" cols="12" sm="6">
+                                        <strong>Days:</strong>
+                                        {{
+                                            item.period === 'monthly' || item.period === 'yearly'
+                                                ? item.days.join(', ')
+                                                : item.days.map(day => day.slice(0, 3)).join(', ')
+                                        }}
+                                    </v-col>
+                                    <v-col v-if="item.time" cols="12" sm="6">
                                         <strong>Start Time:</strong> {{ formatTime(item.time) }}
                                     </v-col>
                                     <v-col v-if="item.hasEndTime" cols="12" sm="6">
-                                        <strong>End Time:</strong> {{ item.hasEndTime ?
-                                            formatTime(item.endTime) : '-' }}
-                                    </v-col>
-                                </v-row>
-                                <v-row>
-                                    <v-col cols="12" sm="6">
-                                        <strong>Frequency:</strong> {{ toTitleCase(item.frequency)
+                                        <strong>End Time:</strong> {{ item.hasEndTime ? formatTime(item.endTime) : '-'
                                         }}
                                     </v-col>
-                                    <v-col cols="12" sm="6">
-                                        <strong>Days:</strong> {{ item.frequency === 'monthly' ?
-                                            item.days.join(', ') : item.days.map(day => day.slice(0,
-                                                                                                  3)).join(', ') }}
+                                    <v-col v-if="item.minutesInterval" cols="12" sm="6">
+                                        <strong>Interval:</strong> {{ item.minutesInterval }}
+                                    </v-col>
+                                    <v-col v-if="item.hourlyInterval" cols="12" sm="6">
+                                        <strong>Interval:</strong> {{ item.hourlyInterval }}
+                                    </v-col>
+                                    <v-col v-if="item.hasDuration" cols="12" sm="6">
+                                        <strong>Duration:</strong> {{ item.duration }}
+                                    </v-col>
+                                    <v-col v-if="item.solarEvent" cols="12" sm="6">
+                                        <strong>Solar Event:</strong> {{ item.solarEvent }}
+                                    </v-col>
+                                    <v-col v-if="item.offset" cols="12" sm="6">
+                                        <strong>Offset:</strong> {{ item.offset }}
+                                    </v-col>
+                                    <v-col v-if="item.nextDate" cols="12" sm="6">
+                                        <strong>Next Date:</strong> {{ item.nextDate }}
+                                    </v-col>
+                                    <v-col v-if="item.nextDescription" cols="12" sm="6">
+                                        <strong>Next Description:</strong> {{ item.nextDescription }}
                                     </v-col>
                                 </v-row>
                             </v-card-text>
@@ -55,6 +80,7 @@
                     </td>
                 </tr>
             </template>
+
             <template #no-data>
                 <div class="text-center my-4">No Schedules</div>
             </template>
@@ -66,56 +92,123 @@
                     <span class="text-h5">{{ isEditing ? 'Edit Schedule' : 'New Schedule' }}</span>
                     <div class="d-flex align-items-center">
                         <v-switch v-model="enabled" label="Enabled" required class="mr-2" />
-                        <v-btn v-if="isEditing" icon @click="openDeleteDialog">
+                        <v-btn v-if="isEditing" icon max-height="50" color="red" @click="openDeleteDialog()">
                             <v-icon>mdi-delete</v-icon>
                         </v-btn>
                     </div>
                 </v-card-title>
                 <v-card-text>
-                    <v-text-field v-model="name" label="Schedule Name" :rules="[rules.required]" required :disabled="isEditing" />
-                    <v-btn-toggle v-model="frequency" label="Frequency" mandatory>
-                        <v-btn value="daily">Daily</v-btn>
-                        <v-btn value="weekly">Weekly</v-btn>
-                        <v-btn value="monthly">Monthly</v-btn>
-                    </v-btn-toggle>
-                    <v-select
-                        v-if="frequency === 'daily'" v-model="dailyDays" :items="daysOfWeek" label="Select Days" multiple
-                        required :rules="[rules.required]"
-                    />
-                    <v-select
-                        v-if="frequency === 'weekly'" v-model="weeklyDays" :items="daysOfWeek" label="Select Days" multiple
-                        required :rules="[rules.required]"
-                    />
-                    <v-select
-                        v-if="frequency === 'monthly'" v-model="monthlyDays" :items="daysOfMonth" label="Select Days" multiple
-                        required :rules="[rules.required]"
-                    />
                     <v-text-field
-                        v-model="formattedTime" :active="modalTime" :focused="modalTime" label="Start Time"
-                        prepend-icon="mdi-clock-time-four-outline" readonly :rules="[rules.required]"
+                        v-model="name" label="Schedule Name" :rules="[rules.required]" required
+                        :disabled="isEditing"
+                    />
+                    <v-btn-toggle
+                        v-model="scheduleType" label="Schedule Type" mandatory
+                        class="d-flex align-items-center justify-space-between"
                     >
-                        <v-dialog v-model="modalTime" activator="parent" width="auto">
-                            <v-time-picker
-                                v-if="modalTime" v-model="time" :max="hasEndTime ? endTime : undefined"
-                                :format="props.use24HourFormat ? '24hr' : 'ampm'" :ampm-in-title="!props.use24HourFormat"
-                            />
-                        </v-dialog>
-                    </v-text-field>
-                    <v-text-field
-                        v-if="hasEndTime" v-model="formattedEndTime" :active="modalEndTime" :focused="modalEndTime"
-                        label="End Time" prepend-icon="mdi-clock-time-four-outline" readonly :rules="[rules.endTimeRule]"
-                    >
-                        <v-dialog v-model="modalEndTime" activator="parent" width="auto">
-                            <v-time-picker
-                                v-if="modalEndTime" v-model="endTime" :min="time" :format="props.use24HourFormat ? '24hr' : 'ampm'"
-                                :ampm-in-title="!props.use24HourFormat"
-                            />
-                        </v-dialog>
-                    </v-text-field>
-                    <v-btn-toggle v-model="hasEndTime" mandatory @update:model-value="clearStartTimeMax">
-                        <v-btn :value="false">No End Time</v-btn>
-                        <v-btn :value="true">End Time</v-btn>
+                        <v-btn value="time">Time</v-btn>
+                        <v-btn value="solar">Solar</v-btn>
                     </v-btn-toggle>
+                    <div v-if="scheduleType === 'time'">
+                        <v-btn-toggle v-model="period" label="Period" mandatory>
+                            <v-btn value="minutes">Minutes</v-btn>
+                            <v-btn value="hourly">Hourly</v-btn>
+                            <v-btn value="daily">Daily</v-btn>
+                            <v-btn value="weekly">Weekly</v-btn>
+                            <v-btn value="monthly">Monthly</v-btn>
+                            <v-btn value="yearly">Yearly</v-btn>
+                        </v-btn-toggle>
+                        <v-select
+                            v-if="period === 'daily'" v-model="dailyDays" :items="daysOfWeek" label="Select Days"
+                            multiple required :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'weekly'" v-model="weeklyDays" :items="daysOfWeek"
+                            label="Select Days" multiple required :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'monthly'" v-model="monthlyDays" :items="daysOfMonth"
+                            label="Select Days" multiple required :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'yearly'" v-model="yearlyMonth" :items="months" label="Select Month"
+                            required :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'yearly'" v-model="yearlyDay" :items="daysOfMonth" label="Select Day"
+                            required :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'minutes'" v-model="minutesInterval"
+                            :items="generateNumberArray(1, 60)" label="Interval (Minutes)" :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="period === 'hourly'" v-model="hourlyInterval"
+                            :items="generateNumberArray(1, 23)" label="Interval (Hours)" :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="hasDuration && (period === 'minutes' || period === 'hourly')" v-model="duration"
+                            :items="durationItems" label="Duration" :rules="[rules.required]"
+                        />
+                        <v-btn-toggle
+                            v-if="period === 'minutes' || period === 'hourly'" v-model="hasDuration"
+                            mandatory
+                        >
+                            <v-btn :value="false">No Duration</v-btn>
+                            <v-btn :value="true">Duration</v-btn>
+                        </v-btn-toggle>
+                        <v-text-field
+                            v-if="period !== 'minutes' && period !== 'hourly'" v-model="formattedTime"
+                            :active="modalTime" :focused="modalTime" label="Start Time"
+                            prepend-icon="mdi-clock-time-four-outline" readonly :rules="[rules.required]"
+                        >
+                            <v-dialog v-model="modalTime" activator="parent" width="auto">
+                                <v-time-picker
+                                    v-if="modalTime" v-model="time" :max="hasEndTime ? endTime : undefined"
+                                    :format="props.use24HourFormat ? '24hr' : 'ampm'"
+                                    :ampm-in-title="!props.use24HourFormat"
+                                />
+                            </v-dialog>
+                        </v-text-field>
+                        <v-text-field
+                            v-if="hasEndTime && period !== 'minutes' && period !== 'hourly'"
+                            v-model="formattedEndTime" :active="modalEndTime" :focused="modalEndTime" label="End Time"
+                            prepend-icon="mdi-clock-time-four-outline" readonly :rules="[rules.endTimeRule]"
+                        >
+                            <v-dialog v-model="modalEndTime" activator="parent" width="auto">
+                                <v-time-picker
+                                    v-if="modalEndTime" v-model="endTime" :min="time"
+                                    :format="props.use24HourFormat ? '24hr' : 'ampm'"
+                                    :ampm-in-title="!props.use24HourFormat"
+                                />
+                            </v-dialog>
+                        </v-text-field>
+                        <v-btn-toggle
+                            v-if="period !== 'minutes' && period !== 'hourly'" v-model="hasEndTime" mandatory
+                            @update:model-value="clearStartTimeMax"
+                        >
+                            <v-btn :value="false">No End Time</v-btn>
+                            <v-btn :value="true">End Time</v-btn>
+                        </v-btn-toggle>
+                    </div>
+                    <div v-if="scheduleType === 'solar'">
+                        <v-select
+                            v-model="solarEvent" :items="solarEvents" label="Select Event" required
+                            :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-model="offset" :items="offsetItems" label="Offset (minutes)"
+                            :rules="[rules.required]"
+                        />
+                        <v-select
+                            v-if="hasDuration" v-model="duration" :items="durationItems"
+                            label="Duration (minutes)" :rules="[rules.required]"
+                        />
+                        <v-btn-toggle v-model="hasDuration" mandatory>
+                            <v-btn :value="false">No Duration</v-btn>
+                            <v-btn :value="true">Duration</v-btn>
+                        </v-btn-toggle>
+                    </div>
                 </v-card-text>
                 <v-card-actions>
                     <v-btn @click="saveSchedule">Save</v-btn>
@@ -123,7 +216,6 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-
         <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card>
                 <v-card-title class="text-h6">Are you sure you want to delete this item?</v-card-title>
@@ -140,60 +232,100 @@
 
 <script>
 import { mapState } from 'vuex'
+
 export default {
     inject: ['$socket', '$dataTracker'],
     props: {
-        id: { type: String, required: true },
-        props: { type: Object, default: () => ({}) },
-        state: { type: Object, default: () => ({}) }
+        id: {
+            type: String,
+            required: true
+        },
+        props: {
+            type: Object,
+            default: () => ({})
+        },
+        state: {
+            type: Object,
+            default: () => ({})
+        }
     },
     data () {
         return {
-            dialog: false,
-            dialogDelete: false,
+            // General state
+            items: null,
+            currentSchedule: null,
+            isEditing: false,
+
+            // Scheduling options
+            name: '',
+            enabled: true,
+            scheduleType: 'time',
+            period: 'daily',
+            time: null,
+            endTime: null,
+            hasEndTime: false,
+            hasDuration: false,
+            duration: null,
+            dailyDays: [],
+            dailyDaysOfWeek: [],
+            weeklyDays: [],
+            monthlyDays: [],
+            yearlyDay: 1,
+            yearlyMonth: null,
+            minutesInterval: null,
+            hourlyInterval: null,
+            solarEvent: 'sunrise',
+            offset: 0,
+
+            // Modal controls
             modalTime: false,
             modalEndTime: false,
-            isEditing: false,
-            items: null,
+            dialog: false,
+            dialogDelete: false,
+
+            // Datatable
+            expanded: [],
+            expandedItem: null,
+            updatingExpanded: false, // Flag to control updates
             headers: [
                 { title: 'Name', align: 'start', key: 'name' },
                 { title: 'Description', align: 'start', key: 'description' },
                 { title: 'Enabled', align: 'start', key: 'action' }
             ],
-            currentSchedule: null,
-            name: '',
-            frequency: 'daily',
-            dailyDays: [
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday',
-                'Sunday'
+
+            // Date and time arrays
+            months: [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
             ],
-            weeklyDays: [],
-            monthlyDays: [],
             daysOfWeek: [
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday',
-                'Sunday'
+                'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                'Saturday', 'Sunday'
             ],
             daysOfMonth: Array.from({ length: 31 }, (_, i) => i + 1),
-            time: null,
-            hasEndTime: false,
-            endTime: null,
-            enabled: true,
-            endTimeRule: value =>
-                this.endTime > this.time || 'End time must be after start time',
+
+            // Solar events
+            solarEvents: [
+                { title: 'Night End', value: 'nightEnd' },
+                { title: 'Nautical Dawn', value: 'nauticalDawn' },
+                { title: 'Civil Dawn', value: 'civilDawn' },
+                { title: 'Sunrise', value: 'sunrise' },
+                { title: 'Sunrise End', value: 'sunriseEnd' },
+                { title: 'Morning Golden Hour End', value: 'morningGoldenHourEnd' },
+                { title: 'Solar Noon', value: 'solarNoon' },
+                { title: 'Evening Golden Hour Start', value: 'eveningGoldenHourStart' },
+                { title: 'Sunset Start', value: 'sunsetStart' },
+                { title: 'Sunset', value: 'sunset' },
+                { title: 'Civil Dusk', value: 'civilDusk' },
+                { title: 'Nautical Dusk', value: 'nauticalDusk' },
+                { title: 'Night Start', value: 'nightStart' },
+                { title: 'Nadir', value: 'nadir' }
+            ],
+
+            // Validation rules
             rules: {
                 required: value => !!value || 'Required.',
-                endTimeRule: value =>
-                    this.endTime > this.time || 'End time must be after start time'
+                endTimeRule: value => this.endTime > this.time || 'End time must be after start time'
             }
         }
     },
@@ -202,8 +334,7 @@ export default {
         ...mapState('data', ['messages']),
         schedules: {
             get () {
-                const items = this.items || this.getProperty('schedules')
-                return items
+                return this.items || this.getProperty('schedules')
             },
             set (value) {
                 this.items = value
@@ -216,60 +347,104 @@ export default {
         formattedEndTime () {
             if (!this.endTime) return ''
             return this.formatTime(this.endTime)
+        },
+        durationItems () {
+            if (this.scheduleType === 'time') {
+                if (this.period === 'minutes') {
+                    return this.generateNumberArray(1, this.minutesInterval)
+                } else if (this.period === 'hourly') {
+                    return this.generateNumberArray(1, this.hourlyInterval)
+                }
+            } else if (this.scheduleType === 'solar') {
+                return this.generateNumberArray(1, 360)
+            }
+            return []
+        },
+        offsetItems () {
+            return this.generateNumberArray(-120, 120)
         }
     },
-    created () {
-        // can't do this in setup as we are using custom onInput function that needs access to 'this'
-        this.$dataTracker(this.id, this.onInput, this.onLoad, this.onDynamicProperties)
 
-        // let Node-RED know that this widget has loaded
+    watch: {
+        expanded (val) {
+            if (this.updatingExpanded) return
+
+            if (val.length > 0) {
+                const lastItem = val[val.length - 1]
+
+                // only request status if only one item is expanded
+                if (val.length === 1) {
+                    this.$nextTick(() => this.highlightExpandedRow())
+                    const expandedItem = this.schedules.find(
+                        schedule => schedule.name === lastItem
+                    )
+                    this.requestStatus(expandedItem)
+                }
+
+                // if only one item is expanded, don't collapse others
+                if (this.expanded[0] === lastItem) return
+
+                // Prevent recursive updates when updating expanded
+                this.updatingExpanded = true
+                this.expanded = [val[val.length - 1]]
+                this.updatingExpanded = false
+            }
+        }
+    },
+
+    created () {
+        this.$dataTracker(
+            this.id,
+            this.onInput,
+            this.onLoad,
+            this.onDynamicProperties
+        )
         this.$socket.emit('widget-load', this.id)
     },
     methods: {
-
-        // given the last received msg into this node, load the state
         onLoad (msg) {
             if (msg) {
-                // update vuex store to reflect server-state
-                this.$store.commit('data/bind', {
-                    widgetId: this.id,
-                    msg
-                })
+                this.$store.commit('data/bind', { widgetId: this.id, msg })
                 if (msg.payload !== undefined) {
                     this.schedules = msg.payload?.schedules || []
                 }
             }
         },
         onInput (msg) {
-            // update our vuex store with the value retrieved from Node-RED
-            this.$store.commit('data/bind', {
-                widgetId: this.id,
-                msg
-            })
+            this.$store.commit('data/bind', { widgetId: this.id, msg })
             console.log('onInput', msg)
         },
         onDynamicProperties (msg) {
             const schedules = msg.ui_update?.schedules
             if (schedules) {
                 if (Array.isArray(schedules)) {
-                    this.schedules = msg.ui_update?.schedules || []
+                    this.schedules = schedules || []
                 }
             }
-            // update the UI with any other changes
             const updates = msg.ui_update
-
             if (updates) {
-                // this.updateDynamicProperty('label', updates.label)
+                // handle updates if needed
             }
+        },
+        isRowExpanded (item) { return this.expanded.includes(item.name) },
+        highlightExpandedRow () { const rows = this.$el.querySelectorAll('tr'); rows.forEach(row => { const itemName = row.querySelector('td:first-child')?.textContent.trim(); if (this.expanded.includes(itemName)) { row.classList.add('highlighted-row') } else { row.classList.remove('highlighted-row') } }) },
+        handleRowClick (item, index) {
+            this.expanded = [index.item.name]
+        },
+        generateNumberArray (min, max) {
+            const array = []
+            for (let i = min; i <= max; i++) {
+                array.push(i)
+            }
+            return array
+        },
+        mapSolarEvent (event, toTitle = true) {
+            const found = this.solarEvents.find(e => toTitle ? e.value === event : e.title === event)
+            return found ? (toTitle ? found.title : found.value) : event
         },
         sendSchedules () {
             const msg = { _event: 'submit', payload: { schedules: this.schedules } }
-
-            this.$store.commit('data/bind', {
-                widgetId: this.id,
-                msg
-            })
-            console.log('sendSchedules', msg)
+            this.$store.commit('data/bind', { widgetId: this.id, msg })
             this.$socket.emit('submit', this.id, msg)
         },
         formatTime (time) {
@@ -300,26 +475,54 @@ export default {
                 alert(validationResult.message)
                 return
             }
-            const days = this.getSelectedDays()
+            const newSchedule = {
+                name: this.name,
+                enabled: this.enabled,
+                scheduleType: this.scheduleType
+            }
+
+            if (this.scheduleType === 'time') {
+                newSchedule.period = this.period
+
+                if (['daily', 'weekly', 'monthly', 'yearly'].includes(this.period)) {
+                    newSchedule.time = this.time
+                    newSchedule.days = this.getSelectedDays()
+                    newSchedule.hasEndTime = this.hasEndTime
+                    newSchedule.endTime = this.hasEndTime ? this.endTime : null
+                }
+
+                if (this.period === 'yearly') {
+                    newSchedule.month = this.yearlyMonth
+                }
+
+                if (this.period === 'minutes') {
+                    newSchedule.minutesInterval = this.minutesInterval
+                    newSchedule.hasDuration = this.hasDuration
+                    newSchedule.duration = this.duration
+                }
+
+                if (this.period === 'hourly') {
+                    newSchedule.hourlyInterval = this.hourlyInterval
+                    newSchedule.hasDuration = this.hasDuration
+                    newSchedule.duration = this.duration
+                }
+            }
+
+            if (this.scheduleType === 'solar') {
+                newSchedule.solarEvent = this.mapSolarEvent(this.solarEvent, false)
+                newSchedule.offset = this.offset
+
+                if (this.hasDuration) {
+                    newSchedule.hasDuration = this.hasDuration
+                    newSchedule.duration = this.duration
+                }
+            }
+
             if (this.isEditing) {
-                Object.assign(this.currentSchedule, {
-                    name: this.name,
-                    time: this.time,
-                    frequency: this.frequency,
-                    days,
-                    hasEndTime: this.hasEndTime,
-                    endTime: this.hasEndTime ? this.endTime : null,
-                    enabled: this.enabled
-                })
+                Object.assign(this.currentSchedule, newSchedule)
             } else {
-                const newSchedule = {
-                    name: this.name,
-                    time: this.time,
-                    frequency: this.frequency,
-                    days,
-                    hasEndTime: this.hasEndTime,
-                    endTime: this.hasEndTime ? this.endTime : null,
-                    enabled: this.enabled
+                if (!this.schedules) {
+                    this.schedules = []
                 }
                 this.schedules.push(newSchedule)
             }
@@ -331,88 +534,180 @@ export default {
                 return { isValid: false, message: 'Schedule Name is required.' }
             }
 
-            // Ensure schedule name is unique
-            const isNameDuplicate = this.schedules.some(
-                schedule =>
-                    schedule.name === this.name && schedule !== this.currentSchedule
-            )
+            const isNameDuplicate = this.schedules
+                ? this.schedules.some(
+                    schedule =>
+                        schedule.name === this.name && schedule !== this.currentSchedule
+                )
+                : false
             if (isNameDuplicate) {
                 return { isValid: false, message: 'Schedule Name must be unique.' }
             }
 
-            if (!this.time) {
-                return { isValid: false, message: 'Start Time is required.' }
-            }
-            if (this.hasEndTime && (!this.endTime || this.endTime <= this.time)) {
-                return {
-                    isValid: false,
-                    message: 'End Time must be after Start Time.'
+            if (this.scheduleType === 'time') {
+                if (['daily', 'weekly', 'monthly', 'yearly'].includes(this.period)) {
+                    if (!this.time) {
+                        return { isValid: false, message: 'Start Time is required.' }
+                    }
+                    if (this.hasEndTime) {
+                        if (!this.endTime) {
+                            return {
+                                isValid: false,
+                                message: 'End Time is required.'
+                            }
+                        }
+                        if (this.endTime <= this.time) {
+                            return {
+                                isValid: false,
+                                message: 'End Time must be after Start Time.'
+                            }
+                        }
+                    }
+                    const days = this.getSelectedDays()
+                    if (!days.length) {
+                        return {
+                            isValid: false,
+                            message: 'At least one day must be selected for current period.'
+                        }
+                    }
+                } else if (this.period === 'minutes') {
+                    if (!this.minutesInterval) {
+                        return { isValid: false, message: 'Interval is required for Minutes period.' }
+                    }
+                    if (this.hasDuration && !this.duration) {
+                        return {
+                            isValid: false,
+                            message: 'Duration is required when Duration is enabled for Minutes period.'
+                        }
+                    }
+                } else if (this.period === 'hourly') {
+                    if (!this.hourlyInterval) {
+                        return { isValid: false, message: 'Interval is required for Hourly period.' }
+                    }
+                    if (this.hasDuration && !this.duration) {
+                        return {
+                            isValid: false,
+                            message: 'Duration is required when Duration is enabled for Hourly period.'
+                        }
+                    }
+                }
+            } else if (this.scheduleType === 'solar') {
+                if (!this.solarEvent) {
+                    return { isValid: false, message: 'Solar Event is required.' }
+                }
+                if (!this.offset && this.offset !== 0) {
+                    return { isValid: false, message: 'Offset is required for Solar schedule type.' }
+                }
+                if (this.hasDuration && !this.duration) {
+                    return {
+                        isValid: false,
+                        message: 'Duration is required when Duration is enabled for Solar schedule type.'
+                    }
                 }
             }
-            const days = this.getSelectedDays()
-            if (!days.length) {
-                return {
-                    isValid: false,
-                    message: 'At least one day must be selected.'
-                }
-            }
+
             return { isValid: true, message: '' }
         },
+
         getSelectedDays () {
-            if (this.frequency === 'daily') {
+            if (this.period === 'daily') {
                 return this.dailyDays
-            } else if (this.frequency === 'weekly') {
+            } else if (this.period === 'weekly') {
                 return this.weeklyDays
-            } else if (this.frequency === 'monthly') {
+            } else if (this.period === 'monthly') {
                 return this.monthlyDays
+            } else if (this.period === 'yearly') {
+                return [this.yearlyDay]
             }
             return []
         },
         toggleSchedule (item) {
             const enabled = !item.enabled
             if (item.name) {
-                this.$socket.emit('setEnabled', this.id, { _event: 'setEnabled', payload: { name: item.name, enabled } })
+                this.$socket.emit('setEnabled', this.id, {
+                    _event: 'setEnabled',
+                    payload: { name: item.name, enabled }
+                })
             }
         },
-        editSchedule (event, row) {
-            const item = row.item
+        requestStatus (item) {
+            if (item.name) {
+                this.$socket.emit('requestStatus', this.id, {
+                    _event: 'requestStatus',
+                    payload: {
+                        name: item.name
+                    }
+                })
+            }
+        },
+        toggleExpandedItem (item) {
+            this.expandedItem = this.expandedItem === item ? null : item
+            this.requestStatus(item)
+        },
+        editSchedule (item) {
             this.currentSchedule = item
             this.isEditing = true
             this.name = item.name
-            this.frequency = item.frequency
+            this.period = item.period
             this.time = item.time
             this.enabled = item.enabled
-            if (item.frequency === 'daily') {
+            if (item.period === 'minutes') {
+                this.minutesInterval = item.minutesInterval
+                this.duration = item.duration
+                this.hasDuration = !!item.duration
+            } else if (item.period === 'hourly') {
+                this.hourlyInterval = item.hourlyInterval
+                this.duration = item.duration
+                this.hasDuration = !!item.duration
+            } else if (item.period === 'daily') {
                 this.dailyDays = item.days
-            } else if (item.frequency === 'weekly') {
+            } else if (item.period === 'weekly') {
                 this.weeklyDays = item.days
-            } else if (item.frequency === 'monthly') {
-                this.monthlyDays = item.days.map(Number) // Ensure days are numbers
+            } else if (item.period === 'monthly') {
+                this.monthlyDays = item.days.map(Number)
+            } else if (item.period === 'yearly') {
+                this.yearlyDay = item.days[0]
+                this.yearlyMonth = item.month
             }
             this.hasEndTime = item.hasEndTime
             if (this.hasEndTime) {
                 this.endTime = item.endTime
             }
+            this.scheduleType = item.scheduleType || 'time'
+            this.offset = item.offset || 0
+            this.solarEvent = this.mapSolarEvent(item.solarEvent) || ''
+            this.hasDuration = item.hasDuration || false
+            this.duration = item.hasDuration ? item.duration : null
             this.dialog = true
         },
         resetForm () {
-            this.name = 'New Schedule'
-            this.frequency = 'daily'
-            this.dailyDays = [
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday',
-                'Sunday'
-            ]
-            this.weeklyDays = []
-            this.monthlyDays = []
-            this.time = null
+            const baseName = 'New Schedule'
+            let newName = baseName
+            let index = 2
+
+            if (this.schedules) {
+                while (this.schedules.some(schedule => schedule.name === newName)) {
+                    newName = `${baseName} ${index}`
+                    index++
+                }
+            }
+
+            this.name = newName
+            this.period = 'daily'
+            this.dailyDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+            this.weeklyDays = ['Monday']
+            this.monthlyDays = [1]
+            this.yearlyDay = 1
+            this.yearlyMonth = 'January'
+            this.solarEvent = 'Sunrise'
+            this.time = '00:00'
             this.hasEndTime = false
-            this.endTime = null
+            this.endTime = '00:00'
             this.enabled = true
+            this.offset = 0
+            this.scheduleType = 'time'
+            this.hasDuration = false
+            this.duration = 1
         },
         clearStartTimeMax () {
             if (!this.hasEndTime) {
@@ -429,7 +724,11 @@ export default {
             if (this.currentSchedule) {
                 const index = this.schedules.indexOf(this.currentSchedule)
                 if (index > -1) {
-                    this.$socket.emit('remove', this.id, { _event: 'remove', payload: { name: this.currentSchedule.name } })
+                    this.schedules.splice(index, 1)
+                    this.$socket.emit('remove', this.id, {
+                        _event: 'remove',
+                        payload: { name: this.currentSchedule.name }
+                    })
                 }
                 this.closeDialog()
             }
@@ -438,3 +737,10 @@ export default {
     }
 }
 </script>
+<style>
+.highlighted-row {
+    background-color: rgb(var(--v-theme-surface-light));
+    /* color: rgb(var(--v-theme-on-primary)); */
+    /* Customize this color as needed */
+}
+</style>
