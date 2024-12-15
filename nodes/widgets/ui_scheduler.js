@@ -1591,6 +1591,7 @@ module.exports = function (RED) {
             task.node_limit = opt.limit || 0
             task.stop()
             task.on('run', (timestamp) => {
+                node.status({ fill: 'green', shape: 'dot', text: formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
                 node.debug(`running '${task.name}' ~ '${task.node_topic}'\n now time ${new Date()}\n crontime ${new Date(timestamp)}`)
                 const indicator = task.isDynamic ? 'ring' : 'dot'
                 node.status({ fill: 'green', shape: indicator, text: 'Running ' + formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
@@ -1607,6 +1608,29 @@ module.exports = function (RED) {
                 process.nextTick(async function () {
                     if (task.node_expressionType === 'solar') {
                         await updateTask(node, task.node_opt, null)
+                        if (task.node_opt.schedule) {
+                            if (task.node_opt.schedule.duration) {
+                                const duration = task.node_opt.schedule.duration * 60 * 1000 // Assuming duration is in minutes
+                                const eventTime = task.node_solarEventTimes.nextEventTimeOffset
+
+                                // Convert nextEvent to timestamp, add duration, and create new Date object
+                                const newDate = new Date(new Date(eventTime).getTime() + duration)
+
+                                // create new task
+                                const endCmd = {
+                                    command: 'add',
+                                    name: `${task.node_opt.schedule.name}_end`,
+                                    topic: task.node_opt.schedule.name,
+
+                                    expression: newDate,
+                                    payload: task.node_opt.schedule?.payload || false,
+                                    type: 'bool',
+                                    dontStartTheTask: !task.node_opt.schedule.enabled,
+                                    endSchedule: true
+                                }
+                                await updateTask(node, endCmd, null)
+                            }
+                        }
                     }
                     requestSerialisation()// request persistent state be written
                 })
@@ -1623,17 +1647,20 @@ module.exports = function (RED) {
                     })
                     if (task.node_opt.schedule) {
                         task.node_opt.schedule.enabled = true
-                    }
-                    // update state store
-                    const schedules = statestore.getProperty(node.id, 'schedules') || []
-                    const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
+                        // update state store
+                        const schedules = statestore.getProperty(node.id, 'schedules') || []
+                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
 
-                    if (scheduleIndex !== -1) {
-                        schedules[scheduleIndex].enabled = true
-                        statestore.set(base, node, {}, 'schedules', schedules)
+                        if (scheduleIndex !== -1) {
+                            schedules[scheduleIndex].enabled = true
+                            statestore.set(base, node, {}, 'schedules', schedules)
+                        }
+                        if (!task.node_opt.endSchedule) {
+                            const m = { ui_update: { schedules }, event: 'started', schedule: task.name }
+                            base.emit('msg-input:' + node.id, m, node)
+                        }
                     }
-                    const m = { ui_update: { schedules } }
-                    base.emit('msg-input:' + node.id, m, node)
+
                     requestSerialisation()// request persistent state be written
                 })
                 .on('stopped', () => {
@@ -1650,8 +1677,10 @@ module.exports = function (RED) {
                         schedules[scheduleIndex].enabled = false
                         statestore.set(base, node, {}, 'schedules', schedules)
                     }
-                    const m = { ui_update: { schedules } }
-                    base.emit('msg-input:' + node.id, m, node)
+                    if (!task.node_opt.endSchedule && task.node_opt.schedule) {
+                        const m = { ui_update: { schedules }, event: 'stopped', schedule: task.name }
+                        base.emit('msg-input:' + node.id, m, node)
+                    }
                     requestSerialisation()// request persistent state be written
                 })
             task.stop()// prevent bug where calling start without first calling stop causes events to bunch up
@@ -1777,8 +1806,7 @@ module.exports = function (RED) {
                             }
                         }
                         updateNodeNextInfo(node)
-                        const msg = { ui_update: { schedules: uiSchedules } }
-                        console.log('msg', msg)
+                        const msg = { ui_update: { schedules: uiSchedules }, event: 'init' }
                         base.emit('msg-input:' + node.id, msg, node)
                         statestore.set(base, node, msg, 'schedules', uiSchedules)
                     }
@@ -1917,21 +1945,19 @@ module.exports = function (RED) {
                         statestore.set(base, node, msg, 'schedules', update.schedules)
                     }
                 }
-                console.log('msg', msg)
-                const results = []
-                if (node.tasks) {
-                    for (let index = 0; index < node.tasks.length; index++) {
-                        const task = node.tasks[index]
-                        console.log('task', task)
-                        if (task) {
-                            const result = {}
-                            result.name = task.name
-                            result.status = getTaskStatus(node, task, { includeSolarStateOffset: true })
-                            results.push(result)
-                        }
-                    }
-                }
-                console.log('results', results)
+                // const results = []
+                // if (node.tasks) {
+                //     for (let index = 0; index < node.tasks.length; index++) {
+                //         const task = node.tasks[index]
+                //         if (task) {
+                //             const result = {}
+                //             result.name = task.name
+                //             result.status = getTaskStatus(node, task, { includeSolarStateOffset: true })
+                //             results.push(result)
+                //         }
+                //     }
+                // }
+                // console.log('results', results)
 
                 return msg
             },
@@ -1940,6 +1966,7 @@ module.exports = function (RED) {
                 // subscribe to custom events
                 submit: async function (conn, id, msg) {
                     if (msg?.payload?.schedules) {
+                        const schedules = statestore.getProperty(node.id, 'schedules') || []
                         console.log('schedules', msg?.payload?.schedules)
                         const scheduleArray = msg.payload.schedules
                         const cmds = []
@@ -2001,7 +2028,7 @@ module.exports = function (RED) {
                                     expression: startCronExpression,
                                     expressionType: 'cron',
                                     payload: schedule?.payload || true,
-                                    type: 'str',
+                                    payloadType: 'bool',
                                     schedule,
                                     dontStartTheTask: !schedule.enabled
                                 }
@@ -2012,7 +2039,9 @@ module.exports = function (RED) {
                                     topic: schedule.name,
                                     expression: endCronExpression,
                                     payload: schedule?.payloadEnd || false,
-                                    schedule: null
+                                    payloadType: 'bool',
+                                    schedule: null,
+                                    endSchedule: true
                                 }
 
                                 applyOptionDefaults(node, startCmd)
@@ -2059,7 +2088,7 @@ module.exports = function (RED) {
                                     offset: schedule.offset,
                                     locationType: 'fixed',
                                     payload: schedule?.payload || true,
-                                    type: 'default',
+                                    type: 'bool',
                                     schedule,
                                     dontStartTheTask: !schedule.enabled
                                 }
@@ -2068,16 +2097,55 @@ module.exports = function (RED) {
                                 schedule.description = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat).description
                                 cmds.push(cmd)
                             }
+                            // Find the schedule
+                            const scheduleIndex = schedules.findIndex(storeSchedule => storeSchedule.name === schedule.name)
+
+                            if (scheduleIndex !== -1) {
+                                // Get the schedule
+                                schedules[scheduleIndex] = schedule
+                            } else {
+                                schedules.push(schedule)
+                            }
                         })
-                        console.log('schedules', msg.payload.schedules)
-                        const m = { ui_update: { schedules: msg.payload.schedules } }
+
+                        console.log('schedules', schedules)
+                        const m = { ui_update: { schedules }, event: 'submit' }
                         base.emit('msg-input:' + node.id, m, node)
-                        statestore.set(base, node, m, 'schedules', msg.payload.schedules)
+                        statestore.set(base, node, m, 'schedules', schedules)
                         if (cmds.length > 0) {
                             await updateTask(node, cmds, msg)
                             updateNextStatus(node, true)
                             requestSerialisation()// update persistence
+
+                            // get status
+                            scheduleArray.forEach(msgSchedule => {
+                                const scheduleIndex = schedules.findIndex(schedule => schedule.name === msgSchedule.name)
+
+                                if (scheduleIndex !== -1) {
+                                    // Request task status
+                                    const task = getTask(node, msgSchedule.name)
+                                    if (task) {
+                                        const result = {
+                                            // config: exportTask(task, true),
+                                            status: getTaskStatus(node, task, { includeSolarStateOffset: true })
+                                        }
+
+                                        // Update schedule with the status information
+                                        schedules[scheduleIndex].nextDate = result.status.nextDateTZ
+                                        schedules[scheduleIndex].nextDescription = result.status.nextDescription
+                                    } else {
+                                        console.log('Task not found')
+                                    }
+                                } else {
+                                    console.log('Task not found in schedules')
+                                }
+                            })
                         }
+                        statestore.set(base, node, msg, 'schedules', schedules)
+                        // Send the status of schedules
+                        const msgStatus = { ui_update: { schedules }, event: 'submit_status' }
+                        base.emit('msg-input:' + node.id, msgStatus, node)
+
                         node.send(msg)
                     }
                 },
@@ -2113,7 +2181,7 @@ module.exports = function (RED) {
                             requestSerialisation() // Update persistence
 
                             // Send the updated schedules
-                            const m = { ui_update: { schedules } }
+                            const m = { ui_update: { schedules }, event: 'remove', schedule: msg.payload.name }
                             base.emit('msg-input:' + node.id, m, node)
                             node.send(msg)
                         } else {
@@ -2195,10 +2263,9 @@ module.exports = function (RED) {
                             statestore.set(base, node, msg, 'schedules', schedules)
 
                             updateNextStatus(node, true)
-                            requestSerialisation() // update persistence
 
                             // Send the updated schedules
-                            const m = { ui_update: { schedules } }
+                            const m = { ui_update: { schedules }, event: 'status', schedule: msg.payload.name }
                             base.emit('msg-input:' + node.id, m, node)
                             node.send(msg)
                         } else {
