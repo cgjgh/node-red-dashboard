@@ -442,9 +442,8 @@ export default {
             const found = this.solarEvents.find(e => toTitle ? e.value === event : e.title === event)
             return found ? (toTitle ? found.title : found.value) : event
         },
-        sendSchedules () {
-            const msg = { _event: 'submit', payload: { schedules: this.schedules } }
-            this.$store.commit('data/bind', { widgetId: this.id, msg })
+        sendSchedule (schedule) {
+            const msg = { _event: 'submit', payload: { schedules: [schedule] } }
             this.$socket.emit('submit', this.id, msg)
         },
         formatTime (time) {
@@ -526,7 +525,7 @@ export default {
                 }
                 this.schedules.push(newSchedule)
             }
-            this.sendSchedules()
+            this.sendSchedule(newSchedule)
             this.closeDialog()
         },
         validateSchedule () {
