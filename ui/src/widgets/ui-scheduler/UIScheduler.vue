@@ -63,7 +63,7 @@
                                         <strong>Duration:</strong> {{ item.duration }}
                                     </v-col>
                                     <v-col v-if="item.solarEvent" cols="12" sm="6">
-                                        <strong>Solar Event:</strong> {{ item.solarEvent }}
+                                        <strong>Solar Event:</strong> {{ mapSolarEvent(item.solarEvent) }}
                                     </v-col>
                                     <v-col v-if="item.offset" cols="12" sm="6">
                                         <strong>Offset:</strong> {{ item.offset }}

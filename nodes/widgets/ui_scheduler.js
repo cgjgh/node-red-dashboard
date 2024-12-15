@@ -54,6 +54,24 @@ const PERMITTED_SOLAR_EVENTS = [
     'nadir'
 ]
 
+// Solar events
+const solarEvents = [
+    { title: 'Night End', value: 'nightEnd' },
+    { title: 'Nautical Dawn', value: 'nauticalDawn' },
+    { title: 'Civil Dawn', value: 'civilDawn' },
+    { title: 'Sunrise', value: 'sunrise' },
+    { title: 'Sunrise End', value: 'sunriseEnd' },
+    { title: 'Morning Golden Hour End', value: 'morningGoldenHourEnd' },
+    { title: 'Solar Noon', value: 'solarNoon' },
+    { title: 'Evening Golden Hour Start', value: 'eveningGoldenHourStart' },
+    { title: 'Sunset Start', value: 'sunsetStart' },
+    { title: 'Sunset', value: 'sunset' },
+    { title: 'Civil Dusk', value: 'civilDusk' },
+    { title: 'Nautical Dusk', value: 'nauticalDusk' },
+    { title: 'Night Start', value: 'nightStart' },
+    { title: 'Nadir', value: 'nadir' }
+]
+
 // accepted commands using topic as the command & (in compatible cases, the payload is the schedule name)
 // commands not supported by topic are : add/update & describe
 const controlTopics = [
@@ -112,6 +130,11 @@ const humanizeCron = function (expression, locale, use24HourFormat = true) {
     } catch (error) {
         return `Cannot parse expression '${expression}'`
     }
+}
+
+function mapSolarEvent (event, toTitle = true) {
+    const found = solarEvents.find(e => toTitle ? e.value === event : e.title === event)
+    return found ? (toTitle ? found.title : found.value) : event
 }
 
 /**
@@ -1981,6 +2004,9 @@ module.exports = function (RED) {
                                     if (schedule.hasDuration) {
                                         const offsetMinute = schedule.duration % 60
                                         endCronExpression = `${offsetMinute}-59/${schedule.minutesInterval} * * * *`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
                                 case 'hourly':
@@ -1988,6 +2014,9 @@ module.exports = function (RED) {
                                     if (schedule.hasDuration) {
                                         const offsetHour = schedule.duration % 24
                                         endCronExpression = `0 ${offsetHour}-23/${schedule.hourlyInterval} * * *`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
 
@@ -1996,6 +2025,9 @@ module.exports = function (RED) {
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${dailyDaysOfWeek}`
                                     if (schedule.hasEndTime) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${dailyDaysOfWeek}`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
                                 case 'weekly':
@@ -2003,6 +2035,9 @@ module.exports = function (RED) {
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${weeklyDaysOfWeek}`
                                     if (schedule.hasEndTime) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${weeklyDaysOfWeek}`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
                                 case 'monthly':
@@ -2010,12 +2045,18 @@ module.exports = function (RED) {
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${monthlyDays} * *`
                                     if (schedule.hasEndTime) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${monthlyDays} * *`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
                                 case 'yearly':
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
                                     if (schedule.hasEndTime) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
+                                    } else {
+                                        // Remove the end task if it exists
+                                        deleteTask(node, `${schedule.name}_end`)
                                     }
                                     break
                                 default:
@@ -2079,6 +2120,10 @@ module.exports = function (RED) {
                                     cmds.push(endCmd)
                                 }
                             } else if (schedule.scheduleType === 'solar') {
+                                if (!schedule.hasDuration) {
+                                    // Remove the end task if it exists
+                                    deleteTask(node, `${schedule.name}_end`)
+                                }
                                 const cmd = {
                                     command: 'add',
                                     name: schedule.name,
@@ -2094,7 +2139,20 @@ module.exports = function (RED) {
                                 }
                                 applyOptionDefaults(node, cmd)
                                 const exp = (cmd.expressionType === 'solar') ? cmd.location : cmd.expression
-                                schedule.description = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat).description
+
+                                schedule.description = (() => {
+                                    const description = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat).description
+                                    const words = description.replace(/['"]/g, '').split(' ')
+
+                                    for (let i = 0; i < words.length; i++) {
+                                        if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
+                                            words[i] = mapSolarEvent(words[i])
+                                        }
+                                    }
+
+                                    return words.join(' ')
+                                })()
+
                                 cmds.push(cmd)
                             }
                             // Find the schedule
@@ -2132,7 +2190,21 @@ module.exports = function (RED) {
 
                                         // Update schedule with the status information
                                         schedules[scheduleIndex].nextDate = result.status.nextDateTZ
-                                        schedules[scheduleIndex].nextDescription = result.status.nextDescription
+
+                                        if (schedules[scheduleIndex].scheduleType === 'solar') {
+                                            const nextDescription = result.status.nextDescription
+                                            const words = nextDescription.split(' ')
+
+                                            for (let i = 0; i < words.length; i++) {
+                                                if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
+                                                    words[i] = mapSolarEvent(words[i])
+                                                }
+                                            }
+
+                                            schedules[scheduleIndex].nextDescription = words.join(' ')
+                                        } else {
+                                            schedules[scheduleIndex].nextDescription = result.status.nextDescription
+                                        }
                                     } else {
                                         console.log('Task not found')
                                     }
@@ -2254,7 +2326,20 @@ module.exports = function (RED) {
 
                                 // Update schedule with the status information
                                 schedules[scheduleIndex].nextDate = result.status.nextDateTZ
-                                schedules[scheduleIndex].nextDescription = result.status.nextDescription
+                                if (schedules[scheduleIndex].scheduleType === 'solar') {
+                                    const nextDescription = result.status.nextDescription
+                                    const words = nextDescription.split(' ')
+
+                                    for (let i = 0; i < words.length; i++) {
+                                        if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
+                                            words[i] = mapSolarEvent(words[i])
+                                        }
+                                    }
+
+                                    schedules[scheduleIndex].nextDescription = words.join(' ')
+                                } else {
+                                    schedules[scheduleIndex].nextDescription = result.status.nextDescription
+                                }
                             } else {
                                 console.log('Task not found')
                             }
