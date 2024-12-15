@@ -566,7 +566,7 @@ export default {
                     if (!days.length) {
                         return {
                             isValid: false,
-                            message: 'At least one day must be selected for current period.'
+                            message: `At least one day must be selected for ${this.period} period.`
                         }
                     }
                 } else if (this.period === 'minutes') {
