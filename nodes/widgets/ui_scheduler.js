@@ -28,6 +28,7 @@ const SunCalc = require('suncalc2')
 // eslint-disable-next-line no-unused-vars
 const datastore = require('../store/data.js')
 const statestore = require('../store/state.js')
+const state = require('../store/state.js')
 
 SunCalc.addTime(-18, 'nightEnd', 'nightStart')
 SunCalc.addTime(-6, 'civilDawn', 'civilDusk')
@@ -745,7 +746,13 @@ function exportTask (task, includeStatus) {
         payload: task.node_payload,
         limit: task.node_limit || null,
         expressionType: task.node_expressionType,
-        ...(task?.node_opt?.schedule && { schedule: task.node_opt.schedule })
+        ...(task?.node_opt?.schedule && {
+            schedule: {
+                ...task.node_opt.schedule,
+                nextDate: undefined,
+                nextDescription: undefined
+            }
+        })
     }
     if (o.expressionType === 'solar') {
         o.solarType = task.node_solarType
@@ -957,6 +964,157 @@ module.exports = function (RED) {
                 node.nextIndicator = ''
             }
         }
+
+        function generateSolarDescription (node, cmd) {
+            applyOptionDefaults(node, cmd) // Ensuring defaults are applied
+            const description = _describeExpression(
+                cmd.location, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset,
+                cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat
+            ).description
+            const words = description.replace(/['"]/g, '').replace(',', '').split(' ')
+            for (let i = 0; i < words.length; i++) {
+                if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
+                    words[i] = mapSolarEvent(words[i])
+                    if (i < words.length - 1) {
+                        words[i] += ', '
+                    }
+                }
+            }
+            return words.join('')
+        }
+
+        function generateScheduleObject (task) {
+            if (task.node_expressionType === 'cron') {
+                const schedule = {
+                    name: task.name,
+                    enabled: task.node_opt.dontStartTheTask || true,
+                    scheduleType: 'time',
+                    startCronExpression: task.node_expression,
+                    description: _describeExpression(
+                        task.node_opt.expression,
+                        task.node_opt.expressionType,
+                        task.node_opt.timeZone || node.timeZone,
+                        task.node_opt.offset,
+                        task.node_opt.solarType,
+                        task.node_opt.solarEvents,
+                        task.node_opt.time,
+                        task.node_opt,
+                        node.use24HourFormat
+                    ).description,
+                    ...(task.isStatic && { isStatic: true }) // Conditionally add isStatic
+                }
+
+                const cronParts = task.node_expression.split(' ')
+                if (cronParts.length !== 7) {
+                    console.log('Invalid cron expression.', task.node_expression, cronParts)
+                    return null
+                }
+
+                const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts
+
+                const daysMap = { SUN: 'Sunday', MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday' }
+                const daysOfWeekNumbersMap = { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' }
+
+                if (second.includes('/') || minute.includes('/') || hour.includes('/') || dayOfMonth.includes('/') || month.includes('/') || dayOfWeek.includes('/')) {
+                    // Handle interval-based schedules
+                    const interval = second.includes('/')
+                        ? second.split('/')[1]
+                        : minute.includes('/')
+                            ? minute.split('/')[1]
+                            : hour.includes('/')
+                                ? hour.split('/')[1]
+                                : dayOfMonth.includes('/')
+                                    ? dayOfMonth.split('/')[1]
+                                    : month.includes('/')
+                                        ? month.split('/')[1]
+                                        : dayOfWeek.split('/')[1]
+
+                    if (minute === '0' && hour.includes('/')) {
+                        schedule.period = 'hourly'
+                        schedule.hourlyInterval = parseInt(interval, 10)
+                    } else if (minute.includes('/')) {
+                        schedule.period = 'minutes'
+                        schedule.minutesInterval = parseInt(interval, 10)
+                    } else if (second.includes('/')) {
+                        schedule.period = 'seconds'
+                        schedule.secondsInterval = parseInt(interval, 10)
+                        schedule.readonly = true
+                    } else if (dayOfMonth.includes('/')) {
+                        schedule.period = 'monthly'
+                        schedule.days = Array.from({ length: 31 }, (_, i) => i + 1).filter(day => day % parseInt(interval, 10) === 0)
+                    } else if (month.includes('/')) {
+                        schedule.period = 'yearly'
+                        schedule.months = Array.from({ length: 12 }, (_, i) => i + 1).filter(month => month % parseInt(interval, 10) === 0)
+                    } else if (dayOfWeek.includes('/')) {
+                        schedule.period = 'weekly'
+                        schedule.days = dayOfWeek.split('/').map(day => {
+                            return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                        })
+                    }
+                } else if (dayOfWeek.includes('-')) {
+                    // Handle day-of-week ranges
+                    const [startDay, endDay] = dayOfWeek.split('-').map(day => {
+                        return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                    })
+                    schedule.period = 'weekly'
+                    schedule.time = `${hour}:${minute}`
+                    schedule.days = Array.from(
+                        { length: 7 },
+                        (_, i) => daysOfWeekNumbersMap[(Object.keys(daysOfWeekNumbersMap).indexOf(startDay) + i) % 7]
+                    ).slice(0, endDay - startDay + 1)
+                } else if (dayOfWeek !== '*') {
+                    // Handle specific day-of-week schedules
+                    schedule.period = 'weekly'
+                    schedule.time = `${hour}:${minute}`
+                    schedule.days = dayOfWeek.split(',').map(day => {
+                        return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                    })
+                } else if (dayOfMonth !== '*' && month !== '*') {
+                    // Handle specific dates
+                    schedule.period = 'yearly'
+                    schedule.time = `${hour}:${minute}`
+                    schedule.days = dayOfMonth.split(',').map(Number)
+                    schedule.month = month
+                } else if (dayOfMonth !== '*') {
+                    // Handle monthly schedules
+                    schedule.period = 'monthly'
+                    schedule.time = `${hour}:${minute}`
+                    schedule.days = dayOfMonth.split(',').map(Number)
+                } else if (hour !== '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                    // Handle daily schedules
+                    schedule.period = 'daily'
+                    schedule.time = `${hour}:${minute}`
+                } else if (second === '*' && minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                    // Handle secondly schedules
+                    schedule.period = 'secondly'
+                    schedule.readonly = true
+                } else if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                    // Handle minutely schedules
+                    schedule.period = 'minutely'
+                } else if (hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                    // Handle hourly schedules
+                    schedule.period = 'hourly'
+                } else {
+                    // Custom schedules
+                    schedule.period = 'custom'
+                }
+
+                return schedule
+            } else if (task.node_expressionType === 'solar') {
+                const schedule = {
+                    name: task.name,
+                    enabled: task.node_opt.isRunning || true,
+                    scheduleType: 'solar',
+                    solarEvent: task.node_solarEvents,
+                    offset: task.node_offset,
+                    description: generateSolarDescription(node, task.node_opt),
+                    ...(task.isStatic && { isStatic: true }) // Conditionally add isStatic
+                }
+                return schedule
+            }
+            return null
+        }
+
         const updateDoneStatus = (node, task) => {
             let indicator = 'dot'
             if (task) {
@@ -1612,6 +1770,29 @@ module.exports = function (RED) {
             task.node_index = index
             task.node_opt = opt
             task.node_limit = opt.limit || 0
+
+            // generate schedule object for UI if it doesn't exist
+            if (!task.node_opt.schedule && task.name.indexOf('_end_sched_type') === -1) {
+                const scheduleObject = generateScheduleObject(task)
+                if (scheduleObject) {
+                    console.log('generating schedule object for task', task.name)
+                    console.log('schedule object', scheduleObject)
+                    task.node_opt.schedule = scheduleObject
+                    const schedules = statestore.getProperty(node.id, 'schedules') || []
+                    const scheduleIndex = schedules.findIndex(storeSchedule => storeSchedule.name === scheduleObject.name)
+
+                    if (scheduleIndex !== -1) {
+                        // Get the schedule
+                        schedules[scheduleIndex] = scheduleObject
+                    } else {
+                        schedules.push(scheduleObject)
+                    }
+                    statestore.set(base, node, null, 'schedules', schedules)
+                    const m = { ui_update: { schedules }, event: 'convert' }
+                    base.emit('msg-input:' + node.id, m, node)
+                }
+            }
+
             task.stop()
             task.on('run', (timestamp) => {
                 node.status({ fill: 'green', shape: 'dot', text: formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
@@ -1642,7 +1823,7 @@ module.exports = function (RED) {
                                 // create new task
                                 const endCmd = {
                                     command: 'add',
-                                    name: `${task.node_opt.schedule.name}_end`,
+                                    name: `${task.node_opt.schedule.name}_end_sched_type`,
                                     topic: task.node_opt.schedule.name,
 
                                     expression: newDate,
@@ -1803,7 +1984,7 @@ module.exports = function (RED) {
                         state.dynamicSchedules = state.schedules
                     }
                     if (state.dynamicSchedules && state.dynamicSchedules.length) {
-                        const uiSchedules = []
+                        const uiSchedules = statestore.getProperty(node.id, 'schedules') || []
                         for (let iOpt = 0; iOpt < state.dynamicSchedules.length; iOpt++) {
                             const opt = state.dynamicSchedules[iOpt]
                             let task
@@ -1986,7 +2167,6 @@ module.exports = function (RED) {
             },
 
             onSocket: {
-                // subscribe to custom events
                 submit: async function (conn, id, msg) {
                     if (msg?.payload?.schedules) {
                         const schedules = statestore.getProperty(node.id, 'schedules') || []
@@ -2006,20 +2186,21 @@ module.exports = function (RED) {
                                         endCronExpression = `${offsetMinute}-59/${schedule.minutesInterval} * * * *`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
                                     break
                                 case 'hourly':
                                     startCronExpression = `0 */${schedule.hourlyInterval} * * *`
                                     if (schedule.hasDuration) {
-                                        const offsetHour = schedule.duration % 24
-                                        endCronExpression = `0 ${offsetHour}-23/${schedule.hourlyInterval} * * *`
+                                        const offsetHour = Math.floor(schedule.duration / 60)
+                                        const offsetMinute = schedule.duration % 60
+                                        endCronExpression = `${offsetMinute} ${offsetHour}/${schedule.hourlyInterval} * * *`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
-                                    break
 
+                                    break
                                 case 'daily':
                                     const dailyDaysOfWeek = schedule.days.length === 7 ? '*' : schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${dailyDaysOfWeek}`
@@ -2027,7 +2208,7 @@ module.exports = function (RED) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${dailyDaysOfWeek}`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
                                     break
                                 case 'weekly':
@@ -2037,18 +2218,24 @@ module.exports = function (RED) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${weeklyDaysOfWeek}`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
                                     break
                                 case 'monthly':
-                                    const monthlyDays = schedule.days.join(',')
+                                    const hasLastDay = schedule.days.includes('Last')
+                                    const otherDays = schedule.days.filter(day => day !== 'Last').join(',')
+
+                                    const monthlyDays = hasLastDay ? (otherDays ? `${otherDays},L` : 'L') : otherDays
+
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${monthlyDays} * *`
+
                                     if (schedule.hasEndTime) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${monthlyDays} * *`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
+
                                     break
                                 case 'yearly':
                                     startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
@@ -2056,7 +2243,7 @@ module.exports = function (RED) {
                                         endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
                                     } else {
                                         // Remove the end task if it exists
-                                        deleteTask(node, `${schedule.name}_end`)
+                                        deleteTask(node, `${schedule.name}_end_sched_type`)
                                     }
                                     break
                                 default:
@@ -2068,7 +2255,7 @@ module.exports = function (RED) {
                                     name: schedule.name,
                                     expression: startCronExpression,
                                     expressionType: 'cron',
-                                    payload: schedule?.payload || true,
+                                    payload: schedule?.payloadValue || true,
                                     payloadType: 'bool',
                                     schedule,
                                     dontStartTheTask: !schedule.enabled
@@ -2076,7 +2263,7 @@ module.exports = function (RED) {
 
                                 const endCmd = {
                                     ...startCmd,
-                                    name: `${schedule.name}_end`,
+                                    name: `${schedule.name}_end_sched_type`,
                                     topic: schedule.name,
                                     expression: endCronExpression,
                                     payload: schedule?.payloadEnd || false,
@@ -2122,7 +2309,7 @@ module.exports = function (RED) {
                             } else if (schedule.scheduleType === 'solar') {
                                 if (!schedule.hasDuration) {
                                     // Remove the end task if it exists
-                                    deleteTask(node, `${schedule.name}_end`)
+                                    deleteTask(node, `${schedule.name}_end_sched_type`)
                                 }
                                 const cmd = {
                                     command: 'add',
@@ -2132,27 +2319,13 @@ module.exports = function (RED) {
                                     solarEvents: schedule.solarEvent,
                                     offset: schedule.offset,
                                     locationType: 'fixed',
-                                    payload: schedule?.payload || true,
+                                    payload: schedule?.payloadValue || true,
                                     type: 'bool',
                                     schedule,
                                     dontStartTheTask: !schedule.enabled
                                 }
-                                applyOptionDefaults(node, cmd)
-                                const exp = (cmd.expressionType === 'solar') ? cmd.location : cmd.expression
 
-                                schedule.description = (() => {
-                                    const description = _describeExpression(exp, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset, cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat).description
-                                    const words = description.replace(/['"]/g, '').split(' ')
-
-                                    for (let i = 0; i < words.length; i++) {
-                                        if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
-                                            words[i] = mapSolarEvent(words[i])
-                                        }
-                                    }
-
-                                    return words.join(' ')
-                                })()
-
+                                schedule.description = generateSolarDescription(node, cmd)
                                 cmds.push(cmd)
                             }
                             // Find the schedule
@@ -2245,7 +2418,7 @@ module.exports = function (RED) {
 
                             // Remove the end task if it exists
                             if (schedule.hasEndTime || schedule.hasDuration) {
-                                deleteTask(node, `${schedule.name}_end`)
+                                deleteTask(node, `${schedule.name}_end_sched_type`)
                                 console.log('End task removed')
                             }
 
@@ -2284,7 +2457,7 @@ module.exports = function (RED) {
                                 console.log('Task started')
                                 // Start end task if schedule has end time
                                 if (schedule.hasEndTime || schedule.hasDuration) {
-                                    startTask(node, `${schedule.name}_end`)
+                                    startTask(node, `${schedule.name}_end_sched_type`)
                                     console.log('End task started')
                                 }
                             } else {
@@ -2292,7 +2465,7 @@ module.exports = function (RED) {
                                 console.log('Task stopped')
                                 // Stop end task if schedule has end time
                                 if (schedule.hasEndTime || schedule.hasDuration) {
-                                    stopTask(node, `${schedule.name}_end`, true)
+                                    stopTask(node, `${schedule.name}_end_sched_type`, true)
                                     console.log('End task stopped')
                                 }
                             }
@@ -2307,7 +2480,6 @@ module.exports = function (RED) {
                 },
 
                 requestStatus: function (conn, id, msg) {
-                    console.log('requestStatus', msg)
                     if (msg?.payload?.name) {
                         // Get the schedules property
                         const schedules = statestore.getProperty(node.id, 'schedules') || []
