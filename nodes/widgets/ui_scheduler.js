@@ -19,6 +19,8 @@ copies or substantial portions of the Software.
 const fs = require('fs')
 const path = require('path')
 
+const { off } = require('process')
+
 const coordParser = require('coord-parser')
 const cronosjs = require('cronosjs')
 const cronstrue = require('cronstrue')
@@ -741,7 +743,7 @@ function exportTask (task, includeStatus) {
     const o = {
         topic: task.node_topic || task.name,
         name: task.name || task.node_topic,
-        index: task.node_index,
+        // index: task.node_index,
         payloadType: task.node_payloadType,
         payload: task.node_payload,
         limit: task.node_limit || null,
@@ -824,6 +826,30 @@ function getTaskStatus (node, task, opts) {
     return r
 }
 
+function getNextStatus (node, task) {
+    if (!task || task.isRunning) {
+        const status = getTaskStatus(node, task, { includeSolarStateOffset: true })
+        const nextDate = status.nextDateTZ
+        let nextDescription = status.nextDescription
+
+        if (task.node_expressionType === 'solar') {
+            const words = nextDescription.split(' ')
+
+            for (let i = 0; i < words.length; i++) {
+                if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
+                    words[i] = mapSolarEvent(words[i])
+                }
+            }
+
+            nextDescription = words.join(' ')
+        }
+
+        return { nextDate, nextDescription }
+    } else {
+        return { nextDate: 'Never', nextDescription: 'Never' }
+    }
+}
+
 let userDir = ''
 let persistPath = ''
 let FSAvailable = false
@@ -873,6 +899,9 @@ module.exports = function (RED) {
         node.defaultLocation = config.defaultLocation
         node.defaultLocationType = config.defaultLocationType
         node.outputs = 1
+        node.sendActiveState = config.sendActiveState
+        node.sendInactiveState = config.sendInactiveState
+        node.topics = config.topics || ['Topic 1']
         node.fanOut = false
 
         node.queuedSerialisationRequest = null
@@ -916,7 +945,7 @@ module.exports = function (RED) {
         if (config.commandResponseMsgOutput === 'output2') {
             node.outputs = 2 // 1 output pins (all messages), 2 outputs (schedules out of pin1, command responses out of pin2)
         } else if (config.commandResponseMsgOutput === 'fanOut') {
-            node.outputs = 2 + (node.options ? node.options.length : 0)
+            node.outputs = 2 + (node.topics ? node.topics.length : 0)
             node.fanOut = true
         } else {
             config.commandResponseMsgOutput = 'output1'
@@ -988,6 +1017,7 @@ module.exports = function (RED) {
                 const schedule = {
                     name: task.name,
                     enabled: task.node_opt.dontStartTheTask || true,
+                    topic: task.node_topic,
                     scheduleType: 'time',
                     startCronExpression: task.node_expression,
                     description: _describeExpression(
@@ -1003,14 +1033,18 @@ module.exports = function (RED) {
                     ).description,
                     ...(task.isStatic && { isStatic: true }) // Conditionally add isStatic
                 }
-
+                console.log(task.node_expression)
                 const cronParts = task.node_expression.split(' ')
-                if (cronParts.length !== 7) {
+                if (cronParts.length < 5 || cronParts.length > 7) {
                     console.log('Invalid cron expression.', task.node_expression, cronParts)
                     return null
                 }
 
-                const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts
+                const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts.length === 7
+                    ? cronParts
+                    : cronParts.length === 6
+                        ? cronParts
+                        : ['', ...cronParts]
 
                 const daysMap = { SUN: 'Sunday', MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday' }
                 const daysOfWeekNumbersMap = { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' }
@@ -1089,8 +1123,8 @@ module.exports = function (RED) {
                     schedule.period = 'secondly'
                     schedule.readonly = true
                 } else if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-                    // Handle minutely schedules
-                    schedule.period = 'minutely'
+                    // Handle minutes schedules
+                    schedule.period = 'minutes'
                 } else if (hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
                     // Handle hourly schedules
                     schedule.period = 'hourly'
@@ -1104,6 +1138,7 @@ module.exports = function (RED) {
                 const schedule = {
                     name: task.name,
                     enabled: task.node_opt.isRunning || true,
+                    topic: task.node_topic,
                     scheduleType: 'solar',
                     solarEvent: task.node_solarEvents,
                     offset: task.node_offset,
@@ -1146,7 +1181,14 @@ module.exports = function (RED) {
             msg.scheduledEvent = !msg.manualTrigger
             const indicator = node.nextIndicator || 'dot'
             const taskType = task.isDynamic ? 'dynamic' : 'static'
-            const index = task.node_index || 0
+            // const index = task.node_index || 0
+            const index = node.topics.findIndex(topic => topic === task.node_topic)
+
+            if (index === -1) {
+                // Handle the case where the topic is not found
+                node.error(`Topic "${task.node_topic}" not found for ${task.name}`)
+            }
+
             node.status({ fill: 'green', shape: indicator, text: 'Schedule Started' })
             try {
                 if (task.node_payloadType !== 'flow' && task.node_payloadType !== 'global') {
@@ -1767,7 +1809,7 @@ module.exports = function (RED) {
             task.node_solarType = opt.solarType
             task.node_solarEvents = opt.solarEvents
             task.node_offset = opt.offset
-            task.node_index = index
+            // task.node_index = index
             task.node_opt = opt
             task.node_limit = opt.limit || 0
 
@@ -1824,8 +1866,7 @@ module.exports = function (RED) {
                                 const endCmd = {
                                     command: 'add',
                                     name: `${task.node_opt.schedule.name}_end_sched_type`,
-                                    topic: task.node_opt.schedule.name,
-
+                                    topic: task.node_topic,
                                     expression: newDate,
                                     payload: task.node_opt.schedule?.payload || false,
                                     type: 'bool',
@@ -1857,6 +1898,9 @@ module.exports = function (RED) {
 
                         if (scheduleIndex !== -1) {
                             schedules[scheduleIndex].enabled = true
+                            const status = getNextStatus(node, task)
+                            schedules[scheduleIndex].nextDate = status.nextDate
+                            schedules[scheduleIndex].nextDescription = status.nextDescription
                             statestore.set(base, node, {}, 'schedules', schedules)
                         }
                         if (!task.node_opt.endSchedule) {
@@ -1879,6 +1923,9 @@ module.exports = function (RED) {
 
                     if (scheduleIndex !== -1) {
                         schedules[scheduleIndex].enabled = false
+                        const status = getNextStatus(node, task)
+                        schedules[scheduleIndex].nextDate = status.nextDate
+                        schedules[scheduleIndex].nextDescription = status.nextDescription
                         statestore.set(base, node, {}, 'schedules', schedules)
                     }
                     if (!task.node_opt.endSchedule && task.node_opt.schedule) {
@@ -2006,7 +2053,15 @@ module.exports = function (RED) {
                                 }
                             }
                             if (opt?.schedule) {
-                                uiSchedules.push(opt.schedule)
+                                // Find the schedule
+                                const scheduleIndex = uiSchedules.findIndex(storeSchedule => storeSchedule.name === opt.schedule.name)
+
+                                if (scheduleIndex !== -1) {
+                                // Get the schedule
+                                    uiSchedules[scheduleIndex] = opt.schedule
+                                } else {
+                                    uiSchedules.push(opt.schedule)
+                                }
                             }
                         }
                         updateNodeNextInfo(node)
@@ -2103,27 +2158,27 @@ module.exports = function (RED) {
         function generateSendMsg (node, msg, type, index) {
             const outputCount = node.outputs
             const fanOut = node.fanOut
-            const hasCommandOutputPin = !!((node.commandResponseMsgOutput === 'output2' || fanOut))
-            const optionCount = node.options ? node.options.length : 0
-            let staticOutputPinIndex = 0
-            let dynOutputPinIndex = 0
-            let cmdOutputPin = 0
+            const hasScheduleOutputPin = !!((node.commandResponseMsgOutput === 'output2' || fanOut))
+            let outputPinIndex = 0
+            const cmdOutputPin = 0
             if (fanOut) {
-                dynOutputPinIndex = optionCount
-                cmdOutputPin = optionCount + 1
-                staticOutputPinIndex = index || 0
+                if (index > -1) {
+                    outputPinIndex = index + 1
+                } else {
+                    outputPinIndex = 0
+                }
             }
-            if (!fanOut && hasCommandOutputPin) {
-                cmdOutputPin = 1
+            if (!fanOut && hasScheduleOutputPin) {
+                outputPinIndex = 1
             }
 
             let idx = 0
             switch (type) {
             case 'static':
-                idx = staticOutputPinIndex
+                idx = outputPinIndex
                 break
             case 'dynamic':
-                idx = dynOutputPinIndex
+                idx = outputPinIndex
                 break
             case 'command-response':
                 idx = cmdOutputPin
@@ -2253,6 +2308,7 @@ module.exports = function (RED) {
                                 const startCmd = {
                                     command: 'add',
                                     name: schedule.name,
+                                    topic: schedule.topic,
                                     expression: startCronExpression,
                                     expressionType: 'cron',
                                     payload: schedule?.payloadValue || true,
@@ -2264,7 +2320,7 @@ module.exports = function (RED) {
                                 const endCmd = {
                                     ...startCmd,
                                     name: `${schedule.name}_end_sched_type`,
-                                    topic: schedule.name,
+                                    topic: schedule.topic,
                                     expression: endCronExpression,
                                     payload: schedule?.payloadEnd || false,
                                     payloadType: 'bool',
@@ -2314,6 +2370,7 @@ module.exports = function (RED) {
                                 const cmd = {
                                     command: 'add',
                                     name: schedule.name,
+                                    topic: schedule.topic,
                                     expressionType: 'solar',
                                     solarType: 'selected',
                                     solarEvents: schedule.solarEvent,
@@ -2355,32 +2412,10 @@ module.exports = function (RED) {
                                 if (scheduleIndex !== -1) {
                                     // Request task status
                                     const task = getTask(node, msgSchedule.name)
-                                    if (task) {
-                                        const result = {
-                                            // config: exportTask(task, true),
-                                            status: getTaskStatus(node, task, { includeSolarStateOffset: true })
-                                        }
+                                    const status = getNextStatus(node, task)
 
-                                        // Update schedule with the status information
-                                        schedules[scheduleIndex].nextDate = result.status.nextDateTZ
-
-                                        if (schedules[scheduleIndex].scheduleType === 'solar') {
-                                            const nextDescription = result.status.nextDescription
-                                            const words = nextDescription.split(' ')
-
-                                            for (let i = 0; i < words.length; i++) {
-                                                if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
-                                                    words[i] = mapSolarEvent(words[i])
-                                                }
-                                            }
-
-                                            schedules[scheduleIndex].nextDescription = words.join(' ')
-                                        } else {
-                                            schedules[scheduleIndex].nextDescription = result.status.nextDescription
-                                        }
-                                    } else {
-                                        console.log('Task not found')
-                                    }
+                                    schedules[scheduleIndex].nextDate = status.nextDate
+                                    schedules[scheduleIndex].nextDescription = status.nextDescription
                                 } else {
                                     console.log('Task not found in schedules')
                                 }
@@ -2490,31 +2525,10 @@ module.exports = function (RED) {
                         if (scheduleIndex !== -1) {
                             // Request task status
                             const task = getTask(node, msg.payload.name)
-                            if (task) {
-                                const result = {
-                                    // config: exportTask(task, true),
-                                    status: getTaskStatus(node, task, { includeSolarStateOffset: true })
-                                }
+                            const status = getNextStatus(node, task)
 
-                                // Update schedule with the status information
-                                schedules[scheduleIndex].nextDate = result.status.nextDateTZ
-                                if (schedules[scheduleIndex].scheduleType === 'solar') {
-                                    const nextDescription = result.status.nextDescription
-                                    const words = nextDescription.split(' ')
-
-                                    for (let i = 0; i < words.length; i++) {
-                                        if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
-                                            words[i] = mapSolarEvent(words[i])
-                                        }
-                                    }
-
-                                    schedules[scheduleIndex].nextDescription = words.join(' ')
-                                } else {
-                                    schedules[scheduleIndex].nextDescription = result.status.nextDescription
-                                }
-                            } else {
-                                console.log('Task not found')
-                            }
+                            schedules[scheduleIndex].nextDate = status.nextDate
+                            schedules[scheduleIndex].nextDescription = status.nextDescription
 
                             // Update the schedules property
                             statestore.set(base, node, msg, 'schedules', schedules)
