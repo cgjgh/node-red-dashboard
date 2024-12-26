@@ -3,6 +3,13 @@
     <v-container class="pa-2 main" style="border: 1.5px solid grey; border-radius: 10px;">
         <v-toolbar flat>
             <v-toolbar-title>{{ props.label }}</v-toolbar-title>
+            <v-select
+                v-model="selectedTopic"
+                :items="['All', ...uniqueTopics]"
+                label="Filter by Topic"
+                class="mr-4"
+                @update:model-value="filterSchedules"
+            />
             <v-spacer />
             <v-btn @click="openDialog()">
                 <v-icon>mdi-plus</v-icon>
@@ -11,14 +18,21 @@
         <v-data-table
             v-model:expanded="expanded"
             :headers="headers"
-            :items="schedules"
+            :items="filteredSchedules"
             hide-default-footer
             item-value="name"
             show-expand
             :expand="expandedItem"
-            :group-by="groupBy"
             @click:row="handleRowClick"
         >
+            <template #item.name="{ item }">
+                <div v-if="item.active === undefined">
+                    {{ item.name }}
+                </div>
+                <v-chip v-else :color="item.active ? 'green' : 'red'">
+                    {{ item.name }}
+                </v-chip>
+            </template>
             <template #item.action="{ item }">
                 <div>
                     <v-switch
@@ -106,15 +120,6 @@
                                 </v-row>
                             </v-card-text>
                         </v-card>
-                    </td>
-                </tr>
-            </template>
-
-            <template #group-header="{ item, columns, toggleGroup, isGroupOpen }">
-                <tr>
-                    <td :colspan="columns.length">
-                        <v-btn :icon="isGroupOpen(item) ? '$expand' : '$next'" size="small" variant="text" @click="toggleGroup(item)" />
-                        {{ item.value ? item.value : 'No Topic' }}
                     </td>
                 </tr>
             </template>
@@ -431,7 +436,7 @@ export default {
             items: null,
             currentSchedule: null,
             isEditing: false,
-            groupBy: [{ key: 'topic', order: 'asc' }],
+            selectedTopic: 'All',
 
             // Scheduling options
             name: '',
@@ -553,6 +558,16 @@ export default {
                 days.push('Last')
                 return days
             }
+        },
+        uniqueTopics () {
+            const topics = this.schedules.map((schedule) => schedule.topic)
+            return [...new Set(topics)]
+        },
+        filteredSchedules () {
+            if (this.selectedTopic === 'All') {
+                return this.schedules
+            }
+            return this.schedules.filter((schedule) => schedule.topic === this.selectedTopic)
         }
     },
 
@@ -627,6 +642,9 @@ export default {
         highlightExpandedRow () { const rows = this.$el.querySelectorAll('tr'); rows.forEach(row => { const itemName = row.querySelector('td:first-child')?.textContent.trim(); if (this.expanded.includes(itemName)) { row.classList.add('highlighted-row') } else { row.classList.remove('highlighted-row') } }) },
         handleRowClick (item, index) {
             this.expanded = [index.item.name]
+        },
+        filterSchedules () {
+            // This will automatically trigger the computed property 'filteredSchedules'
         },
         generateNumberArray (min, max) {
             const array = []
@@ -722,7 +740,10 @@ export default {
                 }
             }
 
-            if (!this.hasDuration || !this.hasEndTime) {
+            if (this.hasDuration || this.hasEndTime) {
+                newSchedule.payloadValue = true
+                newSchedule.endPayloadValue = false
+            } else {
                 newSchedule.payloadValue = this.payloadValue
             }
 
@@ -914,7 +935,11 @@ export default {
 
             this.name = newName
             if (Array.isArray(this.props.topics) && this.props.topics.length > 0) {
-                this.topic = this.props.topics[0]
+                if (this.selectedTopic === 'All') {
+                    this.topic = this.props.topics[0]
+                } else {
+                    this.topic = this.selectedTopic
+                }
             } else {
                 this.topic = null
             }
