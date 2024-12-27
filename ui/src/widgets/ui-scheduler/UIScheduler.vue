@@ -47,6 +47,14 @@
             <template #expanded-row="{ columns, item }">
                 <tr v-if="item">
                     <td :colspan="columns.length">
+                        <v-progress-linear
+                            v-if="item.active"
+                            :color="progressColor (item)"
+                            :model-value="progressValue(item)"
+                            stream
+                            rounded
+                            :height="5"
+                        />
                         <v-card>
                             <v-card-title class="d-flex align-items-center justify-space-between">
                                 <div v-if="item && item.name">
@@ -414,6 +422,49 @@
 <script>
 import { mapState } from 'vuex'
 
+function hsvToRgb (h, s, v) {
+    let r, g, b
+    const i = Math.floor(h * 6)
+    const f = h * 6 - i
+    const p = v * (1 - s)
+    const q = v * (1 - f * s)
+    const t = v * (1 - (1 - f) * s)
+    switch (i % 6) {
+    case 0:
+        r = v
+        g = t
+        b = p
+        break
+    case 1:
+        r = q
+        g = v
+        b = p
+        break
+    case 2:
+        r = p
+        g = v
+        b = t
+        break
+    case 3:
+        r = p
+        g = q
+        b = v
+        break
+    case 4:
+        r = t
+        g = p
+        b = v
+        break
+    case 5:
+        r = v
+        g = p
+        b = q
+        break
+    }
+
+    return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`
+}
+
 export default {
     inject: ['$socket', '$dataTracker'],
     props: {
@@ -437,6 +488,7 @@ export default {
             currentSchedule: null,
             isEditing: false,
             selectedTopic: 'All',
+            now: new Date().getTime(),
 
             // Scheduling options
             name: '',
@@ -573,6 +625,7 @@ export default {
             }
             return this.schedules.filter((schedule) => schedule.topic === this.selectedTopic)
         }
+
     },
 
     watch: {
@@ -616,6 +669,10 @@ export default {
             this.onDynamicProperties
         )
         this.$socket.emit('widget-load', this.id)
+    },
+    mounted () {
+        this.updateNowUTC()
+        setInterval(this.updateNowUTC, 1000)
     },
     methods: {
         onLoad (msg) {
@@ -683,6 +740,7 @@ export default {
                 return `${formattedHours}:${minutes} ${period}`
             }
         },
+        updateNowUTC () { this.now = new Date().getTime() },
         toTitleCase (str) {
             return str.charAt(0).toUpperCase() + str.slice(1)
         },
@@ -694,6 +752,32 @@ export default {
         closeDialog () {
             this.dialog = false
         },
+        progressValue (item) {
+            const { nextEndUTC, currentStartTime } = item
+            console.log('nextEndUTC', nextEndUTC, 'currentStartTime', currentStartTime)
+
+            // Ensure the dates are converted into timestamps
+            const nextEndMillis = new Date(nextEndUTC).getTime()
+            const currentStartMillis = new Date(currentStartTime).getTime()
+
+            if (!nextEndMillis || !currentStartMillis) {
+                return 0
+            }
+
+            const value = Math.round(((this.now - currentStartMillis) / (nextEndMillis - currentStartMillis)) * 100)
+            console.log('value', value)
+
+            return Math.min(Math.max(value, 0), 100) // Ensure the value stays between 0 and 100
+        },
+
+        progressColor (item) {
+            const progress = this.progressValue(item) / 100 // Normalize to 0-1 range
+            const hue = (progress * 120) / 360
+            const saturation = 1
+            const value = 1
+            return hsvToRgb(hue, saturation, value)
+        },
+
         saveSchedule () {
             const validationResult = this.validateSchedule()
             if (!validationResult.isValid) {
