@@ -112,10 +112,10 @@
                                         <strong>Next Description:</strong> {{ item.nextDescription }}
                                     </v-col>
                                     <v-col cols="12" sm="6">
-                                        <span v-if="item.payloadValue"><strong>Output:</strong> {{ item.payloadValue }}</span>
-                                        <span v-else-if="item.hasDuration || item.hasEndTime">
+                                        <span v-if="item.hasDuration || item.hasEndTime">
                                             <strong>Output:</strong><em>True</em> on start and <em>False</em> on end.
                                         </span>
+                                        <span v-else-if="item.payloadValue"><strong>Output:</strong> {{ item.payloadValue }}</span>
                                     </v-col>
                                 </v-row>
                             </v-card-text>
@@ -560,8 +560,12 @@ export default {
             }
         },
         uniqueTopics () {
-            const topics = this.schedules.map((schedule) => schedule.topic)
-            return [...new Set(topics)]
+            if (this.schedules && Array.isArray(this.schedules)) {
+                const topics = this.schedules.map((schedule2) => schedule2.topic)
+                return [...new Set(topics)]
+            } else {
+                return [] // Or handle the case where schedules are undefined
+            }
         },
         filteredSchedules () {
             if (this.selectedTopic === 'All') {
