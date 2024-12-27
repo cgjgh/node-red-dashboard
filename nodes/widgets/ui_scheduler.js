@@ -19,8 +19,6 @@ copies or substantial portions of the Software.
 const fs = require('fs')
 const path = require('path')
 
-const { off } = require('process')
-
 const coordParser = require('coord-parser')
 const cronosjs = require('cronosjs')
 const cronstrue = require('cronstrue')
@@ -30,7 +28,6 @@ const SunCalc = require('suncalc2')
 // eslint-disable-next-line no-unused-vars
 const datastore = require('../store/data.js')
 const statestore = require('../store/state.js')
-const state = require('../store/state.js')
 
 SunCalc.addTime(-18, 'nightEnd', 'nightStart')
 SunCalc.addTime(-6, 'civilDawn', 'civilDusk')
@@ -739,6 +736,11 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
     }
 }
 
+function exportSchedule (schedule) {
+    const { active, nextDate, nextDescription, nextUTC, nextEndDate, nextEndDescription, nextEndUTC, ...rest } = schedule
+    return { ...rest }
+}
+
 function exportTask (task, includeStatus) {
     const o = {
         topic: task.node_topic || task.name,
@@ -748,14 +750,11 @@ function exportTask (task, includeStatus) {
         payload: task.node_payload,
         limit: task.node_limit || null,
         expressionType: task.node_expressionType,
-        ...(task?.node_opt?.schedule && {
-            schedule: {
-                ...task.node_opt.schedule,
-                nextDate: undefined,
-                nextDescription: undefined
-            }
-        })
+        ...(task?.node_opt?.schedule && { schedule: exportSchedule(task.node_opt.schedule) }),
+        ...(task?.node_opt?.endSchedule && { endSchedule: task.node_opt.endSchedule }),
+        ...(task?.node_opt?.scheduleName && { scheduleName: task.node_opt.scheduleName })
     }
+
     if (o.expressionType === 'solar') {
         o.solarType = task.node_solarType
         o.solarEvents = task.node_solarEvents
@@ -764,6 +763,7 @@ function exportTask (task, includeStatus) {
     } else {
         o.expression = task.node_expression
     }
+
     if (includeStatus) {
         o.isDynamic = task.isDynamic === true
         o.modified = task.node_modified === true
@@ -830,7 +830,12 @@ function getNextStatus (node, task) {
     if (!task || task.isRunning) {
         const status = getTaskStatus(node, task, { includeSolarStateOffset: true })
         const nextDate = status.nextDateTZ
+        const nextUTC = status.nextDate
         let nextDescription = status.nextDescription
+
+        if (!nextDescription) {
+            return { nextDate, nextDescription: 'Never', nextUTC }
+        }
 
         if (task.node_expressionType === 'solar') {
             const words = nextDescription.split(' ')
@@ -844,11 +849,13 @@ function getNextStatus (node, task) {
             nextDescription = words.join(' ')
         }
 
-        return { nextDate, nextDescription }
+        return { nextDate, nextDescription, nextUTC }
     } else {
-        return { nextDate: 'Never', nextDescription: 'Never' }
+        return { nextDate: 'Never', nextDescription: 'Never', nextUTC: null }
     }
 }
+
+let sendStateTask
 
 let userDir = ''
 let persistPath = ''
@@ -877,7 +884,7 @@ module.exports = function (RED) {
                 FSAvailable = false
             }
         }
-        contextAvailable = STORE_NAMES.length > 2 // 1st 2 are 'none' and 'file', any others are context stores
+        contextAvailable = STORE_NAMES.length > 2 // 1st 2 are 'none' and 'local_file_system', any others are context stores
     }
 
     // #region Node-RED
@@ -899,6 +906,7 @@ module.exports = function (RED) {
         node.defaultLocation = config.defaultLocation
         node.defaultLocationType = config.defaultLocationType
         node.outputs = 1
+        node.sendStateInterval = config.sendStateInterval
         node.sendActiveState = config.sendActiveState
         node.sendInactiveState = config.sendInactiveState
         node.topics = config.topics || ['Topic 1']
@@ -916,28 +924,17 @@ module.exports = function (RED) {
                 node.serialisationRequestBusy = null
             }
         }, 2500) // 2.5 seconds
-        // convert node.persistDynamic to a getter/setter
-        Object.defineProperty(node, 'persistDynamic', {
-            get: function () {
-                return !!node.storeName
-            }
-        })
 
-        // inherit/upgrade deprecated properties from config
         const hasStoreNameProperty = Object.prototype.hasOwnProperty.call(config, 'storeName') && typeof config.storeName === 'string'
-        const hasDeprecatedPersistDynamic = Object.prototype.hasOwnProperty.call(config, 'persistDynamic') && typeof config.persistDynamic === 'boolean'
         if (hasStoreNameProperty) {
             // not an upgrade - let use this property
             node.storeName = config.storeName
-        } else if (hasDeprecatedPersistDynamic) {
-            // upgrade from older version
-            node.storeName = config.persistDynamic ? 'file' : ''
         } else {
             // default
             node.storeName = ''
         }
 
-        if (node.storeName && node.storeName !== 'file' && STORE_NAMES.indexOf(node.storeName) < 0) {
+        if (node.storeName && node.storeName !== 'local_file_system' && STORE_NAMES.indexOf(node.storeName) < 0) {
             node.warn(`Invalid store name specified '${node.storeName}' - state will not be persisted for this node`)
             contextAvailable = false
         }
@@ -1169,7 +1166,7 @@ module.exports = function (RED) {
                 }, 4000)
             }
         }
-        const sendMsg = async (node, task, cronTimestamp, manualTrigger) => {
+        const sendMsg = async (node, task, cronTimestamp, manualTrigger, intervalTrigger = false) => {
             const msg = { scheduler: {} }
             msg.topic = task.node_topic
             msg.scheduler.triggerTimestamp = cronTimestamp
@@ -1178,9 +1175,10 @@ module.exports = function (RED) {
             if (se) msg.scheduler.status.solarEvent = se
             msg.scheduler.config = exportTask(task)
             if (manualTrigger) msg.manualTrigger = true
+            if (intervalTrigger) msg.intervalTrigger = true
             msg.scheduledEvent = !msg.manualTrigger
-            const indicator = node.nextIndicator || 'dot'
             const taskType = task.isDynamic ? 'dynamic' : 'static'
+
             // const index = task.node_index || 0
             const index = node.topics.findIndex(topic => topic === task.node_topic)
 
@@ -1189,7 +1187,10 @@ module.exports = function (RED) {
                 node.error(`Topic "${task.node_topic}" not found for ${task.name}`)
             }
 
-            node.status({ fill: 'green', shape: indicator, text: 'Schedule Started' })
+            if (!intervalTrigger) {
+                const indicator = node.nextIndicator || 'dot'
+                node.status({ fill: 'green', shape: indicator, text: 'Schedule Started' })
+            }
             try {
                 if (task.node_payloadType !== 'flow' && task.node_payloadType !== 'global') {
                     let pl
@@ -1211,12 +1212,12 @@ module.exports = function (RED) {
                     }
                     setProperty(msg, node.outputField, pl)
                     node.send(generateSendMsg(node, msg, taskType, index))
-                    updateDoneStatus(node, task)
+                    if (!intervalTrigger) { updateDoneStatus(node, task) }
                 } else {
                     const res = await evaluateNodeProperty(task.node_payload, task.node_payloadType, node, msg)
                     setProperty(msg, node.outputField, res)
                     node.send(generateSendMsg(node, msg, taskType, index))
-                    updateDoneStatus(node, task)
+                    if (!intervalTrigger) { updateDoneStatus(node, task) }
                 }
             } catch (err) {
                 node.error(err, msg)
@@ -1247,6 +1248,54 @@ module.exports = function (RED) {
                 setTimeout(() => {
                     updateNextStatus(node, true)
                 }, 200)
+                if (node.sendActiveState || node.sendInactiveState) {
+                    const seconds = Number(node.sendStateInterval) || 60
+                    const expression = cronosjs.CronosExpression.parse(`*/${seconds} * * * * *`)
+                    if (sendStateTask) {
+                        _deleteTask(sendStateTask)
+                    }
+                    sendStateTask = new cronosjs.CronosTask(expression)
+                    sendStateTask.name = 'sendStateTask'
+                    sendStateTask
+                        .on('run', (timestamp) => {
+                            const schedules = statestore.getProperty(node.id, 'schedules') || []
+                            const topicTasks = {}
+
+                            // Iterate through schedules to collect topics and tasks
+                            schedules.forEach((schedule) => {
+                                if (schedule && (schedule.hasEndTime || schedule.hasDuration)) {
+                                    const isActive = schedule.active
+                                    let task = null
+
+                                    if (isActive && (!topicTasks[schedule.topic] || !topicTasks[schedule.topic].active)) {
+                                        task = getTask(node, schedule.name)
+                                        if (task && task.isRunning) {
+                                            topicTasks[schedule.topic] = { task, active: true }
+                                        }
+                                    } else if (!isActive && !topicTasks[schedule.topic]) {
+                                        task = getTask(node, `${schedule.name}_end_sched_type`)
+                                        if (task && task.isRunning) {
+                                            topicTasks[schedule.topic] = { task, active: false }
+                                        }
+                                    }
+                                }
+                            })
+
+                            // Iterate through topics to send messages
+                            Object.keys(topicTasks).forEach((topic) => {
+                                const taskData = topicTasks[topic]
+                                if (taskData) {
+                                    const { task, active } = taskData
+                                    if (active && node.sendActiveState) {
+                                        sendMsg(node, task, timestamp, false, true)
+                                    } else if (!active && node.sendInactiveState) {
+                                        sendMsg(node, task, timestamp, false, true)
+                                    }
+                                }
+                            })
+                        })
+                        .start()
+                }
             } catch (err) {
                 if (node.tasks) {
                     node.tasks.forEach(task => task.stop())
@@ -1711,6 +1760,53 @@ module.exports = function (RED) {
                 // eslint-disable-next-line no-empty
             } catch (error) { }
         }
+
+        function getSchedule (node, scheduleName) {
+            const schedules = statestore.getProperty(node.id, 'schedules') || []
+            const scheduleIndex = schedules.findIndex(schedule => schedule.name === scheduleName)
+            let schedule = null
+            if (scheduleIndex !== -1) {
+                // Get the schedule
+                schedule = schedules[scheduleIndex]
+            }
+            return schedule
+        }
+        function updateSchedule (node, scheduleName, task = null, props, emitEvent = true, eventName = 'update') {
+            console.log('updateSchedule', scheduleName, props)
+            const schedules = statestore.getProperty(node.id, 'schedules') || []
+            const scheduleIndex = schedules.findIndex(schedule => schedule.name === scheduleName)
+            let stateChange = false
+            let schedule = null
+            if (scheduleIndex !== -1) {
+                // Get the schedule
+                schedule = schedules[scheduleIndex]
+
+                // Update the schedule with props
+                Object.assign(schedule, props)
+            } else {
+                if (props && props.name) {
+                    schedules.push(props)
+                    schedule = props
+                }
+            }
+
+            if (schedule) { // Update the schedules property
+                stateChange = true
+                statestore.set(base, node, null, 'schedules', schedules)
+                if (!task) {
+                    task = getTask(node, scheduleName)
+                }
+                if (task) {
+                    task.node_opt.schedule = schedule
+                }
+                if (emitEvent && stateChange) {
+                    const m = { ui_update: { schedules }, event: eventName, schedule: scheduleName }
+                    base.emit('msg-input:' + node.id, m, node)
+                }
+            }
+            return stateChange
+        }
+
         async function updateTask (node, options, msg) {
             if (!options || typeof options !== 'object') {
                 node.warn('schedule settings are not valid', msg)
@@ -1760,6 +1856,7 @@ module.exports = function (RED) {
             }
             requestSerialisation()// request persistent state be written
         }
+
         async function createTask (node, opt, index, _static) {
             opt = opt || {}
             try {
@@ -1814,24 +1911,12 @@ module.exports = function (RED) {
             task.node_limit = opt.limit || 0
 
             // generate schedule object for UI if it doesn't exist
-            if (!task.node_opt.schedule && task.name.indexOf('_end_sched_type') === -1) {
+            if (!task.node_opt.schedule && !task.node_opt.endSchedule) {
                 const scheduleObject = generateScheduleObject(task)
                 if (scheduleObject) {
                     console.log('generating schedule object for task', task.name)
                     console.log('schedule object', scheduleObject)
-                    task.node_opt.schedule = scheduleObject
-                    const schedules = statestore.getProperty(node.id, 'schedules') || []
-                    const scheduleIndex = schedules.findIndex(storeSchedule => storeSchedule.name === scheduleObject.name)
-
-                    if (scheduleIndex !== -1) {
-                        // Get the schedule
-                        schedules[scheduleIndex] = scheduleObject
-                    } else {
-                        schedules.push(scheduleObject)
-                    }
-                    statestore.set(base, node, null, 'schedules', schedules)
-                    const m = { ui_update: { schedules }, event: 'convert' }
-                    base.emit('msg-input:' + node.id, m, node)
+                    updateSchedule(node, task.name, task, scheduleObject, true, 'add')
                 }
             }
 
@@ -1841,6 +1926,17 @@ module.exports = function (RED) {
                 node.debug(`running '${task.name}' ~ '${task.node_topic}'\n now time ${new Date()}\n crontime ${new Date(timestamp)}`)
                 const indicator = task.isDynamic ? 'ring' : 'dot'
                 node.status({ fill: 'green', shape: indicator, text: 'Running ' + formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
+                if (task.node_opt.schedule) {
+                    if (task.node_opt.schedule.hasEndTime || task.node_opt.schedule.hasDuration) {
+                        const props = { active: true }
+                        updateSchedule(node, task.name, task, props, true, 'run')
+                    }
+                }
+                if (task.node_opt.endSchedule) {
+                    const props = { active: false }
+                    updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'run')
+                }
+
                 if (isTaskFinished(task)) {
                     process.nextTick(function () {
                         // using nextTick is a work around for an issue (#3) in cronosjs where the job restarts itself after this event handler has exited
@@ -1868,10 +1964,12 @@ module.exports = function (RED) {
                                     name: `${task.node_opt.schedule.name}_end_sched_type`,
                                     topic: task.node_topic,
                                     expression: newDate,
-                                    payload: task.node_opt.schedule?.payload || false,
+                                    payload: task.node_opt.schedule?.endPayload || false,
                                     type: 'bool',
                                     dontStartTheTask: !task.node_opt.schedule.enabled,
-                                    endSchedule: true
+                                    scheduleName: task.node_opt.schedule.name,
+                                    endSchedule: true,
+                                    noExport: true
                                 }
                                 await updateTask(node, endCmd, null)
                             }
@@ -1886,27 +1984,99 @@ module.exports = function (RED) {
                     requestSerialisation()// request persistent state be written
                 })
                 .on('started', () => {
+                    // Function to validate date format
+                    function isValidDate (dateString) {
+                        const date = new Date(dateString)
+                        return date instanceof Date && !isNaN(date)
+                    }
+
                     node.debug(`started '${task.name}' ~ '${task.node_topic}'`)
                     process.nextTick(function () {
                         updateNextStatus(node)
                     })
                     if (task.node_opt.schedule) {
-                        task.node_opt.schedule.enabled = true
-                        // update state store
-                        const schedules = statestore.getProperty(node.id, 'schedules') || []
-                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
+                        console.log('start schedule')
+                        const status = getNextStatus(node, task)
+                        const props = {
+                            enabled: true,
+                            nextDate: status.nextDate,
+                            nextDescription: status.nextDescription,
+                            nextUTC: status.nextUTC
+                        }
 
-                        if (scheduleIndex !== -1) {
-                            schedules[scheduleIndex].enabled = true
-                            const status = getNextStatus(node, task)
-                            schedules[scheduleIndex].nextDate = status.nextDate
-                            schedules[scheduleIndex].nextDescription = status.nextDescription
-                            statestore.set(base, node, {}, 'schedules', schedules)
+                        updateSchedule(node, task.name, task, props, true, 'start')
+
+                        if (task.node_expressionType === 'solar') {
+                            if (task.node_opt.schedule.duration) {
+                                const duration = task.node_opt.schedule.duration * 60 * 1000 // Assuming duration is in minutes
+                                const eventTime = task.node_solarEventTimes.nextEventTimeOffset
+
+                                // Convert nextEvent to timestamp, add duration, and create new Date object with today's date in UTC
+                                const now = new Date()
+                                const todayDateUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+
+                                const eventTimeInMs = new Date(eventTime).getTime()
+                                let newDateUTC = new Date(todayDateUTC.getTime() + eventTimeInMs % (24 * 60 * 60 * 1000) + duration)
+
+                                // Check if newDateUTC is in the past
+                                if (newDateUTC.getTime() < now.getTime()) {
+                                    // If in the past, set newDateUTC to eventTime + duration
+                                    newDateUTC = new Date(eventTimeInMs + duration)
+                                }
+
+                                console.log('old date', eventTime)
+                                console.log('new date', newDateUTC)
+
+                                // create new task
+                                const endCmd = {
+                                    command: 'add',
+                                    name: `${task.node_opt.schedule.name}_end_sched_type`,
+                                    topic: task.node_topic,
+                                    expression: newDateUTC,
+                                    payload: task.node_opt.schedule?.endPayload || false,
+                                    type: 'bool',
+                                    dontStartTheTask: !task.node_opt.schedule.enabled,
+                                    scheduleName: task.node_opt.schedule.name,
+                                    endSchedule: true,
+                                    noExport: true
+                                }
+                                updateTask(node, endCmd, null)
+                            }
                         }
-                        if (!task.node_opt.endSchedule) {
-                            const m = { ui_update: { schedules }, event: 'started', schedule: task.name }
-                            base.emit('msg-input:' + node.id, m, node)
+                    }
+                    if (task.node_opt.endSchedule) {
+                        console.log('end schedule')
+
+                        const status = getNextStatus(node, task)
+                        const props = {
+                            nextEndDate: status.nextDate,
+                            nextEndDescription: status.nextDescription,
+                            nextEndUTC: status.nextUTC
                         }
+
+                        console.log('next end date', props.nextEndUTC)
+                        const schedule = getSchedule(node, task.node_opt.scheduleName)
+                        if (schedule) {
+                            if (isValidDate(schedule.nextUTC) && isValidDate(props.nextEndUTC)) {
+                                if (new Date(schedule.nextUTC) < new Date(props.nextEndUTC)) {
+                                    console.log('Next date is before next end date')
+                                    props.active = false
+                                } else if (new Date(schedule.nextUTC) > new Date(props.nextEndUTC)) {
+                                    console.log('Next date is after next end date')
+                                    if (new Date(props.nextEndUTC) > new Date()) {
+                                        props.active = true
+                                    } else {
+                                        props.active = false
+                                    }
+                                } else {
+                                    console.log('Next date is the same as next end date')
+                                }
+                            } else {
+                                console.log('Invalid date format')
+                            }
+                        }
+
+                        updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'started')
                     }
 
                     requestSerialisation()// request persistent state be written
@@ -1915,22 +2085,18 @@ module.exports = function (RED) {
                     node.debug(`stopped '${task.name}' ~ '${task.node_topic}'`)
                     updateNextStatus(node)
                     if (task.node_opt.schedule) {
-                        task.node_opt.schedule.enabled = false
-                    }
-                    // update state store
-                    const schedules = statestore.getProperty(node.id, 'schedules') || []
-                    const scheduleIndex = schedules.findIndex(schedule => schedule.name === task.name)
+                        const status = getNextStatus(node, task)// get next status
+                        const props = {
+                            enabled: false,
+                            nextDate: status.nextDate,
+                            nextDescription: status.nextDescription
+                        }
 
-                    if (scheduleIndex !== -1) {
-                        schedules[scheduleIndex].enabled = false
-                        const status = getNextStatus(node, task)
-                        schedules[scheduleIndex].nextDate = status.nextDate
-                        schedules[scheduleIndex].nextDescription = status.nextDescription
-                        statestore.set(base, node, {}, 'schedules', schedules)
-                    }
-                    if (!task.node_opt.endSchedule && task.node_opt.schedule) {
-                        const m = { ui_update: { schedules }, event: 'stopped', schedule: task.name }
-                        base.emit('msg-input:' + node.id, m, node)
+                        if (task.node_opt.schedule.hasDuration || task.node_opt.schedule.hasEndTime) {
+                            props.active = false
+                        }
+
+                        updateSchedule(node, task.name, task, props, true, 'stop')
                     }
                     requestSerialisation()// request persistent state be written
                 })
@@ -1950,23 +2116,30 @@ module.exports = function (RED) {
         async function serialise () {
             let filePath = ''
             try {
-                if (!node.persistDynamic) {
-                    return
-                }
-                if (!FSAvailable && node.storeName === 'file') {
+                // if (!node.persistDynamic) {
+                //     return
+                // }
+                if (!FSAvailable && node.storeName === 'local_file_system') {
                     return
                 }
                 const dynNodes = node.tasks.filter((e) => e && e.isDynamic)
                 const statNodes = node.tasks.filter((e) => e && e.isDynamic !== true)
-                const exp = (task) => exportTask(task, true)
-                const dynNodesExp = dynNodes.map(exp)
-                const statNodesExp = statNodes.map(exp)
+
+                const exp = (task) => {
+                    if (task.node_opt && task.node_opt.noExport !== true) {
+                        return exportTask(task, true)
+                    }
+                    return null
+                }
+
+                const dynNodesExp = dynNodes.map(exp).filter((task) => task !== null)
+                const statNodesExp = statNodes.map(exp).filter((task) => task !== null)
+
                 const state = {
-                    version: 2,
                     dynamicSchedules: dynNodesExp,
                     staticSchedules: statNodesExp
                 }
-                if (node.storeName === 'file') {
+                if (node.storeName === 'local_file_system') {
                     try {
                         filePath = getPersistFilePath()
                         const fileData = JSON.stringify(state)
@@ -1999,20 +2172,17 @@ module.exports = function (RED) {
         async function deserialise () {
             let filePath = ''
             try {
-                if (!node.persistDynamic) {
-                    return
-                }
-                if (!FSAvailable && node.storeName === 'file') {
+                // if (!node.persistDynamic) {
+                //     return
+                // }
+                if (!FSAvailable && node.storeName === 'local_file_system') {
                     return
                 }
                 const restoreState = async (state) => {
                     if (!state) {
                         return // nothing to add
                     }
-                    if (state.version !== 1 && state.version !== 2) {
-                        throw new Error('Invalid version - cannot load dynamic schedules')
-                    }
-                    if (state.version === 2 && state.staticSchedules && state.staticSchedules.length) {
+                    if (state.staticSchedules && state.staticSchedules.length) {
                         for (let iOpt = 0; iOpt < state.staticSchedules.length; iOpt++) {
                             const opt = state.staticSchedules[iOpt]
                             const task = node.tasks.find(e => e.name === opt.name)
@@ -2027,31 +2197,12 @@ module.exports = function (RED) {
                         }
                         updateNodeNextInfo(node)
                     }
-                    if (state.version === 1) {
-                        state.dynamicSchedules = state.schedules
-                    }
                     if (state.dynamicSchedules && state.dynamicSchedules.length) {
                         const uiSchedules = statestore.getProperty(node.id, 'schedules') || []
                         for (let iOpt = 0; iOpt < state.dynamicSchedules.length; iOpt++) {
                             const opt = state.dynamicSchedules[iOpt]
                             let task
                             opt.name = opt.name || opt.topic
-                            if (state.version === 1) {
-                                task = await createTask(node, opt, iOpt, false)
-                            } else if (state.version === 2) {
-                                opt.dontStartTheTask = !opt.isRunning
-                                task = await createTask(node, opt, iOpt, false)
-                                if (task) {
-                                    task.node_count = opt.count
-                                    task.isRunning = opt.isRunning
-                                    task.isDynamic = true
-                                }
-                                if (opt.isRunning === false) {
-                                    stopTask(node, opt.name)
-                                } else if (opt.isRunning === true) {
-                                    startTask(node, opt.name)
-                                }
-                            }
                             if (opt?.schedule) {
                                 // Find the schedule
                                 const scheduleIndex = uiSchedules.findIndex(storeSchedule => storeSchedule.name === opt.schedule.name)
@@ -2062,15 +2213,29 @@ module.exports = function (RED) {
                                 } else {
                                     uiSchedules.push(opt.schedule)
                                 }
+                                statestore.set(base, node, null, 'schedules', uiSchedules)
+                            }
+
+                            opt.dontStartTheTask = !opt.isRunning
+                            // eslint-disable-next-line prefer-const
+                            task = await createTask(node, opt, iOpt, false)
+                            if (task) {
+                                task.node_count = opt.count
+                                task.isRunning = opt.isRunning
+                                task.isDynamic = true
+                            }
+                            if (opt.isRunning === false) {
+                                stopTask(node, opt.name)
+                            } else if (opt.isRunning === true) {
+                                startTask(node, opt.name)
                             }
                         }
                         updateNodeNextInfo(node)
                         const msg = { ui_update: { schedules: uiSchedules }, event: 'init' }
                         base.emit('msg-input:' + node.id, msg, node)
-                        statestore.set(base, node, msg, 'schedules', uiSchedules)
                     }
                 }
-                if (node.storeName === 'file') {
+                if (node.storeName === 'local_file_system') {
                     filePath = getPersistFilePath()
                     if (fs.existsSync(filePath)) {
                         const fileData = fs.readFileSync(filePath)
@@ -2225,7 +2390,6 @@ module.exports = function (RED) {
                 submit: async function (conn, id, msg) {
                     if (msg?.payload?.schedules) {
                         const schedules = statestore.getProperty(node.id, 'schedules') || []
-                        console.log('schedules', msg?.payload?.schedules)
                         const scheduleArray = msg.payload.schedules
                         const cmds = []
                         scheduleArray.forEach(schedule => {
@@ -2322,13 +2486,26 @@ module.exports = function (RED) {
                                     name: `${schedule.name}_end_sched_type`,
                                     topic: schedule.topic,
                                     expression: endCronExpression,
-                                    payload: schedule?.payloadEnd || false,
+                                    payload: schedule?.endPayloadValue || false,
                                     payloadType: 'bool',
                                     schedule: null,
+                                    scheduleName: schedule.name,
                                     endSchedule: true
                                 }
 
                                 applyOptionDefaults(node, startCmd)
+
+                                // abbreviate days of week to three letters
+                                const dayMapping = {
+                                    Monday: 'Mon',
+                                    Tuesday: 'Tue',
+                                    Wednesday: 'Wed',
+                                    Thursday: 'Thu',
+                                    Friday: 'Fri',
+                                    Saturday: 'Sat',
+                                    Sunday: 'Sun'
+                                }
+
                                 schedule.description = _describeExpression(
                                     startCmd.expression,
                                     startCmd.expressionType,
@@ -2339,7 +2516,7 @@ module.exports = function (RED) {
                                     startCmd.time,
                                     startCmd,
                                     node.use24HourFormat
-                                ).description
+                                ).description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
 
                                 // if (schedule.hasEndTime) {
                                 //     schedule.endCronExpression = endCronExpression
@@ -2396,7 +2573,6 @@ module.exports = function (RED) {
                             }
                         })
 
-                        console.log('schedules', schedules)
                         const m = { ui_update: { schedules }, event: 'submit' }
                         base.emit('msg-input:' + node.id, m, node)
                         statestore.set(base, node, m, 'schedules', schedules)
@@ -2516,35 +2692,23 @@ module.exports = function (RED) {
 
                 requestStatus: function (conn, id, msg) {
                     if (msg?.payload?.name) {
-                        // Get the schedules property
-                        const schedules = statestore.getProperty(node.id, 'schedules') || []
-
-                        // Find the schedule
-                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === msg.payload.name)
-
-                        if (scheduleIndex !== -1) {
-                            // Request task status
-                            const task = getTask(node, msg.payload.name)
+                        // Request task status
+                        const task = getTask(node, msg.payload.name)
+                        if (task) {
                             const status = getNextStatus(node, task)
-
-                            schedules[scheduleIndex].nextDate = status.nextDate
-                            schedules[scheduleIndex].nextDescription = status.nextDescription
-
-                            // Update the schedules property
-                            statestore.set(base, node, msg, 'schedules', schedules)
-
+                            const props = {
+                                nextDate: status.nextDate,
+                                nextDescription: status.nextDescription,
+                                nextUTC: status.nextUTC
+                            }
+                            updateSchedule(node, msg.payload.name, task, props, true, 'status')
                             updateNextStatus(node, true)
-
-                            // Send the updated schedules
-                            const m = { ui_update: { schedules }, event: 'status', schedule: msg.payload.name }
-                            base.emit('msg-input:' + node.id, m, node)
                             node.send(msg)
                         } else {
                             console.log('Task not found in schedules')
                         }
                     }
                 }
-
             }
         }
 
@@ -2595,7 +2759,7 @@ module.exports = function (RED) {
     }
 
     function getStoreNames () {
-        const stores = ['', 'file']
+        const stores = ['', 'local_file_system']
         if (!RED.settings.contextStorage) {
             return stores
         }
