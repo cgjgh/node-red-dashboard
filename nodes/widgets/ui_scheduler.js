@@ -1037,6 +1037,7 @@ module.exports = function (RED) {
                     return null
                 }
 
+                // eslint-disable-next-line no-unused-vars
                 const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts.length === 7
                     ? cronParts
                     : cronParts.length === 6
@@ -1928,12 +1929,26 @@ module.exports = function (RED) {
                 node.status({ fill: 'green', shape: indicator, text: 'Running ' + formatShortDateTimeWithTZ(timestamp, node.timeZone, node.use24HourFormat) })
                 if (task.node_opt.schedule) {
                     if (task.node_opt.schedule.hasEndTime || task.node_opt.schedule.hasDuration) {
-                        const props = { active: true }
+                        const status = getNextStatus(node, task)
+                        const props = {
+                            nextDate: status.nextDate,
+                            nextDescription: status.nextDescription,
+                            nextUTC: status.nextUTC,
+                            active: true,
+                            currentStartTime: new Date().toISOString()
+                        }
                         updateSchedule(node, task.name, task, props, true, 'run')
                     }
                 }
                 if (task.node_opt.endSchedule) {
-                    const props = { active: false }
+                    const status = getNextStatus(node, task)
+                    const props = {
+                        nextEndDate: status.nextDate,
+                        nextEndDescription: status.nextDescription,
+                        nextEndUTC: status.nextUTC,
+                        active: false,
+                        currentStartTime: null
+                    }
                     updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'run')
                 }
 
@@ -2065,6 +2080,7 @@ module.exports = function (RED) {
                                     console.log('Next date is after next end date')
                                     if (new Date(props.nextEndUTC) > new Date()) {
                                         props.active = true
+                                        props.currentStartTime = new Date().toISOString()
                                     } else {
                                         props.active = false
                                     }
@@ -2094,6 +2110,7 @@ module.exports = function (RED) {
 
                         if (task.node_opt.schedule.hasDuration || task.node_opt.schedule.hasEndTime) {
                             props.active = false
+                            props.currentStartTime = null
                         }
 
                         updateSchedule(node, task.name, task, props, true, 'stop')
