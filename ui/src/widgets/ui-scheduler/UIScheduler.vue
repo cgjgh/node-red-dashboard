@@ -1,45 +1,38 @@
 <!-- eslint-disable vuetify/no-deprecated-components -->
-<template>
-    <v-container class="pa-2 main" style="border: 1.5px solid grey; border-radius: 10px;">
-        <v-toolbar flat>
+<template class="pa-2 main">
+    <v-container class="pa-2 main" style="border: 1.5px solid grey; border-radius: 10px">
+        <v-toolbar border rounded="lg">
             <v-toolbar-title>{{ props.label }}</v-toolbar-title>
             <v-select
-                v-model="selectedTopic"
-                :items="['All', ...uniqueTopics]"
-                label="Filter by Topic"
-                class="mr-4"
+                v-model="selectedTopic" :items="['All', ...uniqueTopics]" label="Topic"
+                style="max-width: fit-content" rounded="lg" variant="solo-inverted"
                 @update:model-value="filterSchedules"
             />
-            <v-spacer />
             <v-btn @click="openDialog()">
                 <v-icon>mdi-plus</v-icon>
             </v-btn>
         </v-toolbar>
         <v-data-table
-            v-model:expanded="expanded"
-            :headers="headers"
-            :items="filteredSchedules"
-            hide-default-footer
-            item-value="name"
-            show-expand
-            :expand="expandedItem"
-            @click:row="handleRowClick"
+            v-model:expanded="expanded" :headers="filteredHeaders" :items="filteredSchedules"
+            hide-default-footer density="compact" :show-expand="!$vuetify.display.xs" item-value="name"
+            :expand="expandedItem" @click:row="handleRowClick"
         >
+            <template #item.rowNumber="{ item }">
+                <v-chip :color="item.active === undefined ? 'gray' : (item.active ? 'green' : 'red')">
+                    {{ item.rowNumber }}
+                </v-chip>
+            </template>
+
             <template #item.name="{ item }">
-                <div v-if="item.active === undefined">
-                    {{ item.name }}
-                </div>
+                <div v-if="item.active === undefined">{{ item.name }}</div>
                 <v-chip v-else :color="item.active ? 'green' : 'red'">
                     {{ item.name }}
                 </v-chip>
             </template>
             <template #item.action="{ item }">
-                <div>
+                <div style="padding-right: 0; margin-right: 0; width: fit-content;">
                     <v-switch
-                        v-model="item.enabled"
-                        color="primary"
-                        hide-details
-                        :disabled="item.isStatic"
+                        v-model="item.enabled" color="primary" hide-details :disabled="item.isStatic"
                         @click.stop="toggleSchedule(item)"
                     />
                 </div>
@@ -48,12 +41,8 @@
                 <tr v-if="item">
                     <td :colspan="columns.length">
                         <v-progress-linear
-                            v-if="item.active"
-                            :color="progressColor (item)"
-                            :model-value="progressValue(item)"
-                            stream
-                            rounded
-                            :height="5"
+                            v-if="item.active" :color="progressColor(item)"
+                            :model-value="progressValue(item)" stream rounded :height="5"
                         />
                         <v-card>
                             <v-card-title class="d-flex align-items-center justify-space-between">
@@ -64,9 +53,7 @@
                                     <em>No item selected</em>
                                 </div>
                                 <v-btn
-                                    v-if="item"
-                                    icon
-                                    :disabled="item.isStatic || item.readonly"
+                                    v-if="item" icon :disabled="item.isStatic || item.readonly"
                                     @click="editSchedule(item)"
                                 >
                                     <v-icon>mdi-pencil</v-icon>
@@ -85,11 +72,9 @@
                                     </v-col>
                                     <v-col v-if="item.days" cols="12" sm="6">
                                         <strong>Days:</strong>
-                                        {{
-                                            item.period === 'monthly' || item.period === 'yearly'
-                                                ? item.days.join(', ')
-                                                : item.days.map((day) => day.slice(0, 3)).join(', ')
-                                        }}
+                                        {{ item.period === 'monthly' || item.period === 'yearly' ?
+                                            item.days.join(', ') : item.days.map((day) => day.slice(0,
+                                                                                                    3)).join(', ') }}
                                     </v-col>
                                     <v-col v-if="item.time" cols="12" sm="6">
                                         <strong>Start Time:</strong> {{ formatTime(item.time) }}
@@ -108,7 +93,8 @@
                                         <strong>Duration:</strong> {{ item.duration }}
                                     </v-col>
                                     <v-col v-if="item.solarEvent" cols="12" sm="6">
-                                        <strong>Solar Event:</strong> {{ mapSolarEvent(item.solarEvent) }}
+                                        <strong>Solar Event:</strong> {{
+                                            mapSolarEvent(item.solarEvent) }}
                                     </v-col>
                                     <v-col v-if="item.offset" cols="12" sm="6">
                                         <strong>Offset:</strong> {{ item.offset }}
@@ -117,13 +103,16 @@
                                         <strong>Next Date:</strong> {{ item.nextDate }}
                                     </v-col>
                                     <v-col v-if="item.nextDescription" cols="12" sm="6">
-                                        <strong>Next Description:</strong> {{ item.nextDescription }}
+                                        <strong>Next Description:</strong> {{ item.nextDescription
+                                        }}
                                     </v-col>
                                     <v-col cols="12" sm="6">
                                         <span v-if="item.hasDuration || item.hasEndTime">
-                                            <strong>Output:</strong><em>True</em> on start and <em>False</em> on end.
+                                            <strong>Output:</strong><em>True</em> on start and
+                                            <em>False</em> on end.
                                         </span>
-                                        <span v-else-if="item.payloadValue"><strong>Output:</strong> {{ item.payloadValue }}</span>
+                                        <span v-else-if="item.payloadValue"><strong>Output:</strong> {{
+                                            item.payloadValue }}</span>
                                     </v-col>
                                 </v-row>
                             </v-card-text>
@@ -159,6 +148,7 @@
                                 :disabled="isEditing"
                             />
                         </v-col>
+                        <v-divider inset />
 
                         <v-col cols="12">
                             <v-col cols="12" class="d-flex justify-center">
@@ -169,19 +159,26 @@
                                 :rules="[rules.required]"
                             />
                         </v-col>
-
-                        <v-col cols="12">
-                            <v-col cols="12" class="d-flex justify-center">
-                                <v-label>Type</v-label>
+                        <v-divider inset />
+                        <div>
+                            <v-col cols="12">
+                                <v-col cols="12" class="d-flex justify-center">
+                                    <v-label>Type</v-label>
+                                </v-col>
+                                <v-btn-toggle
+                                    v-model="scheduleType" label="Schedule Type" mandatory divided
+                                    variant="elevated" border="sm" rounded="xl"
+                                >
+                                    <v-btn prepend-icon="mdi-clock-outline" value="time">
+                                        Time
+                                    </v-btn>
+                                    <v-btn prepend-icon="mdi-sun-clock" value="solar">
+                                        Solar
+                                    </v-btn>
+                                </v-btn-toggle>
                             </v-col>
-                            <v-btn-toggle
-                                v-model="scheduleType" label="Schedule Type" mandatory
-                                class="d-flex align-items-center justify-space-between"
-                            >
-                                <v-btn prepend-icon="mdi-clock-outline" value="time">Time</v-btn>
-                                <v-btn prepend-icon="mdi-sun-clock" value="solar">Solar</v-btn>
-                            </v-btn-toggle>
-                        </v-col>
+                        </div>
+                        <v-divider inset />
 
                         <div v-if="scheduleType === 'time'">
                             <v-col cols="12" class="d-flex justify-center">
@@ -189,8 +186,8 @@
                             </v-col>
                             <v-col cols="12" class="d-flex justify-center">
                                 <v-btn-toggle
-                                    v-model="period" class="d-flex flex-wrap" style="min-height: fit-content;"
-                                    min-width="100%" label="Period" mandatory
+                                    v-model="period" class="d-flex flex-wrap" style="min-height: fit-content"
+                                    min-width="100%" label="Period" mandatory border="sm"
                                 >
                                     <v-col>
                                         <v-row min-width="fit-content">
@@ -327,6 +324,7 @@
                                     </v-dialog>
                                 </v-text-field>
                             </v-col>
+                            <v-divider inset />
 
                             <v-col
                                 v-if="period !== 'minutes' && period !== 'hourly'" cols="12"
@@ -335,23 +333,23 @@
                                 <v-col cols="12" class="d-flex justify-center">
                                     <v-label>Timespan</v-label>
                                 </v-col>
-                                <v-btn-toggle v-model="hasEndTime" mandatory @update:model-value="setEndTime">
+                                <v-btn-toggle
+                                    v-model="hasEndTime" mandatory divided variant="elevated" border="sm"
+                                    rounded="xl" @update:model-value="setEndTime"
+                                >
                                     <v-btn :value="false">No End Time</v-btn>
                                     <v-btn :value="true">End Time</v-btn>
                                 </v-btn-toggle>
                             </v-col>
                         </div>
-                        <div v-if="scheduleType === 'solar'">
-                            <v-col cols="12" class="d-flex flex-column align-center">
-                                <v-col cols="12" class="d-flex justify-center">
-                                    <v-label>Event</v-label>
-                                </v-col>
-                                <v-select
-                                    v-model="solarEvent" :items="solarEvents" label="Select Event" required
-                                    :rules="[rules.required]" prepend-icon="mdi-sun-clock-outline"
-                                    style="min-width: 50%;"
-                                />
+                        <div v-if="scheduleType === 'solar'" :style="{ width: '100%' }">
+                            <v-col cols="12" class="d-flex justify-center">
+                                <v-label>Event</v-label>
                             </v-col>
+                            <v-select
+                                v-model="solarEvent" :items="solarEvents" label="Select Event" required
+                                :rules="[rules.required]" prepend-icon="mdi-sun-clock-outline"
+                            />
 
                             <v-col cols="12" class="d-flex justify-center">
                                 <v-select
@@ -359,8 +357,10 @@
                                     label="Offset (minutes)" :rules="[rules.required]"
                                 />
                             </v-col>
+                            <v-divider inset />
                         </div>
-                        <div>
+
+                        <div :style="{ width: '100%' }">
                             <v-col
                                 v-if="((period === 'minutes' || period === 'hourly') || scheduleType === 'solar')"
                                 cols="12" class="d-flex flex-column align-center"
@@ -368,7 +368,10 @@
                                 <v-col cols="12" class="d-flex justify-center">
                                     <v-label>Timespan</v-label>
                                 </v-col>
-                                <v-btn-toggle v-model="hasDuration" mandatory>
+                                <v-btn-toggle
+                                    v-model="hasDuration" mandatory divided variant="elevated" border="sm"
+                                    rounded="xl"
+                                >
                                     <v-btn :value="false">No Duration</v-btn>
                                     <v-btn :value="true">Duration</v-btn>
                                 </v-btn-toggle>
@@ -382,13 +385,15 @@
                                     :items="durationItems" label="Duration (minutes)" :rules="[rules.required]"
                                 />
                             </v-col>
+                            <v-divider inset />
                             <v-col cols="12" class="d-flex flex-column align-center">
                                 <v-col cols="12" class="d-flex justify-center">
                                     <v-label>Output</v-label>
                                 </v-col>
                                 <v-btn-toggle
                                     v-if="(scheduleType === 'time' && (period === 'daily' || period === 'weekly' || period === 'monthly' || period === 'yearly')) && !hasEndTime || (scheduleType === 'time' && (period === 'minutes' || period === 'hourly') || scheduleType === 'solar') && !hasDuration"
-                                    v-model="payloadValue" mandatory
+                                    v-model="payloadValue" mandatory divided variant="elevated" border="sm"
+                                    rounded="xl"
                                 >
                                     <v-btn :value="false">False</v-btn>
                                     <v-btn :value="true">True</v-btn>
@@ -399,19 +404,21 @@
                     </v-row>
                 </v-card-text>
                 <v-card-actions class="d-flex justify-center">
-                    <v-btn variant="tonal" @click="saveSchedule">Save</v-btn>
-                    <v-btn variant="tonal" @click="closeDialog">Cancel</v-btn>
+                    <v-btn variant="tonal" color="success" @click="saveSchedule">Save</v-btn>
+                    <v-btn variant="tonal" color="error" @click="closeDialog">Cancel</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
 
         <v-dialog v-model="dialogDelete" max-width="500px">
             <v-card>
-                <v-card-title class="text-h6">Are you sure you want to delete this item?</v-card-title>
+                <v-card-title class="text-h6">
+                    Are you sure you want to delete this schedule?
+                </v-card-title>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="text" @click="closeDelete">Cancel</v-btn>
-                    <v-btn variant="text" @click="deleteConfirm">OK</v-btn>
+                    <v-btn variant="tonal" @click="closeDelete">Cancel</v-btn>
+                    <v-btn variant="tonal" color="error" @click="deleteConfirm">Delete</v-btn>
                     <v-spacer />
                 </v-card-actions>
             </v-card>
@@ -419,6 +426,9 @@
     </v-container>
 </template>
 
+<script setup>
+import { useDisplay } from 'vuetify'
+</script>
 <script>
 import { mapState } from 'vuex'
 
@@ -524,9 +534,9 @@ export default {
             expandedItem: null,
             updatingExpanded: false, // Flag to control updates
             headers: [
-                { title: 'Name', align: 'start', key: 'name' },
-                { title: 'Description', align: 'start', key: 'description' },
-                { title: 'Enabled', align: 'start', key: 'action' }
+                { title: 'Name', align: 'start', key: 'name', width: '0%' },
+                { title: 'Description', align: 'start', key: 'description', width: '0%' },
+                { title: 'Enabled', align: 'center', key: 'action', width: '0%' }
             ],
 
             // Date and time arrays
@@ -620,12 +630,25 @@ export default {
             }
         },
         filteredSchedules () {
-            if (this.selectedTopic === 'All') {
-                return this.schedules
-            }
-            return this.schedules.filter((schedule) => schedule.topic === this.selectedTopic)
-        }
+            const filteredSchedules = this.selectedTopic === 'All'
+                ? this.schedules
+                : this.schedules.filter((schedule) => schedule.topic === this.selectedTopic)
 
+            return filteredSchedules.map((item, index) => ({
+                ...item,
+                rowNumber: index + 1
+            }))
+        },
+        filteredHeaders () {
+            return this.$vuetify.display.xs
+                ? this.headers.map((header) => {
+                    if (header.key === 'name') {
+                        return { title: 'No.', align: 'start', key: 'rowNumber', width: '0%' }
+                    }
+                    return header
+                })
+                : this.headers
+        }
     },
 
     watch: {
@@ -674,6 +697,10 @@ export default {
         this.updateNowUTC()
         setInterval(this.updateNowUTC, 1000)
     },
+    unmounted () {
+        window.removeEventListener('resize', this.handleResize)
+    },
+
     methods: {
         onLoad (msg) {
             if (msg) {
@@ -702,8 +729,13 @@ export default {
         isRowExpanded (item) { return this.expanded.includes(item.name) },
         highlightExpandedRow () { const rows = this.$el.querySelectorAll('tr'); rows.forEach(row => { const itemName = row.querySelector('td:first-child')?.textContent.trim(); if (this.expanded.includes(itemName)) { row.classList.add('highlighted-row') } else { row.classList.remove('highlighted-row') } }) },
         handleRowClick (item, index) {
-            this.expanded = [index.item.name]
+            if (this.expanded.length === 0 || this.expanded[0] !== index.item.name) {
+                this.expanded = [index.item.name]
+            } else {
+                this.expanded = []
+            }
         },
+
         filterSchedules () {
             // This will automatically trigger the computed property 'filteredSchedules'
         },
@@ -754,7 +786,6 @@ export default {
         },
         progressValue (item) {
             const { nextEndUTC, currentStartTime } = item
-            console.log('nextEndUTC', nextEndUTC, 'currentStartTime', currentStartTime)
 
             // Ensure the dates are converted into timestamps
             const nextEndMillis = new Date(nextEndUTC).getTime()
@@ -765,7 +796,6 @@ export default {
             }
 
             const value = Math.round(((this.now - currentStartMillis) / (nextEndMillis - currentStartMillis)) * 100)
-            console.log('value', value)
 
             return Math.min(Math.max(value, 0), 100) // Ensure the value stays between 0 and 100
         },
@@ -1106,9 +1136,9 @@ export default {
 }
 
 .main {
-    min-width: fit-content;
+    min-width: 100%;
     /* Allows content to shrink */
-    max-width: 100%;
+    max-width: fit-content;
     /* Limits container width to parent width */
     overflow: auto;
     /* Adds scrollbar if content overflows */
@@ -1119,4 +1149,9 @@ export default {
 .v-data-table tbody tr:nth-of-type(even) {
     background-color: rgba(0, 0, 0, .03);
 }
+.v-data-table__td.v-data-table-column--align-center {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+
 </style>
