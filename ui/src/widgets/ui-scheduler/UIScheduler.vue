@@ -1,7 +1,7 @@
 <!-- eslint-disable vuetify/no-deprecated-components -->
-<template class="pa-2 main">
-    <v-container class="pa-2 main" style="border: 1.5px solid grey; border-radius: 10px">
-        <v-toolbar border rounded="lg">
+<template class="pa-0 main">
+    <v-container class="pa-0 main" style="border: 1.5px solid grey; border-radius: 10px">
+        <v-toolbar border color="navigation-background" rounded="lg">
             <v-toolbar-title>{{ props.label }}</v-toolbar-title>
             <v-select
                 v-model="selectedTopic" :items="['All', ...uniqueTopics]" label="Topic"
@@ -40,11 +40,11 @@
             <template #expanded-row="{ columns, item }">
                 <tr v-if="item">
                     <td :colspan="columns.length">
-                        <v-progress-linear
-                            v-if="item.active" :color="progressColor(item)"
-                            :model-value="progressValue(item)" stream rounded :height="5"
-                        />
                         <v-card>
+                            <v-progress-linear
+                                v-if="item.active" :color="progressColor(item)"
+                                :model-value="progressValue(item)" stream rounded :height="6"
+                            />
                             <v-card-title class="d-flex align-items-center justify-space-between">
                                 <div v-if="item && item.name">
                                     <strong>Name:</strong> {{ item.name }}
@@ -53,7 +53,7 @@
                                     <em>No item selected</em>
                                 </div>
                                 <v-btn
-                                    v-if="item" icon :disabled="item.isStatic || item.readonly"
+                                    v-if="item" icon color="primary" :disabled="item.isStatic || item.readonly"
                                     @click="editSchedule(item)"
                                 >
                                     <v-icon>mdi-pencil</v-icon>
@@ -102,10 +102,10 @@
                                     <v-col v-if="item.nextDate" cols="12" sm="6">
                                         <strong>Next Date:</strong> {{ item.nextDate }}
                                     </v-col>
-                                    <v-col v-if="item.nextDescription" cols="12" sm="6">
-                                        <strong>Next Description:</strong> {{ item.nextDescription
-                                        }}
+                                    <v-col v-if="item.nextDescription" cols="12" sm="6" @click="requestStatus(item)">
+                                        <strong>Next Description:</strong> {{ item.nextDescription }}
                                     </v-col>
+
                                     <v-col cols="12" sm="6">
                                         <span v-if="item.hasDuration || item.hasEndTime">
                                             <strong>Output:</strong><em>True</em> on start and
@@ -126,7 +126,10 @@
             </template>
         </v-data-table>
 
-        <v-dialog v-model="dialog" max-width="450px">
+        <v-dialog v-model="dialog" color="background" max-width="450px">
+            <v-alert v-model="validationResult.alert" type="error" closable>
+                {{ validationResult.message }}
+            </v-alert>
             <v-card>
                 <v-card-title class="d-flex align-items-center justify-space-between">
                     <span class="text-h5">{{ isEditing ? 'Edit Schedule' : 'New Schedule' }}</span>
@@ -410,7 +413,7 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="dialogDelete" max-width="500px">
+        <v-dialog v-model="dialogDelete" color="background" max-width="500px">
             <v-card>
                 <v-card-title class="text-h6">
                     Are you sure you want to delete this schedule?
@@ -427,9 +430,11 @@
 </template>
 
 <script setup>
+// eslint-disable-next-line no-unused-vars
 import { useDisplay } from 'vuetify'
 </script>
 <script>
+import { VTimePicker } from 'vuetify/labs/VTimePicker'
 import { mapState } from 'vuex'
 
 function hsvToRgb (h, s, v) {
@@ -476,6 +481,8 @@ function hsvToRgb (h, s, v) {
 }
 
 export default {
+    name: 'UIScheduler',
+    components: { VTimePicker },
     inject: ['$socket', '$dataTracker'],
     props: {
         id: {
@@ -499,6 +506,10 @@ export default {
             isEditing: false,
             selectedTopic: 'All',
             now: new Date().getTime(),
+            validationResult: {
+                alert: false,
+                message: ''
+            },
 
             // Scheduling options
             name: '',
@@ -534,9 +545,9 @@ export default {
             expandedItem: null,
             updatingExpanded: false, // Flag to control updates
             headers: [
-                { title: 'Name', align: 'start', key: 'name', width: '0%' },
-                { title: 'Description', align: 'start', key: 'description', width: '0%' },
-                { title: 'Enabled', align: 'center', key: 'action', width: '0%' }
+                { title: 'Name', align: 'start', key: 'name' },
+                { title: 'Description', align: 'start', key: 'description' },
+                { title: 'Enabled', align: 'center', key: 'action' }
             ],
 
             // Date and time arrays
@@ -630,15 +641,25 @@ export default {
             }
         },
         filteredSchedules () {
+            if (!this.schedules) {
+                return []
+            }
+
             const filteredSchedules = this.selectedTopic === 'All'
                 ? this.schedules
                 : this.schedules.filter((schedule) => schedule.topic === this.selectedTopic)
 
-            return filteredSchedules.map((item, index) => ({
-                ...item,
-                rowNumber: index + 1
-            }))
+            return filteredSchedules.map((item, index) => {
+                if (this.$vuetify.display.xs) {
+                    return {
+                        ...item,
+                        rowNumber: index + 1
+                    }
+                }
+                return item
+            })
         },
+
         filteredHeaders () {
             return this.$vuetify.display.xs
                 ? this.headers.map((header) => {
@@ -809,9 +830,8 @@ export default {
         },
 
         saveSchedule () {
-            const validationResult = this.validateSchedule()
-            if (!validationResult.isValid) {
-                alert(validationResult.message)
+            this.validationResult = this.validateSchedule()
+            if (this.validationResult.alert) {
                 return
             }
             const newSchedule = {
@@ -871,45 +891,45 @@ export default {
                 if (!this.schedules) {
                     this.schedules = []
                 }
-                this.schedules.push(newSchedule)
+                // this.schedules.push(newSchedule)
             }
             this.sendSchedule(newSchedule)
             this.closeDialog()
         },
         validateSchedule () {
             if (!this.name) {
-                return { isValid: false, message: 'Schedule Name is required.' }
+                return { alert: true, message: 'Schedule Name is required.' }
             }
 
             const isNameDuplicate = this.schedules
                 ? this.schedules.some(
                     schedule =>
-                        schedule.name === this.name && schedule !== this.currentSchedule
+                        schedule.name === this.name && schedule !== this.currentSchedule && !this.isEditing
                 )
                 : false
             if (isNameDuplicate) {
-                return { isValid: false, message: 'Schedule Name must be unique.' }
+                return { alert: true, message: 'Schedule Name must be unique.' }
             }
 
             if (!this.topic) {
-                return { isValid: false, message: 'Topic is required.' }
+                return { alert: true, message: 'Topic is required.' }
             }
 
             if (this.scheduleType === 'time') {
                 if (['daily', 'weekly', 'monthly', 'yearly'].includes(this.period)) {
                     if (!this.time) {
-                        return { isValid: false, message: 'Start Time is required.' }
+                        return { alert: true, message: 'Start Time is required.' }
                     }
                     if (this.hasEndTime) {
                         if (!this.endTime) {
                             return {
-                                isValid: false,
+                                alert: true,
                                 message: 'End Time is required.'
                             }
                         }
                         if (this.endTime <= this.time) {
                             return {
-                                isValid: false,
+                                alert: true,
                                 message: 'End Time must be after Start Time.'
                             }
                         }
@@ -917,41 +937,41 @@ export default {
                     const days = this.getSelectedDays()
                     if (!days.length) {
                         return {
-                            isValid: false,
+                            alert: true,
                             message: `At least one day must be selected for ${this.period} period.`
                         }
                     }
                 } else if (this.period === 'minutes') {
                     if (!this.minutesInterval) {
-                        return { isValid: false, message: 'Interval is required for Minutes period.' }
+                        return { alert: true, message: 'Interval is required for Minutes period.' }
                     }
                     if (this.hasDuration && !this.duration) {
                         return {
-                            isValid: false,
+                            alert: true,
                             message: 'Duration is required when Duration is enabled for Minutes period.'
                         }
                     }
                 } else if (this.period === 'hourly') {
                     if (!this.hourlyInterval) {
-                        return { isValid: false, message: 'Interval is required for Hourly period.' }
+                        return { alert: true, message: 'Interval is required for Hourly period.' }
                     }
                     if (this.hasDuration && !this.duration) {
                         return {
-                            isValid: false,
+                            alert: true,
                             message: 'Duration is required when Duration is enabled for Hourly period.'
                         }
                     }
                 }
             } else if (this.scheduleType === 'solar') {
                 if (!this.solarEvent) {
-                    return { isValid: false, message: 'Solar Event is required.' }
+                    return { alert: true, message: 'Solar Event is required.' }
                 }
                 if (!this.offset && this.offset !== 0) {
-                    return { isValid: false, message: 'Offset is required for Solar schedule type.' }
+                    return { alert: true, message: 'Offset is required for Solar schedule type.' }
                 }
                 if (this.hasDuration && !this.duration) {
                     return {
-                        isValid: false,
+                        alert: true,
                         message: 'Duration is required when Duration is enabled for Solar schedule type.'
                     }
                 }
@@ -959,12 +979,12 @@ export default {
 
             if (this.payloadValue === null && (this.hasDuration || this.hasEndTime)) {
                 return {
-                    isValid: false,
+                    alert: true,
                     message: 'Output value is required.'
                 }
             }
 
-            return { isValid: true, message: '' }
+            return { alert: false, message: '' }
         },
 
         getSelectedDays () {
@@ -1128,30 +1148,7 @@ export default {
     }
 }
 </script>
-<style>
-.highlighted-row {
-    background-color: rgb(var(--v-theme-surface-light));
-    /* color: rgb(var(--v-theme-on-primary)); */
-    /* Customize this color as needed */
-}
 
-.main {
-    min-width: 100%;
-    /* Allows content to shrink */
-    max-width: fit-content;
-    /* Limits container width to parent width */
-    overflow: auto;
-    /* Adds scrollbar if content overflows */
-    display: inline-block;
-    /* Ensure content is scrollable if it overflows */
-}
-
-.v-data-table tbody tr:nth-of-type(even) {
-    background-color: rgba(0, 0, 0, .03);
-}
-.v-data-table__td.v-data-table-column--align-center {
-    margin-right: 0 !important;
-    padding-right: 0 !important;
-}
-
+<style scoped>
+@import "../stylesheets/ui-scheduler.css";
 </style>

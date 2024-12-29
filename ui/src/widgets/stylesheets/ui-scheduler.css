@@ -1,0 +1,28 @@
+.highlighted-row {
+    background-color: rgb(var(--v-theme-surface));
+    /* color: rgb(var(--v-theme-on-primary)); */
+    /* Customize this color as needed */
+}
+
+.main {
+    min-width: 100%;
+    /* Allows content to shrink */
+    max-width: fit-content;
+    /* Limits container width to parent width */
+    overflow: auto;
+    /* Adds scrollbar if content overflows */
+    display: inline-block;
+    /* Ensure content is scrollable if it overflows */
+}
+
+.v-data-table tbody tr:nth-of-type(even) {
+    background-color: rgba(0, 0, 0, .03);
+}
+.v-data-table__td.v-data-table-column--align-center {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
+.v-data-table__td.v-data-table-column--align-start {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+}
