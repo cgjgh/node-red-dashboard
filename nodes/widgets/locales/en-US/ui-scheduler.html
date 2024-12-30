@@ -40,6 +40,10 @@
             A timezone to use. Leave blank for system timezone. Alternatively, enter UTC or a timezone in the format of Region/Area (<a target="_blank" href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">list</a>)
             <br>
             TIP: Timezone should be perceived from your own perspective. See the <a href="#understanding-timezone">Understanding Timezone</a> example below.
+        </div>
+        <h4>24 Hour Format</h4>
+        <div style="padding-left: 15px">
+            Sets what time format is used for displaying the time. If set to <code>true</code>, the time will be displayed in 24 hour format. If set to <code>false</code>, the time will be displayed in 12 hour format.
         </div>    
         <h4>Location (optional)</h4>
         <div style="padding-left: 15px">
@@ -52,19 +56,31 @@
                 <li>2 outputs: Command responses to output 1, Schedule messages to output 2</li>
                 <li>Fan out: Separate outputs for command messages and each topic</li>
             </ul>
-        </div>    
-        <h4>Persist dynamic schedules</h4>
+        </div>
+        <h4>Send State of Schedules</h4>
         <div style="padding-left: 15px">
-            Enabling this option causes dynamic schedules to be saved to file and re-loaded when the ui-scheduler node is loaded or re-deployed. <br>
-            NOTES...
+            Send the current state of enabled schedules with a timespan to the output. This is grouped by topic, so if two schedules are <code>active</code> (in range of start and end times) for the same topic, only one message will be sent with payload <code>true</code>.
+            Likewise, if one schedule for a topic is <code>inactive</code>, and the other is <code>active</code>, only one message will be sent with payload <code>true</code>.
+            If both schedules are <code>inactive</code>, only one message will be sent with payload <code>false</code>.
             <ul>
-                <li>Any time an update to any dynamic schedule occurs, all dynamic schedules are saved to file</li>
-                <li>The schedules are saved in a directory called <code>ui-schedulerdata</code> under your node-red folder</li>
+                <li>Interval: Set the interval in seconds between messages</li>
+                <li>Active State: Send a message with payload <code>true</code> when a schedule is active</li>
+                <li>Inactive State: Send a message with payload <code>false</code> when all schedules are inactive</li>
+            </ul>
+        </div>    
+        <h4>Save State</h4>
+        <div style="padding-left: 15px">
+            Set whether to save the schedules to disk or memory.
+            <ul>
+                <li>None: Don't persist state. Schedules will be lost when the node is redeployed</li>
+                <li>Local File System: Persist state to local file system. The schedules are saved in a directory called <code>schedulerdata</code> under your node-red folder</li>
+                <li>Node Context Stores: Persist state to the node context. These will be automatically loaded from your node-red settings file. See the <a href="https://nodered.org/docs/user-guide/context">Node-RED Contexts</a> documentation for more information.</li>
             </ul>
         </div>    
         <h4>Schedules</h4>
         <div style="padding-left: 15px">
-            A table of schedules. Entries here are considered static and will be reloaded when node-red starts or the ui-scheduler node is (re)deployed.
+            A table of schedules. Entries here are considered static and will be reloaded when node-red starts or the ui-scheduler node is (re)deployed. 
+            These cannot be edited in the Node-Red Dashboard 2.0 UI.
         </div>
         <h4>Schedules - Name</h4>
         <div style="padding-left: 15px">
@@ -72,7 +88,7 @@
         </div>
         <h4>Schedules - Topic</h4>
         <div style="padding-left: 15px">
-            The topic will be sent in <code>msg.topic</code> when the schedule triggers. This is to permit the flow to act on the triggered schedule.
+            The topic will be sent in <code>msg.topic</code> when the schedule triggers. This is to permit the flow to act on the triggered schedule. Topics are defined in the the config above. 
         </div>
         <h4>Schedules - Payload</h4>
         <div style="padding-left: 15px">
@@ -180,11 +196,11 @@
         <dt><i>payload (see 'Output property')</i> <span class="property-type">number|string|boolean|object|buffer</span></dt>
         <dd>msg.[Output property] will contain whatever is configured in 'payload'</dd>
         <dd>e.g. if 'Output property' is set to <b>data.value</b> then <code>msg.data.value</code> will contain the value of the <i>payload</i></dd>
-        <dd>msg.topic will contain the name of the schedule. This simplifies separating out which schedule has triggered</dd>
+        <dd>msg.topic will contain the name of the topic. This simplifies separating out which schedule has triggered</dd>
         <dd>Additional properties are also added to the msg object. Check the debug output (use show complete msg)</dd>
     </dl>
 
-    <h3>Inputs <i>(Advanced Usage)</i></h3>
+    <!-- <h3>Inputs <i>(Advanced Usage)</i></h3>
     <dl class="message-properties">
         <dt><i>topic</i> <span class="property-type">string</span></dt>
         <dd>Most of the commands can be provided in the topic with the name of schedule in the payload (where appropriate). <br>Supported command topics... 
@@ -283,7 +299,7 @@
                 <ul>
                     <li>This option has no output.</li>
                 </ul>
-            </p>
+            </p> -->
 
             <p id="ui-scheduler-commands-info"><b>Getting status of a schedule or removing / stopping / pausing / starting a schedule</b><br><br>
                 Topic Method...<br>

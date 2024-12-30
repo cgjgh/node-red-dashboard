@@ -963,6 +963,9 @@ export default {
                     }
                 }
             } else if (this.scheduleType === 'solar') {
+                if (!this.props.defaultLocation || this.defaultLocation === '') {
+                    return { alert: true, message: 'Solar Event requires a location to be configured in editor settings.' }
+                }
                 if (!this.solarEvent) {
                     return { alert: true, message: 'Solar Event is required.' }
                 }
@@ -1082,7 +1085,7 @@ export default {
                 this.topic = null
             }
             this.period = 'daily'
-            this.dailyDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+            this.dailyDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
             this.weeklyDays = ['Monday']
             this.monthlyDays = [1]
             this.yearlyDay = 1

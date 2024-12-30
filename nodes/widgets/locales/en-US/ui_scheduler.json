@@ -1,30 +1,19 @@
 {
     "ui-scheduler": {
-        "payloadReceived": "Payload received.",
-        "invalidPayload": "Payload invalid.",
-        "contextCreated": "Context created.",
         "enabled": "enabled",
         "disabled": "disabled",
         "label": {
             "name": "Name",
             "size": "Size",
             "group": "Group",
-            "startDay": "First Day",
-            "singleOff": "Single Off",
-            "block": "Block",
-            "sendStateInterval": "Interval",
+            "sendStateInterval": "Interval(seconds)",
             "sendActiveState": "Active State",
             "sendInactiveState": "Inactive State",
-            "customPayload": "User Events",
             "on": "On",
             "off": "Off",
             "context": "Context",
-            "eventMode": "Event Mode",
-            "eventOptions": "Event Options",
             "latitude": "Latitude",
             "longitude": "Longitude",
-            "devices": "Devices",
-            "device": "Device",
             "topic": "Topic",
             "topics": "Topics"
         },
@@ -37,11 +26,6 @@
             "Friday",
             "Saturday"
         ],
-        "customPayloadDesc": "Accept free-form frontend input for events",
-        "eventModeDesc": "Schedule single events rather than a time span",
-        "singleOffDesc": "Output \"off\" payloads only at the defined end time",
-        "onlySendChangeDesc": "Block device output unless value changes",
-        "topicDesc": "Send the device name via msg.topic",
         "copy": "copy",
         "ui": {
             "start": "Start",
@@ -77,14 +61,7 @@
             "nadir": "nadir",
             "nightEnd": "night end",
             "nauticalDawn": "nautical dawn",
-            "dawn": "dawn",
-            "payloadWarning": "Invalid or no payload provided.",
-            "emptyOverview": "Nothing planned yet. Click \"Overview\" and select a device.",
-            "noActiveOverview": "No schedules are active. Click \"Overview\" and select a device.",
-            "nothingPlanned": "Nothing planned yet. Click the plus sign to add a new timer.",
-            "alertTimespan": "Time frame exceeds midnight.\nDo you want to continue?",
-            "alertTimespanDay": "Time frame must not exceed 24 hours.",
-            "selectAll": "Select All"
+            "dawn": "dawn"
         }
     }
 }

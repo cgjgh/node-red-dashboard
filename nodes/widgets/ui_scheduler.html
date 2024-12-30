@@ -1062,7 +1062,7 @@ copies or substantial portions of the Software.
                 }
 
                 // populate store names
-                const currentStore = node.storeName || ''
+                let currentStore = node.storeName || ''
                 $('#node-input-storeName').empty()
                 $('#node-input-storeName').append('<option value="">None: Don\'t persist state</option>')
                 $('#node-input-storeName').append('<option value="local_file_system">File: local file system</option>')
@@ -1076,6 +1076,9 @@ copies or substantial portions of the Software.
                     let name = item
                     if (item === defaultStore) {
                         name += ' (default)'
+                        if (currentStore === '') {
+                            currentStore = item
+                        }
                     }
                     const opt = $(`<option value="${item}">${'Node Context: ' + name}</option>`)
                     $('#node-input-storeName').append(opt)
@@ -1457,7 +1460,6 @@ copies or substantial portions of the Software.
                 })
                     .done(function (data) {
                         tzData = data
-                        console.log(tzData)
                         $('#node-input-timeZone').autocomplete({
                             source: function (request, response) {
                                 const matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), 'i')
@@ -2268,8 +2270,7 @@ copies or substantial portions of the Software.
                 node.outputs = node.commandResponseMsgOutput === 'output1' ? 1 : 2
                 node.defaultLocationType = $('#node-input-defaultLocation').typedInput('type')
                 node.defaultLocation = $('#node-input-defaultLocation').typedInput('value')
-                if (fanOut && options && options.length) {
-                    // node.outputs = options.length + 2 // in fanout mode, we add a separate output for dynamic schedules & command responses
+                if (fanOut && node.topics && node.topics.length) {
                     node.outputs = 1 + topics.length
                 }
                 $('#node-input-timeZone').off()
@@ -2528,10 +2529,6 @@ copies or substantial portions of the Software.
             <input type="text" id="node-input-label">
         </div>
         <div class="form-row ui-scheduler-form-row">
-            <label for="node-input-outputField"><i class="fa fa-sign-out"></i> Output property</label>
-            <input type="text" id="node-input-outputField" style="width: calc(100% - 130px)" placeholder="payload">
-        </div>
-        <div class="form-row ui-scheduler-form-row">
             <label for="node-input-timeZone"><i class="fa fa-globe"></i> Timezone</label>
             <input type="text" id="node-input-timeZone" style="width: calc(100% - 130px)" placeholder="Leave empty for none/system">
         </div>
@@ -2552,28 +2549,32 @@ copies or substantial portions of the Software.
             </select>
         </div>
 
-        <div class="form-row ui-scheduler-form-row">
-            <label for="node-input-send-state-container-div" style="vertical-align:top;flex-basis: 200px;">
-                <i class="fa fa-refresh"></i>
-                Send State of Schedules
+        <div class="form-row">
+            <label for="node-input-send-state-container-div" style="vertical-align:top;width:auto">
+                <i class="fa fa-refresh"></i> Send State of Schedules:
             </label>
-            <div>
+            <div id="node-input-send-state-container-div" class="form-row">
                 <span>
-                    <label for="node-input-sendStateInterval"><i class="fa fa-refresh"></i>
-                        <span data-i18n="ui-scheduler.label.sendStateInterval"></span> </label>
+                    <label style="width:auto; vertical-align:top" for="node-input-sendStateInterval"><i class="fa fa-refresh"></i>
+                        <span data-i18n="ui-scheduler.label.sendStateInterval"></span>
+                    </label>
                     <input type="number" id="node-input-sendStateInterval" min="1" max="60"
-                        style="width:10%; margin-right: 6px;" />
+                        style="display:inline-block; width:auto; vertical-align:top; margin-right:50px;" />
                 </span>
                 <span>
-                    <label for="node-input-sendActiveState"><i class="fa fa-dot-circle-o"></i> <span
-                            data-i18n="ui-scheduler.label.sendActiveState"></span> </label>
-                    <input type="checkbox" id="node-input-sendActiveState" style="width:10%; margin-right: 6px;">
+                    <label style="width:auto; vertical-align:top" for="node-input-sendActiveState"><i class="fa fa-dot-circle-o"></i>
+                        <span data-i18n="ui-scheduler.label.sendActiveState"></span>
+                    </label>
+                    <input type="checkbox" id="node-input-sendActiveState"
+                        style="display:inline-block; width:auto; vertical-align:top; margin-right:50px;">
                     <span data-i18n="ui-scheduler.sendActiveState"></span>
                 </span>
                 <span>
-                    <label for="node-input-sendInactiveState"><i class="fa fa-dot-circle-o"></i> <span
-                            data-i18n="ui-scheduler.label.sendInactiveState"></span> </label>
-                    <input type="checkbox" id="node-input-sendInactiveState" style="width:10%;">
+                    <label style="width:auto; vertical-align:top" for="node-input-sendInactiveState"><i class="fa fa-dot-circle-o"></i>
+                        <span data-i18n="ui-scheduler.label.sendInactiveState"></span>
+                    </label>
+                    <input type="checkbox" id="node-input-sendInactiveState"
+                        style="display:inline-block; width:auto; vertical-align:top; margin-right:50px;">
                     <span data-i18n="ui-scheduler.sendInactiveState"></span>
                 </span>
             </div>
@@ -2583,6 +2584,11 @@ copies or substantial portions of the Software.
             <label for="form-row node-input-topic-container-row"><i class="fa fa-plug"></i> <span
                     data-i18n="ui-scheduler.label.topics"></span> </label>
             <ol id="node-input-topic-container"></ol>
+        </div>
+        
+        <div class="form-row ui-scheduler-form-row">
+            <label for="node-input-storeName"><i class="fa fa-database"></i> Save State</label>
+            <select type="text" id="node-input-storeName" style="width: calc(100% - 130px);"></select>
         </div>
         
         <div id="node-ui-scheduler-tab-static-schedules" class="form-row ui-scheduler-form-row form-row-auto-height"
@@ -2614,8 +2620,8 @@ copies or substantial portions of the Software.
         </div>
 
         <div class="form-row ui-scheduler-form-row">
-            <label for="node-input-storeName"><i class="fa fa-database"></i> Save State</label>
-            <select type="text" id="node-input-storeName" style="width: calc(100% - 130px);"></select>
+            <label for="node-input-outputField"><i class="fa fa-sign-out"></i> Output property</label>
+            <input type="text" id="node-input-outputField" style="width: calc(100% - 130px)" placeholder="payload">
         </div>
     
         <style>

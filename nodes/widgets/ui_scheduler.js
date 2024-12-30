@@ -733,7 +733,7 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
 }
 
 function exportSchedule (schedule) {
-    const { active, nextDate, nextDescription, nextUTC, nextEndDate, nextEndDescription, nextEndUTC, ...rest } = schedule
+    const { active, nextDate, nextDescription, nextUTC, nextEndDate, nextEndDescription, nextEndUTC, currentStartTime, ...rest } = schedule
     return { ...rest }
 }
 
@@ -901,7 +901,7 @@ module.exports = function (RED) {
         node.commandResponseMsgOutput = config.commandResponseMsgOutput || 'output1'
         node.defaultLocation = config.defaultLocation
         node.defaultLocationType = config.defaultLocationType
-        node.outputs = 1
+        node.outputs = config.outputs || 1
         node.sendStateInterval = config.sendStateInterval
         node.sendActiveState = config.sendActiveState
         node.sendInactiveState = config.sendInactiveState
@@ -938,7 +938,7 @@ module.exports = function (RED) {
         if (config.commandResponseMsgOutput === 'output2') {
             node.outputs = 2 // 1 output pins (all messages), 2 outputs (schedules out of pin1, command responses out of pin2)
         } else if (config.commandResponseMsgOutput === 'fanOut') {
-            node.outputs = 2 + (node.topics ? node.topics.length : 0)
+            node.outputs = 1 + (node.topics ? node.topics.length : 0)
             node.fanOut = true
         } else {
             config.commandResponseMsgOutput = 'output1'
@@ -2076,7 +2076,12 @@ module.exports = function (RED) {
                                     console.log('Next date is after next end date')
                                     if (new Date(props.nextEndUTC) > new Date()) {
                                         props.active = true
-                                        props.currentStartTime = new Date().toISOString()
+                                        console.log('schedule', schedule)
+                                        if (schedule.duration && props.nextEndUTC) {
+                                            props.currentStartTime = new Date(new Date(props.nextEndUTC).getTime() - schedule.duration * 60000).toISOString()
+                                        } else {
+                                            props.currentStartTime = new Date().toISOString()
+                                        }
                                     } else {
                                         props.active = false
                                     }
@@ -2418,10 +2423,11 @@ module.exports = function (RED) {
                                             const offsetMinute = schedule.duration % 60
                                             endCronExpression = `${offsetMinute}-59/${schedule.minutesInterval} * * * *`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
                                         break
+
                                     case 'hourly':
                                         startCronExpression = `0 */${schedule.hourlyInterval} * * *`
                                         if (schedule.hasDuration) {
@@ -2429,56 +2435,84 @@ module.exports = function (RED) {
                                             const offsetMinute = schedule.duration % 60
                                             endCronExpression = `${offsetMinute} ${offsetHour}/${schedule.hourlyInterval} * * *`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
-
                                         break
+
                                     case 'daily':
                                         const dailyDaysOfWeek = schedule.days.length === 7 ? '*' : schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                        const startTime = new Date()
+                                        startTime.setHours(schedule.time.split(':')[0])
+                                        startTime.setMinutes(schedule.time.split(':')[1])
                                         startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${dailyDaysOfWeek}`
                                         if (schedule.hasEndTime) {
+                                            const endTime = new Date()
+                                            endTime.setHours(schedule.endTime.split(':')[0])
+                                            endTime.setMinutes(schedule.endTime.split(':')[1])
+                                            schedule.duration = (endTime - startTime) / 60000
                                             endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${dailyDaysOfWeek}`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
                                         break
+
                                     case 'weekly':
                                         const weeklyDaysOfWeek = schedule.days.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                        const startTimeWeekly = new Date()
+                                        startTimeWeekly.setHours(schedule.time.split(':')[0])
+                                        startTimeWeekly.setMinutes(schedule.time.split(':')[1])
                                         startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} * * ${weeklyDaysOfWeek}`
                                         if (schedule.hasEndTime) {
+                                            const endTimeWeekly = new Date()
+                                            endTimeWeekly.setHours(schedule.endTime.split(':')[0])
+                                            endTimeWeekly.setMinutes(schedule.endTime.split(':')[1])
+                                            schedule.duration = (endTimeWeekly - startTimeWeekly) / 60000
                                             endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} * * ${weeklyDaysOfWeek}`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
                                         break
+
                                     case 'monthly':
                                         const hasLastDay = schedule.days.includes('Last')
                                         const otherDays = schedule.days.filter(day => day !== 'Last').join(',')
-
                                         const monthlyDays = hasLastDay ? (otherDays ? `${otherDays},L` : 'L') : otherDays
-
+                                        const startTimeMonthly = new Date()
+                                        startTimeMonthly.setHours(schedule.time.split(':')[0])
+                                        startTimeMonthly.setMinutes(schedule.time.split(':')[1])
                                         startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${monthlyDays} * *`
-
                                         if (schedule.hasEndTime) {
+                                            const endTimeMonthly = new Date()
+                                            endTimeMonthly.setHours(schedule.endTime.split(':')[0])
+                                            endTimeMonthly.setMinutes(schedule.endTime.split(':')[1])
+                                            schedule.duration = (endTimeMonthly - startTimeMonthly) / 60000
                                             endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${monthlyDays} * *`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
-
                                         break
+
                                     case 'yearly':
+                                        const startTimeYearly = new Date()
+                                        startTimeYearly.setHours(schedule.time.split(':')[0])
+                                        startTimeYearly.setMinutes(schedule.time.split(':')[1])
                                         startCronExpression = `0 ${schedule.time.split(':')[1]} ${schedule.time.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
                                         if (schedule.hasEndTime) {
+                                            const endTimeYearly = new Date()
+                                            endTimeYearly.setHours(schedule.endTime.split(':')[0])
+                                            endTimeYearly.setMinutes(schedule.endTime.split(':')[1])
+                                            schedule.duration = (endTimeYearly - startTimeYearly) / 60000
                                             endCronExpression = `0 ${schedule.endTime.split(':')[1]} ${schedule.endTime.split(':')[0]} ${schedule.days} ${schedule.month.substring(0, 3).toUpperCase()} *`
                                         } else {
-                                        // Remove the end task if it exists
+                                            // Remove the end task if it exists
                                             deleteTask(node, `${schedule.name}_end_sched_type`)
                                         }
                                         break
+
                                     default:
                                         startCronExpression = '0 0 31 2 ? *' // Default to never
                                     }
