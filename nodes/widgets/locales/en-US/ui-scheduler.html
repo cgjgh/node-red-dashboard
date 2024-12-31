@@ -31,10 +31,6 @@
     <p>Schedule the injection of a payload to start a flow <span style="float: right"><button class="ui-scheduler-link-button" onclick="_popoutui-schedulerHelp()">pop out <i class="fa fa-external-link"></i></button></span></p>
     <h3>Properties</h3>
     <dl class="message-properties">
-        <h4>Output property</h4>
-        <div style="padding-left: 15px">
-            The <code>msg.</code> property to send the payload to.  Typically this would be payload.
-        </div>
         <h4>Timezone (optional)</h4>
         <div style="padding-left: 15px">
             A timezone to use. Leave blank for system timezone. Alternatively, enter UTC or a timezone in the format of Region/Area (<a target="_blank" href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones">list</a>)
@@ -68,14 +64,19 @@
                 <li>Inactive State: Send a message with payload <code>false</code> when all schedules are inactive</li>
             </ul>
         </div>    
-        <h4>Save State</h4>
+        <h4>Persist Schedules</h4>
         <div style="padding-left: 15px">
             Set whether to save the schedules to disk or memory.
             <ul>
-                <li>None: Don't persist state. Schedules will be lost when the node is redeployed</li>
-                <li>Local File System: Persist state to local file system. The schedules are saved in a directory called <code>schedulerdata</code> under your node-red folder</li>
-                <li>Node Context Stores: Persist state to the node context. These will be automatically loaded from your node-red settings file. See the <a href="https://nodered.org/docs/user-guide/context">Node-RED Contexts</a> documentation for more information.</li>
+                <li>None: Don't persist schedules. Schedules will be lost when the node is redeployed</li>
+                <li>Local File System: Persist schedules to local file system. The schedules are saved in a directory called <code>schedulerdata</code> under your node-red folder</li>
+                <li>Node Context Stores: Persist schedules to the node context. These stores will be automatically loaded from your node-red settings file. See the <a href="https://nodered.org/docs/user-guide/context">Node-RED Contexts</a> documentation for more information.</li>
             </ul>
+        </div>
+        <h4>Topics</h4>
+        <div style="padding-left: 15px">
+            A table of predefined topics. These topics can be used in the <code>Topic</code> field of schedules, and can be selected in Node-Red Dashboard 2.0 UI.
+            In Fan Out mode, schedule messages will be sent to the output corresponding to the topic.
         </div>    
         <h4>Schedules</h4>
         <div style="padding-left: 15px">
@@ -199,6 +200,11 @@
         <dd>msg.topic will contain the name of the topic. This simplifies separating out which schedule has triggered</dd>
         <dd>Additional properties are also added to the msg object. Check the debug output (use show complete msg)</dd>
     </dl>
+
+    <h4>Output property</h4>
+    <div style="padding-left: 15px">
+        The <code>msg.</code> property to send the payload to. Typically this would be payload.
+    </div>
 
     <!-- <h3>Inputs <i>(Advanced Usage)</i></h3>
     <dl class="message-properties">
@@ -482,7 +488,7 @@ msg.payload = "name"; //  name of the schedule</code></pre>
         <ul>
             <li>This example will work all year around but was written on 15th Apr as a point of reference</li>
             <li>Server is in London (GMT+1 / BST)</li>
-            <li>My wife in on holiday in Cairo (GMT+2)
+            <li>My wife is on holiday in Cairo (GMT+2)
                 <ul>
                     <li>sunrise is at 05:27 in Cairo on 15-Apr</li>
                 </ul>

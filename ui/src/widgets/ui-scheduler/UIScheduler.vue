@@ -2,12 +2,26 @@
 <template class="pa-0 main">
     <v-container class="pa-0 main" style="border: 1.5px solid grey; border-radius: 10px">
         <v-toolbar border color="navigation-background" rounded="lg">
-            <v-toolbar-title>{{ props.label }}</v-toolbar-title>
+            <v-toolbar-title
+                :class="['truncate-text', { 'text-body-1': selectedTopic !== 'All' && $vuetify.display.xs }]"
+                :style="{ margin: (selectedTopic !== 'All' && $vuetify.display.xs) ? '2px !important' : '20px' }"
+            >
+                {{ props.label }}
+            </v-toolbar-title>
             <v-select
                 v-model="selectedTopic" :items="['All', ...uniqueTopics]" label="Topic"
                 style="max-width: fit-content" rounded="lg" variant="solo-inverted"
                 @update:model-value="filterSchedules"
             />
+            <v-switch
+                v-if="selectedTopic !== 'All'"
+                v-model="anyScheduleEnabled"
+                color="primary"
+                hide-details
+                class="pl-3"
+                @click.stop="toggleAllSchedules"
+            />
+
             <v-btn @click="openDialog()">
                 <v-icon>mdi-plus</v-icon>
             </v-btn>
@@ -38,87 +52,89 @@
                 </div>
             </template>
             <template #expanded-row="{ columns, item }">
-                <tr v-if="item">
-                    <td :colspan="columns.length">
-                        <v-card>
-                            <v-progress-linear
-                                v-if="item.active" :color="progressColor(item)"
-                                :model-value="progressValue(item)" stream rounded :height="6"
-                            />
-                            <v-card-title class="d-flex align-items-center justify-space-between">
-                                <div v-if="item && item.name">
-                                    <strong>Name:</strong> {{ item.name }}
-                                </div>
-                                <div v-else>
-                                    <em>No item selected</em>
-                                </div>
-                                <v-btn
-                                    v-if="item" icon color="primary" :disabled="item.isStatic || item.readonly"
-                                    @click="editSchedule(item)"
-                                >
-                                    <v-icon>mdi-pencil</v-icon>
-                                </v-btn>
-                            </v-card-title>
-                            <v-card-text>
-                                <v-row>
-                                    <v-col v-if="item.topic" cols="12" sm="6">
-                                        <strong>Topic:</strong> {{ item.topic }}
-                                    </v-col>
-                                    <v-col v-if="item.period" cols="12" sm="6">
-                                        <strong>Period:</strong> {{ toTitleCase(item.period) }}
-                                    </v-col>
-                                    <v-col v-if="item.yearlyMonth" cols="12" sm="6">
-                                        <strong>Month:</strong> {{ item.yearlyMonth }}
-                                    </v-col>
-                                    <v-col v-if="item.days" cols="12" sm="6">
-                                        <strong>Days:</strong>
-                                        {{ item.period === 'monthly' || item.period === 'yearly' ?
-                                            item.days.join(', ') : item.days.map((day) => day.slice(0,
-                                                                                                    3)).join(', ') }}
-                                    </v-col>
-                                    <v-col v-if="item.time" cols="12" sm="6">
-                                        <strong>Start Time:</strong> {{ formatTime(item.time) }}
-                                    </v-col>
-                                    <v-col v-if="item.hasEndTime" cols="12" sm="6">
-                                        <strong>End Time:</strong>
-                                        {{ item.hasEndTime ? formatTime(item.endTime) : '-' }}
-                                    </v-col>
-                                    <v-col v-if="item.minutesInterval" cols="12" sm="6">
-                                        <strong>Interval:</strong> {{ item.minutesInterval }}
-                                    </v-col>
-                                    <v-col v-if="item.hourlyInterval" cols="12" sm="6">
-                                        <strong>Interval:</strong> {{ item.hourlyInterval }}
-                                    </v-col>
-                                    <v-col v-if="item.hasDuration" cols="12" sm="6">
-                                        <strong>Duration:</strong> {{ item.duration }}
-                                    </v-col>
-                                    <v-col v-if="item.solarEvent" cols="12" sm="6">
-                                        <strong>Solar Event:</strong> {{
-                                            mapSolarEvent(item.solarEvent) }}
-                                    </v-col>
-                                    <v-col v-if="item.offset" cols="12" sm="6">
-                                        <strong>Offset:</strong> {{ item.offset }}
-                                    </v-col>
-                                    <v-col v-if="item.nextDate" cols="12" sm="6">
-                                        <strong>Next Date:</strong> {{ item.nextDate }}
-                                    </v-col>
-                                    <v-col v-if="item.nextDescription" cols="12" sm="6" @click="requestStatus(item)">
-                                        <strong>Next Description:</strong> {{ item.nextDescription }}
-                                    </v-col>
+                <v-slide-x-transition appear>
+                    <tr v-if="item">
+                        <td :colspan="columns.length" class="px-0">
+                            <v-card>
+                                <v-progress-linear
+                                    v-if="item.active" :color="progressColor(item)"
+                                    :model-value="progressValue(item)" stream rounded :height="6"
+                                />
+                                <v-card-title class="d-flex align-items-center justify-space-between">
+                                    <div v-if="item && item.name">
+                                        <strong>Name:</strong> {{ item.name }}
+                                    </div>
+                                    <div v-else>
+                                        <em>No item selected</em>
+                                    </div>
+                                    <v-btn
+                                        v-if="item" icon color="primary" :disabled="item.isStatic || item.readonly"
+                                        @click="editSchedule(item)"
+                                    >
+                                        <v-icon>mdi-pencil</v-icon>
+                                    </v-btn>
+                                </v-card-title>
+                                <v-card-text>
+                                    <v-row>
+                                        <v-col v-if="item.topic" cols="12" sm="6">
+                                            <strong>Topic:</strong> {{ item.topic }}
+                                        </v-col>
+                                        <v-col v-if="item.period" cols="12" sm="6">
+                                            <strong>Period:</strong> {{ toTitleCase(item.period) }}
+                                        </v-col>
+                                        <v-col v-if="item.yearlyMonth" cols="12" sm="6">
+                                            <strong>Month:</strong> {{ item.yearlyMonth }}
+                                        </v-col>
+                                        <v-col v-if="item.days" cols="12" sm="6">
+                                            <strong>Days:</strong>
+                                            {{ item.period === 'monthly' || item.period === 'yearly' ?
+                                                item.days.join(', ') : item.days.map((day) => day.slice(0,
+                                                                                                        3)).join(', ') }}
+                                        </v-col>
+                                        <v-col v-if="item.time" cols="12" sm="6">
+                                            <strong>Start Time:</strong> {{ formatTime(item.time) }}
+                                        </v-col>
+                                        <v-col v-if="item.hasEndTime" cols="12" sm="6">
+                                            <strong>End Time:</strong>
+                                            {{ item.hasEndTime ? formatTime(item.endTime) : '-' }}
+                                        </v-col>
+                                        <v-col v-if="item.minutesInterval" cols="12" sm="6">
+                                            <strong>Interval:</strong> {{ item.minutesInterval }}
+                                        </v-col>
+                                        <v-col v-if="item.hourlyInterval" cols="12" sm="6">
+                                            <strong>Interval:</strong> {{ item.hourlyInterval }}
+                                        </v-col>
+                                        <v-col v-if="item.hasDuration" cols="12" sm="6">
+                                            <strong>Duration:</strong> {{ item.duration }}
+                                        </v-col>
+                                        <v-col v-if="item.solarEvent" cols="12" sm="6">
+                                            <strong>Solar Event:</strong> {{
+                                                mapSolarEvent(item.solarEvent) }}
+                                        </v-col>
+                                        <v-col v-if="item.offset" cols="12" sm="6">
+                                            <strong>Offset:</strong> {{ item.offset }}
+                                        </v-col>
+                                        <v-col v-if="item.nextDate" cols="12" sm="6">
+                                            <strong>Next Date:</strong> {{ item.nextDate }}
+                                        </v-col>
+                                        <v-col v-if="item.nextDescription" cols="12" sm="6" @click="requestStatus(item)">
+                                            <strong>Next Description:</strong> {{ item.nextDescription }}
+                                        </v-col>
 
-                                    <v-col cols="12" sm="6">
-                                        <span v-if="item.hasDuration || item.hasEndTime">
-                                            <strong>Output:</strong><em>True</em> on start and
-                                            <em>False</em> on end.
-                                        </span>
-                                        <span v-else-if="item.payloadValue"><strong>Output:</strong> {{
-                                            item.payloadValue }}</span>
-                                    </v-col>
-                                </v-row>
-                            </v-card-text>
-                        </v-card>
-                    </td>
-                </tr>
+                                        <v-col cols="12" sm="6">
+                                            <span v-if="item.hasDuration || item.hasEndTime">
+                                                <strong>Output:</strong><em>True</em> on start and
+                                                <em>False</em> on end.
+                                            </span>
+                                            <span v-else-if="item.payloadValue"><strong>Output:</strong> {{
+                                                item.payloadValue }}</span>
+                                        </v-col>
+                                    </v-row>
+                                </v-card-text>
+                            </v-card>
+                        </td>
+                    </tr>
+                </v-slide-x-transition>
             </template>
 
             <template #no-data>
@@ -126,7 +142,7 @@
             </template>
         </v-data-table>
 
-        <v-dialog v-model="dialog" color="background" max-width="450px">
+        <v-dialog v-model="dialog" fullscreen color="background" max-width="450px">
             <v-alert v-model="validationResult.alert" type="error" closable>
                 {{ validationResult.message }}
             </v-alert>
@@ -340,7 +356,7 @@
                                     v-model="hasEndTime" mandatory divided variant="elevated" border="sm"
                                     rounded="xl" @update:model-value="setEndTime"
                                 >
-                                    <v-btn :value="false">No End Time</v-btn>
+                                    <v-btn :value="false">None</v-btn>
                                     <v-btn :value="true">End Time</v-btn>
                                 </v-btn-toggle>
                             </v-col>
@@ -375,7 +391,7 @@
                                     v-model="hasDuration" mandatory divided variant="elevated" border="sm"
                                     rounded="xl"
                                 >
-                                    <v-btn :value="false">No Duration</v-btn>
+                                    <v-btn :value="false">None</v-btn>
                                     <v-btn :value="true">Duration</v-btn>
                                 </v-btn-toggle>
                             </v-col>
@@ -413,15 +429,15 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="dialogDelete" color="background" max-width="500px">
+        <v-dialog v-model="dialogDelete" min-width="fit-content" scrim="red-darken-4" color="background" max-width="500px">
             <v-card>
-                <v-card-title class="text-h6">
+                <v-card-title class="text-body-2 text-center">
                     Are you sure you want to delete this schedule?
                 </v-card-title>
                 <v-card-actions>
                     <v-spacer />
-                    <v-btn variant="tonal" @click="closeDelete">Cancel</v-btn>
                     <v-btn variant="tonal" color="error" @click="deleteConfirm">Delete</v-btn>
+                    <v-btn variant="tonal" @click="closeDelete">Cancel</v-btn>
                     <v-spacer />
                 </v-card-actions>
             </v-card>
@@ -595,6 +611,9 @@ export default {
             set (value) {
                 this.items = value
             }
+        },
+        anyScheduleEnabled () {
+            return this.filteredSchedules.some((schedule) => schedule.enabled)
         },
         formattedTime () {
             if (!this.time) return ''
@@ -895,6 +914,7 @@ export default {
             }
             this.sendSchedule(newSchedule)
             this.closeDialog()
+            this.expanded = []
         },
         validateSchedule () {
             if (!this.name) {
@@ -1011,6 +1031,18 @@ export default {
                 })
             }
         },
+        toggleAllSchedules () {
+            const enabled = !this.anyScheduleEnabled
+            const names = this.filteredSchedules.map(schedule => schedule.name).filter(name => name)
+
+            if (names.length > 0) {
+                this.$socket.emit('setEnabled', this.id, {
+                    _event: 'setEnabled',
+                    payload: { names, enabled }
+                })
+            }
+        },
+
         requestStatus (item) {
             if (item.name) {
                 this.$socket.emit('requestStatus', this.id, {
@@ -1152,6 +1184,6 @@ export default {
 }
 </script>
 
-<style scoped>
+<style>
 @import "../stylesheets/ui-scheduler.css";
 </style>

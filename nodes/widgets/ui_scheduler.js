@@ -2709,46 +2709,50 @@ module.exports = function (RED) {
 
                 setEnabled: function (conn, id, msg) {
                     console.log('setEnabled', msg)
-                    if (msg?.payload?.name) {
-                        // Get the schedules property from the statestore
-                        const schedules = base.stores.state.getProperty(node.id, 'schedules') || []
 
-                        // Find the schedule
-                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === msg.payload.name)
+                    // Get the schedules property from the statestore
+                    const schedules = base.stores.state.getProperty(node.id, 'schedules') || []
+
+                    // Helper function to handle enabling/disabling tasks
+                    const handleTask = (name, enabled) => {
+                        const scheduleIndex = schedules.findIndex(schedule => schedule.name === name)
 
                         if (scheduleIndex !== -1) {
-                            // Get the schedule
                             const schedule = schedules[scheduleIndex]
 
-                            // Get the enable status from the message payload
-                            const enabled = msg.payload.enabled
-
-                            // Start or stop the task based on the enabled status
                             if (enabled) {
-                                startTask(node, msg.payload.name)
-                                console.log('Task started')
-                                // Start end task if schedule has end time
+                                startTask(node, name)
+                                console.log('Task started for', name)
                                 if (schedule.hasEndTime || schedule.hasDuration) {
-                                    startTask(node, `${schedule.name}_end_sched_type`)
-                                    console.log('End task started')
+                                    startTask(node, `${name}_end_sched_type`)
+                                    console.log('End task started for', name)
                                 }
                             } else {
-                                stopTask(node, msg.payload.name, true)
-                                console.log('Task stopped')
-                                // Stop end task if schedule has end time
+                                stopTask(node, name, true)
+                                console.log('Task stopped for', name)
                                 if (schedule.hasEndTime || schedule.hasDuration) {
-                                    stopTask(node, `${schedule.name}_end_sched_type`, true)
-                                    console.log('End task stopped')
+                                    stopTask(node, `${name}_end_sched_type`, true)
+                                    console.log('End task stopped for', name)
                                 }
                             }
 
                             updateNextStatus(node, true)
-                            requestSerialisation() // Update persistence
-
-                            // Send the updated schedules
-                            node.send(msg)
                         }
                     }
+
+                    // Process the payload if it contains an array of names
+                    if (Array.isArray(msg?.payload?.names) && msg.payload.names.length > 0) {
+                        msg.payload.names.forEach(name => handleTask(name, msg.payload.enabled))
+                    } else if (msg?.payload?.name) {
+                    // Process the payload if it contains a single name as a string
+
+                        handleTask(msg.payload.name, msg.payload.enabled)
+                    }
+
+                    requestSerialisation() // Update persistence
+
+                    // Send the updated schedules
+                    node.send(msg)
                 },
 
                 requestStatus: function (conn, id, msg) {

@@ -15,14 +15,25 @@
     /* Ensure content is scrollable if it overflows */
 }
 
+ /* even rows color */
 .v-data-table tbody tr:nth-of-type(even) {
     background-color: rgba(0, 0, 0, .03);
 }
+
+/* end column  */
 .v-data-table__td.v-data-table-column--align-center {
     margin-right: 0 !important;
     padding-right: 0 !important;
 }
+
+/* start column  */
 .v-data-table__td.v-data-table-column--align-start {
     margin-right: 0 !important;
     padding-right: 0 !important;
+}
+
+.truncate-text {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
