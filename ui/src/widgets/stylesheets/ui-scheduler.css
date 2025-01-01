@@ -37,3 +37,12 @@
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
+
+.bordered-card {
+  border: 1px solid var(--v-theme-group-outline);
+}
+
+.border-none {
+  border: none;
+}
+

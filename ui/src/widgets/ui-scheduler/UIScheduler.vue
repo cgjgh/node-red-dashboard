@@ -14,12 +14,8 @@
                 @update:model-value="filterSchedules"
             />
             <v-switch
-                v-if="selectedTopic !== 'All'"
-                v-model="anyScheduleEnabled"
-                color="primary"
-                hide-details
-                class="pl-3"
-                @click.stop="toggleAllSchedules"
+                v-if="selectedTopic !== 'All'" v-model="anyScheduleEnabled" color="primary" hide-details
+                class="pl-3" @click.stop="toggleAllSchedules"
             />
 
             <v-btn @click="openDialog()">
@@ -29,7 +25,7 @@
         <v-data-table
             v-model:expanded="expanded" :headers="filteredHeaders" :items="filteredSchedules"
             hide-default-footer density="compact" :show-expand="!$vuetify.display.xs" item-value="name"
-            :expand="expandedItem" @click:row="handleRowClick"
+            :expand="expandedItem" items-per-page @click:row="handleRowClick"
         >
             <template #item.rowNumber="{ item }">
                 <v-chip :color="item.active === undefined ? 'gray' : (item.active ? 'green' : 'red')">
@@ -117,7 +113,10 @@
                                         <v-col v-if="item.nextDate" cols="12" sm="6">
                                             <strong>Next Date:</strong> {{ item.nextDate }}
                                         </v-col>
-                                        <v-col v-if="item.nextDescription" cols="12" sm="6" @click="requestStatus(item)">
+                                        <v-col
+                                            v-if="item.nextDescription" cols="12" sm="6"
+                                            @click="requestStatus(item)"
+                                        >
                                             <strong>Next Description:</strong> {{ item.nextDescription }}
                                         </v-col>
 
@@ -142,11 +141,14 @@
             </template>
         </v-data-table>
 
-        <v-dialog v-model="dialog" fullscreen color="background" max-width="450px">
-            <v-alert v-model="validationResult.alert" type="error" closable>
+        <v-dialog v-model="dialog" :fullscreen="$vuetify.display.xs" rounded="lg" color="background" max-width="450px">
+            <v-alert
+                v-model="validationResult.alert" location="top center" elevation="24" min-height="fit-content"
+                position="relative" type="error" closable
+            >
                 {{ validationResult.message }}
             </v-alert>
-            <v-card>
+            <v-card :class="{ 'bordered-card': !$vuetify.display.xs, 'border-none': $vuetify.display.xs }">
                 <v-card-title class="d-flex align-items-center justify-space-between">
                     <span class="text-h5">{{ isEditing ? 'Edit Schedule' : 'New Schedule' }}</span>
                     <div class="d-flex align-items-center">
@@ -429,7 +431,10 @@
             </v-card>
         </v-dialog>
 
-        <v-dialog v-model="dialogDelete" min-width="fit-content" scrim="red-darken-4" color="background" max-width="500px">
+        <v-dialog
+            v-model="dialogDelete" min-width="fit-content" scrim="red-darken-4" color="background"
+            max-width="500px"
+        >
             <v-card>
                 <v-card-title class="text-body-2 text-center">
                     Are you sure you want to delete this schedule?
@@ -514,10 +519,16 @@ export default {
             default: () => ({})
         }
     },
+    // setup () {
+    //     const { mobile } = useDisplay()
+
+    //     return {
+    //         isMobile: mobile
+    //     }
+    // },
     data () {
         return {
             // General state
-            items: null,
             currentSchedule: null,
             isEditing: false,
             selectedTopic: 'All',
@@ -604,13 +615,8 @@ export default {
 
     computed: {
         ...mapState('data', ['messages']),
-        schedules: {
-            get () {
-                return this.items || this.getProperty('schedules')
-            },
-            set (value) {
-                this.items = value
-            }
+        schedules () {
+            return this.getProperty('schedules') || []
         },
         anyScheduleEnabled () {
             return this.filteredSchedules.some((schedule) => schedule.enabled)
@@ -626,7 +632,7 @@ export default {
         durationItems () {
             if (this.scheduleType === 'time') {
                 if (this.period === 'minutes') {
-                    return this.generateNumberArray(1, this.minutesInterval)
+                    return this.generateNumberArray(1, this.minutesInterval - 1)
                 } else if (this.period === 'hourly') {
                     return this.generateNumberArray(1, (this.hourlyInterval * 60) - 1)
                 }
@@ -721,7 +727,24 @@ export default {
             if (this.yearlyDay > maxDays) {
                 this.yearlyDay = null // Reset if the selected day is no longer valid
             }
+        },
+        hasDuration (value) {
+            if (this.period === 'minutes') {
+                if (!this.durationItems.includes((this.minutesInterval ?? 0) - 1)) {
+                    this.duration = null
+                    this.hasDuration = false
+                }
+            }
+        },
+        minutesInterval (value) {
+            if (this.period === 'minutes') {
+                if (!this.durationItems.includes(value - 1)) {
+                    this.duration = null
+                    this.hasDuration = false
+                }
+            }
         }
+
     },
 
     created () {
@@ -746,7 +769,7 @@ export default {
             if (msg) {
                 this.$store.commit('data/bind', { widgetId: this.id, msg })
                 if (msg.payload !== undefined) {
-                    this.schedules = msg.payload?.schedules || []
+                    this.updateDynamicProperty('schedules', msg.payload?.schedules || [])
                 }
             }
         },
@@ -755,16 +778,11 @@ export default {
             console.log('onInput', msg)
         },
         onDynamicProperties (msg) {
-            const schedules = msg.ui_update?.schedules
-            if (schedules) {
-                if (Array.isArray(schedules)) {
-                    this.schedules = schedules || []
-                }
-            }
             const updates = msg.ui_update
-            if (updates) {
-                // handle updates if needed
+            if (!updates) {
+                return
             }
+            this.updateDynamicProperty('schedules', updates.schedules)
         },
         isRowExpanded (item) { return this.expanded.includes(item.name) },
         highlightExpandedRow () { const rows = this.$el.querySelectorAll('tr'); rows.forEach(row => { const itemName = row.querySelector('td:first-child')?.textContent.trim(); if (this.expanded.includes(itemName)) { row.classList.add('highlighted-row') } else { row.classList.remove('highlighted-row') } }) },
@@ -781,6 +799,9 @@ export default {
         },
         generateNumberArray (min, max) {
             const array = []
+            if (min > max) {
+                return array
+            }
             for (let i = min; i <= max; i++) {
                 array.push(i)
             }
@@ -798,8 +819,8 @@ export default {
             return found ? (toTitle ? found.title : found.value) : event
         },
         sendSchedule (schedule) {
-            const msg = { _event: 'submit', payload: { schedules: [schedule] } }
-            this.$socket.emit('submit', this.id, msg)
+            const msg = { action: 'submit', payload: { schedules: [schedule] } }
+            this.$socket.emit('widget-action', this.id, msg)
         },
         formatTime (time) {
             if (!time) return ''
@@ -823,6 +844,10 @@ export default {
         },
         closeDialog () {
             this.dialog = false
+            this.validationResult = {
+                alert: false,
+                message: ''
+            }
         },
         progressValue (item) {
             const { nextEndUTC, currentStartTime } = item
@@ -908,7 +933,7 @@ export default {
                 Object.assign(this.currentSchedule, newSchedule)
             } else {
                 if (!this.schedules) {
-                    this.schedules = []
+                    this.updateDynamicProperty('schedules', [])
                 }
                 // this.schedules.push(newSchedule)
             }
@@ -1025,8 +1050,8 @@ export default {
         toggleSchedule (item) {
             const enabled = !item.enabled
             if (item.name) {
-                this.$socket.emit('setEnabled', this.id, {
-                    _event: 'setEnabled',
+                this.$socket.emit('widget-action', this.id, {
+                    action: 'setEnabled',
                     payload: { name: item.name, enabled }
                 })
             }
@@ -1036,8 +1061,8 @@ export default {
             const names = this.filteredSchedules.map(schedule => schedule.name).filter(name => name)
 
             if (names.length > 0) {
-                this.$socket.emit('setEnabled', this.id, {
-                    _event: 'setEnabled',
+                this.$socket.emit('widget-action', this.id, {
+                    action: 'setEnabled',
                     payload: { names, enabled }
                 })
             }
@@ -1045,8 +1070,8 @@ export default {
 
         requestStatus (item) {
             if (item.name) {
-                this.$socket.emit('requestStatus', this.id, {
-                    _event: 'requestStatus',
+                this.$socket.emit('widget-action', this.id, {
+                    action: 'requestStatus',
                     payload: {
                         name: item.name
                     }
@@ -1168,11 +1193,11 @@ export default {
         },
         deleteConfirm () {
             if (this.currentSchedule) {
-                const index = this.schedules.indexOf(this.currentSchedule)
+                const index = this.schedules.findIndex(schedule => schedule.name === this.currentSchedule.name)
                 if (index > -1) {
                     this.schedules.splice(index, 1)
-                    this.$socket.emit('remove', this.id, {
-                        _event: 'remove',
+                    this.$socket.emit('widget-action', this.id, {
+                        action: 'remove',
                         payload: { name: this.currentSchedule.name }
                     })
                 }
