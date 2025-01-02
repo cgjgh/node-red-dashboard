@@ -932,12 +932,12 @@ copies or substantial portions of the Software.
             category: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.label.category'),
             color: RED._('@flowfuse/node-red-dashboard/ui-base:ui-base.colors.light'),
             defaults: {
-                name: { value: '' },
+                name: { value: 'scheduler' },
                 group: { type: 'ui-group', required: true },
                 order: { value: 0 },
                 label: { value: 'Scheduler' },
                 width: {
-                    value: 0,
+                    value: 6,
                     validate: function (v) {
                         const width = v || 0
                         const currentGroup = $('#node-input-group').val() || this.group
@@ -947,12 +947,13 @@ copies or substantial portions of the Software.
                         return valid
                     }
                 },
-                height: { value: 0 },
+                height: { value: 1 },
                 // FUTURE config: { type: "ui-scheduler Config" },
                 outputField: { value: 'payload' },
                 timeZone: { value: '' },
                 use24HourFormat: { value: false },
-                storeName: { value: '' },
+                useNewTimePicker: { value: false },
+                storeName: { value: 'NONE' },
                 commandResponseMsgOutput: { value: 'fanOut' },
                 defaultLocation: { value: '' },
                 defaultLocationType: { value: '' },
@@ -1011,7 +1012,7 @@ copies or substantial portions of the Software.
             inputs: 1,
             outputs: 1,
             icon: 'font-awesome/fa-clock-o',
-            paletteLabel: 'ui-scheduler',
+            paletteLabel: 'scheduler',
             label: function () { return this.name || (~this.label.indexOf('{' + '{') ? null : this.label) || 'Scheduler' },
             outputLabels: function (index) {
                 const node = this
@@ -1062,30 +1063,26 @@ copies or substantial portions of the Software.
                 }
 
                 // populate store names
-                let currentStore = node.storeName || ''
+                const currentStore = node.storeName || 'NONE'
                 $('#node-input-storeName').empty()
-                $('#node-input-storeName').append('<option value="">None: Don\'t persist state</option>')
+                $('#node-input-storeName').append('<option value="NONE">None: Don\'t persist state</option>')
                 $('#node-input-storeName').append('<option value="local_file_system">File: local file system</option>')
-                console.log(RED.settings.context.stores)
                 RED.settings.context.stores.forEach(function (item) {
                     console.log(item)
-                    const defaultStore = hasProperty(RED.settings, 'context') ? RED.settings.context.default : ''
+                    const defaultStore = hasProperty(RED.settings, 'context') ? RED.settings.context.default : 'NONE'
                     if (!item) {
                         return // skip empty store names
                     }
                     let name = item
                     if (item === defaultStore) {
                         name += ' (default)'
-                        if (currentStore === '') {
-                            currentStore = item
-                        }
                     }
                     const opt = $(`<option value="${item}">${'Node Context: ' + name}</option>`)
                     $('#node-input-storeName').append(opt)
                 })
 
                 // if the store does not exist, add it to the dropdown and select it (appended with the text "NOT AVAILABLE!")
-                if (currentStore && currentStore !== 'local_file_system' && RED.settings.context.stores.indexOf(currentStore) === -1) {
+                if (currentStore !== 'NONE' && currentStore !== 'local_file_system' && RED.settings.context.stores.indexOf(currentStore) === -1) {
                     const opt = $(`<option selected disabled style="color: var(--red-ui-text-color-error) !important;" value="${currentStore}">${'Node Context: ' + currentStore + ' (INVALID)'}</option>`)
                     $('#node-input-storeName').append(opt)
                 } else {
@@ -2622,6 +2619,10 @@ copies or substantial portions of the Software.
         <div class="form-row ui-scheduler-form-row">
             <label for="node-input-outputField"><i class="fa fa-sign-out"></i> Output property</label>
             <input type="text" id="node-input-outputField" style="width: calc(100% - 130px)" placeholder="payload">
+        </div>
+        <div class=" form-row ui-scheduler-form-row">
+            <label for="node-input-useNewTimePicker"><i class="fa fa-clock-o"></i> Use new timepicker (if available)</label>
+            <input type="checkbox" id="node-input-useNewTimePicker" style="display: inline-block; width: auto; margin: 0px 0px 0px 4px;">
         </div>
     
         <style>

@@ -927,7 +927,7 @@ module.exports = function (RED) {
             node.storeName = config.storeName
         } else {
             // default
-            node.storeName = ''
+            node.storeName = 'NONE'
         }
 
         if (node.storeName && node.storeName !== 'local_file_system' && STORE_NAMES.indexOf(node.storeName) < 0) {
@@ -2146,6 +2146,10 @@ module.exports = function (RED) {
                     dynamicSchedules: dynNodesExp,
                     staticSchedules: statNodesExp
                 }
+                if (node.storeName === 'NONE') {
+                    return
+                }
+
                 if (node.storeName === 'local_file_system') {
                     try {
                         filePath = getPersistFilePath()
@@ -2178,6 +2182,11 @@ module.exports = function (RED) {
         }
         async function deserialise () {
             let filePath = ''
+            const sendEmptyArray = () => {
+                const msg = { ui_update: { schedules: [] }, event: 'init' }
+                base.emit('msg-input:' + node.id, msg, node)
+                base.stores.state.set(base, node, null, 'schedules', [])
+            }
             try {
                 // if (!node.persistDynamic) {
                 //     return
@@ -2185,8 +2194,10 @@ module.exports = function (RED) {
                 if (!FSAvailable && node.storeName === 'local_file_system') {
                     return
                 }
+
                 const restoreState = async (state) => {
                     if (!state) {
+                        sendEmptyArray()
                         return // nothing to add
                     }
                     if (state.staticSchedules && state.staticSchedules.length) {
@@ -2205,7 +2216,8 @@ module.exports = function (RED) {
                         updateNodeNextInfo(node)
                     }
                     if (state.dynamicSchedules && state.dynamicSchedules.length) {
-                        const uiSchedules = base.stores.state.getProperty(node.id, 'schedules') || []
+                        // eslint-disable-next-line prefer-const
+                        let uiSchedules = []
                         for (let iOpt = 0; iOpt < state.dynamicSchedules.length; iOpt++) {
                             const opt = state.dynamicSchedules[iOpt]
                             let task
@@ -2242,6 +2254,10 @@ module.exports = function (RED) {
                         base.emit('msg-input:' + node.id, msg, node)
                     }
                 }
+                if (node.storeName === 'NONE') {
+                    sendEmptyArray()
+                    return
+                }
                 if (node.storeName === 'local_file_system') {
                     filePath = getPersistFilePath()
                     if (fs.existsSync(filePath)) {
@@ -2249,6 +2265,7 @@ module.exports = function (RED) {
                         const state = JSON.parse(fileData)
                         await restoreState(state)
                     } else {
+                        sendEmptyArray()
                         RED.log.debug(`scheduler: no persistence data found for node '${node.id}'.`)
                     }
                 } else {
@@ -2256,12 +2273,14 @@ module.exports = function (RED) {
                     const storeName = node.storeName || 'default'
                     const contextKey = 'state'
                     if (!contextAvailable || !STORE_NAMES.indexOf(storeName)) {
+                        sendEmptyArray()
                         return
                     }
                     const state = await contextGet(node.context(), contextKey, storeName)
                     await restoreState(state)
                 }
             } catch (error) {
+                sendEmptyArray()
                 node.error(`scheduler: Error loading persistence data '${filePath}'. ${error.message}`)
             }
         }
@@ -2643,8 +2662,8 @@ module.exports = function (RED) {
                     const m = { ui_update: { schedules }, event: 'remove', schedule: msg.payload.name }
                     base.emit('msg-input:' + node.id, m, node)
                 } else {
-                    console.log('Schedule not found for', name)
-                    node.warn('No schedule found for', name)
+                    console.log('Schedule not found for', msg?.payload?.name)
+                    node.warn('No schedule found for', msg?.payload?.name)
                 }
             }
         }
@@ -2784,7 +2803,7 @@ module.exports = function (RED) {
     }
 
     function getStoreNames () {
-        const stores = ['', 'local_file_system']
+        const stores = ['NONE', 'local_file_system']
         if (!RED.settings.contextStorage) {
             return stores
         }

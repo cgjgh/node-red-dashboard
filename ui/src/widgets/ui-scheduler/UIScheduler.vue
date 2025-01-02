@@ -312,9 +312,9 @@
                                 class="d-flex justify-center"
                             >
                                 <v-text-field
-                                    v-model="formattedTime" :active="modalTime" :focused="modalTime"
-                                    label="Start Time" prepend-icon="mdi-clock-time-four-outline" readonly
-                                    :rules="[rules.required]"
+                                    v-if="props.useNewTimePicker" v-model="formattedTime" :active="modalTime"
+                                    :focused="modalTime" label="Start Time" prepend-icon="mdi-clock-time-four-outline"
+                                    readonly :rules="[rules.required]"
                                 >
                                     <v-dialog v-model="modalTime" activator="parent" width="auto">
                                         <v-time-picker
@@ -325,6 +325,11 @@
                                         />
                                     </v-dialog>
                                 </v-text-field>
+
+                                <v-text-field
+                                    v-else v-model="time" label="Start Time"
+                                    prepend-icon="mdi-clock-time-four-outline" type="time" :rules="[rules.required]"
+                                />
                             </v-col>
 
                             <v-col
@@ -332,9 +337,9 @@
                                 class="d-flex justify-center"
                             >
                                 <v-text-field
-                                    v-model="formattedEndTime" :active="modalEndTime" :focused="modalEndTime"
-                                    label="End Time" prepend-icon="mdi-clock-time-four-outline" readonly
-                                    :rules="[rules.endTimeRule]"
+                                    v-if="props.useNewTimePicker" v-model="formattedEndTime"
+                                    :active="modalEndTime" :focused="modalEndTime" label="End Time"
+                                    prepend-icon="mdi-clock-time-four-outline" readonly :rules="[rules.endTimeRule]"
                                 >
                                     <v-dialog v-model="modalEndTime" activator="parent" width="auto">
                                         <v-time-picker
@@ -344,6 +349,12 @@
                                         />
                                     </v-dialog>
                                 </v-text-field>
+
+                                <v-text-field
+                                    v-else v-model="endTime" label="End Time"
+                                    prepend-icon="mdi-clock-time-four-outline" type="time"
+                                    :rules="[rules.endTimeRule]"
+                                />
                             </v-col>
                             <v-divider inset />
 
@@ -455,7 +466,6 @@
 import { useDisplay } from 'vuetify'
 </script>
 <script>
-import { VTimePicker } from 'vuetify/labs/VTimePicker'
 import { mapState } from 'vuex'
 
 function hsvToRgb (h, s, v) {
@@ -503,7 +513,6 @@ function hsvToRgb (h, s, v) {
 
 export default {
     name: 'UIScheduler',
-    components: { VTimePicker },
     inject: ['$socket', '$dataTracker'],
     props: {
         id: {
@@ -689,7 +698,7 @@ export default {
             return this.$vuetify.display.xs
                 ? this.headers.map((header) => {
                     if (header.key === 'name') {
-                        return { title: 'No.', align: 'start', key: 'rowNumber', width: '0%' }
+                        return { title: '#', align: 'start', key: 'rowNumber', width: '0%' }
                     }
                     return header
                 })
@@ -1209,6 +1218,6 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 @import "../stylesheets/ui-scheduler.css";
 </style>
