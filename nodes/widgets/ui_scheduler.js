@@ -20,7 +20,7 @@ const fs = require('fs')
 const path = require('path')
 
 const coordParser = require('coord-parser')
-const cronosjs = require('cronosjs')
+const cronosjs = require('cronosjs-extended')
 const cronstrue = require('cronstrue')
 const prettyMs = require('pretty-ms')
 const SunCalc = require('suncalc2')
@@ -239,6 +239,16 @@ function isDateSequence (data) {
     return false
 }
 
+async function executeWithTimeLimit (action, timeLimit) {
+    const timeoutPromise = new Promise((resolve, reject) => {
+        setTimeout(() => {
+            reject(new Error('Async action timed out'))
+        }, timeLimit)
+    })
+
+    return Promise.race([action(), timeoutPromise])
+}
+
 /**
  * Returns an object describing the parameters.
  * @param {string} expression The expressions or coordinates to use
@@ -293,16 +303,23 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
             result.nowOffset = nowOffset
             ds = parseDateSequence(result.eventTimes.map((event) => event.timeOffset))
             dsOk = ds && ds.isDateSequence
+            result.valid = dsOk
         }
     } else {
         if (expressionType === 'cron' || expressionType === '') {
+            console.log('Expression: ', expression)
             exOk = cronosjs.validate(expression)
+            console.log('Expression Valid: ', expression)
+
+            result.valid = exOk
         } else {
             ds = parseDateSequence(expression)
             dsOk = ds.isDateSequence
+            result.valid = dsOk
         }
         if (!exOk && !dsOk) {
             result.description = 'Invalid expression'
+            result.valid = false
             return result
         }
     }
@@ -345,6 +362,155 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
             } catch (error) {
                 console.debug(error)
             }
+        } else {
+            result.description = 'Invalid expression'
+            result.valid = false
+            return result
+        }
+        result.description = humanizeCron(expression, null, use24HourFormat)
+        result.nextDate = next
+    }
+    return result
+}
+
+async function _asyncDescribeExpression (expression, expressionType, timeZone, offset, solarType, solarEvents, time, opts, use24HourFormat = true) {
+    const now = time ? new Date(time) : new Date()
+    opts = opts || {}
+    let result = { description: undefined, nextDate: undefined, nextDescription: undefined, prettyNext: 'Never' }
+    const cronOpts = timeZone ? { timezone: timeZone } : undefined
+    let ds = null
+    let dsOk = false
+    let exOk = false
+    // let now = new Date();
+
+    if (solarType === 'all') {
+        solarEvents = PERMITTED_SOLAR_EVENTS.join(',')
+    }
+
+    if (expressionType === 'solar') {
+        const opt = {
+            locationType: opts.locationType || opts.defaultLocationType,
+            defaultLocationType: opts.defaultLocationType,
+            defaultLocation: opts.defaultLocation,
+            expressionType,
+            location: expression,
+            offset: offset || 0,
+            name: 'dummy',
+            solarType,
+            solarEvents,
+            payloadType: 'default',
+            payload: ''
+        }
+
+        if (validateOpt(opt)) {
+            const pos = coordParser(opt.location)
+            const offset = isNumber(opt.offset) ? parseInt(opt.offset) : 0
+            const nowOffset = new Date(now.getTime() - offset * 60000)
+            result = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, now, offset)
+            // eslint-disable-next-line eqeqeq
+            if (opts.includeSolarStateOffset && offset != 0) {
+                const ssOffset = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, nowOffset, 0)
+                result.solarStateOffset = ssOffset.solarState
+            }
+            result.offset = offset
+            result.now = now
+            result.nowOffset = nowOffset
+            ds = parseDateSequence(result.eventTimes.map((event) => event.timeOffset))
+            dsOk = ds && ds.isDateSequence
+            result.valid = dsOk
+        }
+    } else {
+        if (expressionType === 'cron' || expressionType === '') {
+            console.log('Expression: ', expression)
+            exOk = cronosjs.validate(expression)
+            console.log('Expression Valid: ', expression)
+
+            result.valid = exOk
+        } else {
+            ds = parseDateSequence(expression)
+            dsOk = ds.isDateSequence
+            result.valid = dsOk
+        }
+        if (!exOk && !dsOk) {
+            result.description = 'Invalid expression'
+            result.valid = false
+            return result
+        }
+    }
+
+    if (dsOk) {
+        const task = ds.task
+        const dates = ds.dates
+        const dsFutureDates = dates.filter(d => d >= now)
+        const count = dsFutureDates ? dsFutureDates.length : 0
+        result.description = 'Date sequence with fixed dates'
+        if (task && task._sequence && count) {
+            result.nextDate = dsFutureDates[0]
+            const ms = result.nextDate.valueOf() - now.valueOf()
+            result.prettyNext = (result.nextEvent ? result.nextEvent + ' ' : '') + `in ${prettyMs(ms, { secondsDecimalDigits: 0, verbose: true })}`
+            if (expressionType === 'solar') {
+                if (solarType === 'all') {
+                    result.description = 'All Solar Events'
+                } else {
+                    result.description = "Solar Events: '" + solarEvents.split(',').join(', ') + "'"
+                }
+            } else {
+                if (count === 1) {
+                    result.description = 'One time at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone, use24HourFormat)
+                } else {
+                    result.description = count + ' Date Sequences starting at ' + formatShortDateTimeWithTZ(result.nextDate, timeZone, use24HourFormat)
+                }
+                result.nextDates = dsFutureDates.slice(0, 5)
+            }
+        }
+    }
+
+    if (exOk) {
+        const ex = cronosjs.CronosExpression.parse(expression, cronOpts)
+        console.log('Expression: ', ex)
+
+        // eslint-disable-next-line no-inner-declarations
+        function getNext () {
+            return new Promise((resolve, reject) => {
+            // Simulating a time-consuming async action
+                const next = ex.nextDate()
+                resolve(next)
+            })
+        }
+
+        const next = await executeWithTimeLimit(getNext, 3000)
+            .then((result) => {
+                console.log(result) // Handle successful completion
+                return result
+            })
+            .catch((error) => {
+                console.error(error) // Handle timeout or other errors
+                return null
+            })
+        // const next = await executeWithTimeout(() => ex.nextDate(), 2000)
+        //     .then((next) => {
+        //         console.log('Execution completed successfully:', next)
+        //         return next // Ensure a value is returned
+        //     })
+        //     .catch((error) => {
+        //         console.error('An error occurred:', error.message)
+        //         return null
+        //     })
+
+        console.log('Next: ', next)
+
+        if (next && next instanceof Date) {
+            const ms = next.valueOf() - now.valueOf()
+            result.prettyNext = `in ${prettyMs(ms, { secondsDecimalDigits: 0, verbose: true })}`
+            try {
+                result.nextDates = ex.nextNDates(now, 5)
+            } catch (error) {
+                console.debug(error)
+            }
+        } else {
+            result.description = 'Invalid expression'
+            result.valid = false
+            return result
         }
         result.description = humanizeCron(expression, null, use24HourFormat)
         result.nextDate = next
@@ -2530,7 +2696,7 @@ module.exports = function (RED) {
                                 Sunday: 'Sun'
                             }
 
-                            schedule.description = _describeExpression(
+                            const description = _describeExpression(
                                 startCmd.expression,
                                 startCmd.expressionType,
                                 startCmd.timeZone || node.timeZone,
@@ -2540,8 +2706,11 @@ module.exports = function (RED) {
                                 startCmd.time,
                                 startCmd,
                                 node.use24HourFormat
-                            ).description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
+                            ).description
 
+                            if (description) {
+                                schedule.description = description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
+                            }
                             // if (schedule.hasEndTime) {
                             //     schedule.endCronExpression = endCronExpression
                             //     schedule.endTimeDescription = _describeExpression(
@@ -2589,7 +2758,57 @@ module.exports = function (RED) {
 
                             schedule.description = generateSolarDescription(node, cmd)
                             cmds.push(cmd)
+                        } else if (schedule.scheduleType === 'cron') {
+                            if (schedule.startCronExpression) {
+                                const startCmd = {
+                                    command: 'add',
+                                    name: schedule.name,
+                                    topic: schedule.topic,
+                                    expression: schedule.startCronExpression,
+                                    expressionType: 'cron',
+                                    payload: schedule?.payloadValue || true,
+                                    payloadType: 'bool',
+                                    schedule,
+                                    dontStartTheTask: !schedule.enabled
+                                }
+                                applyOptionDefaults(node, startCmd)
+
+                                // abbreviate days of week to three letters
+                                const dayMapping = {
+                                    Monday: 'Mon',
+                                    Tuesday: 'Tue',
+                                    Wednesday: 'Wed',
+                                    Thursday: 'Thu',
+                                    Friday: 'Fri',
+                                    Saturday: 'Sat',
+                                    Sunday: 'Sun'
+                                }
+
+                                const description = _describeExpression(
+                                    startCmd.expression,
+                                    startCmd.expressionType,
+                                    startCmd.timeZone || node.timeZone,
+                                    startCmd.offset,
+                                    startCmd.solarType,
+                                    startCmd.solarEvents,
+                                    startCmd.time,
+                                    startCmd,
+                                    node.use24HourFormat
+                                ).description
+
+                                if (description) {
+                                    schedule.description = description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
+                                }
+
+                                if (schedule.startCronExpression) {
+                                    cmds.push(startCmd)
+                                }
+                            } else {
+                                console.error('Invalid startCronExpression', schedule.startCronExpression)
+                                return
+                            }
                         }
+
                         // Find the schedule
                         const scheduleIndex = schedules.findIndex(storeSchedule => storeSchedule.name === schedule.name)
 
@@ -2722,6 +2941,59 @@ module.exports = function (RED) {
                 }
             }
         }
+
+        async function describeExpression (msg) {
+            console.log('describeExpression', msg)
+            if (msg?.payload?.cronExpression) {
+                console.log('describeExpression', msg)
+
+                const cmd = {
+                    expression: msg.payload.cronExpression,
+                    expressionType: 'cron'
+                }
+
+                applyOptionDefaults(node, cmd)
+
+                // abbreviate days of week to three letters
+                const dayMapping = {
+                    Monday: 'Mon',
+                    Tuesday: 'Tue',
+                    Wednesday: 'Wed',
+                    Thursday: 'Thu',
+                    Friday: 'Fri',
+                    Saturday: 'Sat',
+                    Sunday: 'Sun'
+                }
+
+                const cronExpression = await _asyncDescribeExpression(
+                    cmd.expression,
+                    cmd.expressionType,
+                    cmd.timeZone || node.timeZone,
+                    cmd.offset,
+                    cmd.solarType,
+                    cmd.solarEvents,
+                    null,
+                    cmd,
+                    node.use24HourFormat
+                )
+
+                console.log('cronExpression', cronExpression)
+                if (cronExpression.description) {
+                    cronExpression.description = cronExpression.description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
+                }
+                cronExpression.expression = msg.payload.cronExpression
+                console.log('cronExpression', cronExpression)
+                if (cronExpression.nextDates && cronExpression.nextDates.length) {
+                    cronExpression.nextDates = cronExpression.nextDates.map(dateString => {
+                        const date = new Date(dateString)
+                        return formatShortDateTimeWithTZ(date, node.timeZone, node.use24HourFormat)
+                    })
+                }
+
+                const m = { payload: { cronExpression }, event: 'describe' }
+                base.emit('msg-input:' + node.id, m, node)
+            }
+        }
         // #endregion UI Actions
 
         // region D2
@@ -2737,23 +3009,24 @@ module.exports = function (RED) {
                         setScheduleEnabled(msg)
                     } else if (msg.action === 'requestStatus') {
                         requestScheduleStatus(msg)
+                    } else if (msg.action === 'describe') {
+                        describeExpression(msg)
                     } else { console.log('Unknown action', msg.action) }
-                }
 
-                if (msg.ui_update) {
-                    const update = msg.ui_update
-                    if (typeof update.label !== 'undefined') {
-                        // dynamically set "label" property
-                        base.stores.state.set(base, node, msg, 'label', update.label)
+                    if (msg.ui_update) {
+                        const update = msg.ui_update
+                        if (typeof update.label !== 'undefined') {
+                            // dynamically set "label" property
+                            base.stores.state.set(base, node, msg, 'label', update.label)
+                        }
+                        if (typeof update.schedules !== 'undefined') {
+                            // dynamically set "schedules" property
+                            base.stores.state.set(base, node, msg, 'schedules', update.schedules)
+                        }
                     }
-                    if (typeof update.schedules !== 'undefined') {
-                        // dynamically set "schedules" property
-                        base.stores.state.set(base, node, msg, 'schedules', update.schedules)
-                    }
+                    return msg
                 }
-                return msg
             }
-
         }
 
         if (group) {
@@ -2956,8 +3229,8 @@ module.exports = function (RED) {
 }
 
 /**
- * Array of timezones
- */
+     * Array of timezones
+     */
 const timeZones = [
     { code: 'CI', latLon: '+0519-00402', tz: 'Africa/Abidjan', UTCOffset: '+00:00', UTCDSTOffset: '+00:00' },
     { code: 'GH', latLon: '+0533-00013', tz: 'Africa/Accra', UTCOffset: '+00:00', UTCDSTOffset: '+00:00' },

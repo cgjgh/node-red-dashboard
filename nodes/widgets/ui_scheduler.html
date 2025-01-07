@@ -961,6 +961,7 @@ copies or substantial portions of the Software.
                 sendActiveState: { value: true },
                 sendInactiveState: { value: true },
                 topics: { value: ['Topic 1'] },
+                outputs: { value: 2 },
                 options: {
                     value: [],
                     validate: function (value) {
@@ -2263,12 +2264,11 @@ copies or substantial portions of the Software.
 
                     node.topics.push(topicName)
                 })
-                console.log(node.topics)
-                node.outputs = node.commandResponseMsgOutput === 'output1' ? 1 : 2
                 node.defaultLocationType = $('#node-input-defaultLocation').typedInput('type')
                 node.defaultLocation = $('#node-input-defaultLocation').typedInput('value')
+                node.outputs = node.commandResponseMsgOutput === 'output1' ? 1 : 2
                 if (fanOut && node.topics && node.topics.length) {
-                    node.outputs = 1 + topics.length
+                    node.outputs = 1 + node.topics.length
                 }
                 $('#node-input-timeZone').off()
                 $('#node-input-crontab').off()

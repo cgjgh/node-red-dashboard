@@ -46,3 +46,23 @@
   border: none;
 }
 
+.text-green {
+    color: green;
+}
+
+.text-red {
+    color: red;
+}
+
+.centered-input .v-field__input {
+    text-align: center;
+}
+
+.centered-subheader .v-list-subheader__text {
+    margin-left: auto!important;
+    margin-right: auto!important;
+}
+
+.v-expansion-panel-text__wrapper {
+    padding: 2px!important;
+}
