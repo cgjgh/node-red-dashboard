@@ -10,16 +10,12 @@
                 <br>
                 <h4>What you can try:</h4>
                 <div v-if="error.type === 'server unreachable'" style="border: none" class="nrdb-placeholder">
-                    <v-btn rounded class="nrdb-placeholder-btns" @click="reloadApp">
+                    <v-btn rounded @click="reloadApp">
                         Reload App
-                    </v-btn>
-                    <br>
-                    <v-btn rounded class="nrdb-placeholder-btns" @click="contactAdmin">
-                        Contact Admin
                     </v-btn>
                 </div>
                 <div v-else-if="error.type === 'no internet'" style="border: none" class="nrdb-placeholder">
-                    <v-btn rounded class="nrdb-placeholder-btns" @click="reloadApp">
+                    <v-btn rounded @click="reloadApp">
                         Reload App
                     </v-btn>
                 </div>
@@ -68,8 +64,7 @@ export default {
     },
     computed: {
         ...mapState('ui', ['dashboards', 'pages', 'widgets']),
-        ...mapState('setup', ['setup']),
-        ...mapState('setup', ['error']),
+        ...mapState('setup', ['setup', 'error']),
 
         status: function () {
             if (this.dashboards) {
@@ -190,12 +185,19 @@ export default {
                     const route = (this.setup.basePath + page.path).replace(/\/\//g, '/')
 
                     const routeName = 'Page:' + page.name
+                    let title = page.name
+                    const headerStyle = payload.dashboards[page.ui].headerContent
+                    if (headerStyle === 'dashboard') {
+                        title = payload.dashboards[page.ui].name
+                    } else if (headerStyle === 'dashpage') {
+                        title = `${payload.dashboards[page.ui].name} (${page.name})`
+                    }
                     this.$router?.addRoute({
                         path: route,
                         name: routeName,
                         component: layouts[page.layout],
                         meta: {
-                            title: page.name, // the page name
+                            title, // the page name
                             id: page.id, // the pages id
                             dashboard: page.ui // the dashboard id - to simplify determining which dashboard we're on
                         }
@@ -252,10 +254,10 @@ export default {
             this.$store.commit('ui/themes', payload.themes)
 
             for (const key in payload.themes) {
-                // check if "Default" theme exists
-                if (payload.themes[key].name === 'Default') {
+                // check if "Default Theme" theme exists
+                if (payload.themes[key].name === 'Default Theme') {
                     // store the default theme in local storage for use when disconnected from Node-RED
-                    localStorage.setItem('defaultNRDBTheme', JSON.stringify(payload.themes[key]))
+                    localStorage.setItem('ndrb-theme-default', JSON.stringify(payload.themes[key]))
                     break
                 }
             }
@@ -272,14 +274,6 @@ export default {
         },
         reloadApp () {
             location.reload()
-        },
-        contactAdmin () {
-            const email = ''
-            const subject = 'Node-RED Dashboard Error'
-            const body = 'Insert issue here...'
-            const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-            window.open(mailtoLink, '_blank')
-            console.log('Mail app opening...')
         }
     }
 }
