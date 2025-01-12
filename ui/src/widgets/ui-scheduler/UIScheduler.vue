@@ -1,5 +1,5 @@
 <!-- eslint-disable vuetify/no-deprecated-components -->
-<template class="pa-0 main">
+<template class="px-0 py-2 main">
     <v-container class="pa-0 main" style="border: 1.5px solid grey; border-radius: 10px">
         <v-toolbar border color="navigation-background" rounded="lg">
             <v-toolbar-title
@@ -56,9 +56,9 @@
                                     v-if="item.active" :color="progressColor(item)"
                                     :model-value="progressValue(item)" stream rounded :height="6"
                                 />
-                                <v-card-title class="d-flex align-items-center justify-space-between">
+                                <v-card-title class="d-flex align-items-center justify-space-between pb-4">
                                     <div v-if="item && item.name">
-                                        <strong>Name:</strong> {{ item.name }}
+                                        {{ item.name }}
                                     </div>
                                     <div v-else>
                                         <em>No item selected</em>
@@ -72,73 +72,174 @@
                                 </v-card-title>
                                 <v-card-text>
                                     <v-row>
-                                        <v-col v-if="item.topic" cols="12" sm="6">
-                                            <strong>Topic:</strong> {{ item.topic }}
-                                        </v-col>
-                                        <v-col v-if="item.period" cols="12" sm="6">
-                                            <strong>Period:</strong> {{ toTitleCase(item.period) }}
-                                        </v-col>
-                                        <v-col v-if="item.yearlyMonth" cols="12" sm="6">
-                                            <strong>Month:</strong> {{ item.yearlyMonth }}
-                                        </v-col>
-                                        <v-col v-if="item.days" cols="12" sm="6">
-                                            <strong>Days:</strong>
-                                            {{ item.period === 'monthly' || item.period === 'yearly' ?
-                                                item.days.join(', ') : item.days.map((day) => day.slice(0,
-                                                                                                        3)).join(', ') }}
-                                        </v-col>
-                                        <v-col v-if="item.time" cols="12" sm="6">
-                                            <strong :class="{ 'text-green': item.hasEndTime }">
-                                                {{ item.hasEndTime ? 'Start Time:' : 'Time:' }}
-                                            </strong>
-                                            {{ formatTime(item.time) }}
-                                        </v-col>
-                                        <v-col v-if="item.hasEndTime" cols="12" sm="6">
-                                            <strong class="text-red">End Time:</strong>
-                                            {{ formatTime(item.endTime) }}
-                                        </v-col>
-                                        <v-col v-if="item.minutesInterval" cols="12" sm="6">
-                                            <strong>Interval:</strong> {{ item.minutesInterval }}
-                                        </v-col>
-                                        <v-col v-if="item.hourlyInterval" cols="12" sm="6">
-                                            <strong>Interval:</strong> {{ item.hourlyInterval }}
-                                        </v-col>
-                                        <v-col v-if="item.hasDuration" cols="12" sm="6">
-                                            <strong>Duration:</strong> {{ item.duration }}
-                                        </v-col>
-                                        <v-col v-if="item.solarEvent" cols="12" sm="6">
-                                            <strong>Solar Event:</strong> {{
-                                                mapSolarEvent(item.solarEvent) }}
-                                        </v-col>
-                                        <v-col v-if="item.offset" cols="12" sm="6">
-                                            <strong>Offset:</strong> {{ item.offset }}
-                                        </v-col>
-                                        <v-col v-if="item.nextDate" cols="12" sm="6">
-                                            <strong>Next Date:</strong> {{ item.nextDate }}
-                                        </v-col>
-                                        <v-col
-                                            v-if="item.nextDescription" cols="12" sm="6"
-                                            @click="requestStatus(item)"
-                                        >
-                                            <strong>Next Description:</strong> {{ item.nextDescription
-                                            }}
-                                        </v-col>
+                                        <v-list>
+                                            <v-list-subheader>Event Details</v-list-subheader>
+                                            <v-list-item v-if="item.topic" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-sitemap-outline</v-icon>
+                                                </template>
+                                                <v-list-item-title>Topic</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.topic }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.period" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-calendar-expand-horizontal</v-icon>
+                                                </template>
+                                                <v-list-item-title>Period</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ toTitleCase(item.period) }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-email-arrow-right-outline</v-icon>
+                                                </template>
+                                                <v-list-item-title>Output</v-list-item-title>
+                                                <v-list-item-subtitle class="pb-2">
+                                                    <template v-if="item.hasDuration || item.hasEndTime">
+                                                        <v-chip density="compact" color="green">True</v-chip>
+                                                        <span> on start,</span>
+                                                        <v-chip density="compact" color="red">False</v-chip>
+                                                        <span> on end</span>
+                                                    </template>
+                                                    <template v-else-if="item.payloadValue !== undefined">
+                                                        <v-chip density="compact" :color="item.payloadValue ? 'green' : 'red'">
+                                                            {{ item.payloadValue ? 'True' : 'False' }}
+                                                        </v-chip>
+                                                    </template>
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-divider />
+                                            <v-list-subheader v-if="item.period">Time Details</v-list-subheader>
+                                            <v-list-item v-if="item.yearlyMonth" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-calendar-month</v-icon>
+                                                </template>
+                                                <v-list-item-title>Month</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.yearlyMonth }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.days" lines="two" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-calendar-range</v-icon>
+                                                </template>
+                                                <v-list-item-title>Days</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ item.period === 'monthly' || item.period ===
+                                                        'yearly' ? item.days.join(', ') :
+                                                            item.days.map((day) => day.slice(0, 3)).join(', ') }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.time" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon :icon="item.hasEndTime ? 'mdi-clock-start' : 'mdi-clock'" />
+                                                </template>
+                                                <v-list-item-title :class="{ 'text-green': item.hasEndTime }">
+                                                    {{
+                                                        item.hasEndTime ? 'Start Time' : 'Time' }}
+                                                </v-list-item-title>
+                                                <v-list-item-subtitle>{{ formatTime(item.time) }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.hasEndTime" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-clock-end</v-icon>
+                                                </template>
+                                                <v-list-item-title class="text-red">End Time</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ formatTime(item.endTime) }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.minutesInterval" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-repeat</v-icon>
+                                                </template>
+                                                <v-list-item-title>Interval (minutes)</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.minutesInterval }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.hourlyInterval" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-repeat</v-icon>
+                                                </template>
+                                                <v-list-item-title>Interval (hours)</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.hourlyInterval }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.hasDuration" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-timer-sand</v-icon>
+                                                </template>
+                                                <v-list-item-title>Duration</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.duration }} minutes</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-subheader v-if="item.solarEvent">Solar</v-list-subheader>
+                                            <v-list-item v-if="item.solarEvent" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-weather-sunset</v-icon>
+                                                </template>
+                                                <v-list-item-title>Solar Event</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ mapSolarEvent(item.solarEvent) }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.offset" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-plus-minus</v-icon>
+                                                </template>
+                                                <v-list-item-title>Offset</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.offset }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-subheader v-if="item.scheduleType === 'cron'">
+                                                Cron
+                                            </v-list-subheader>
+                                            <v-list-item
+                                                v-if="item.scheduleType === 'cron'" lines="two"
+                                                class="prepend-icon-spacing"
+                                            >
+                                                <template #prepend>
+                                                    <v-icon>mdi-code-brackets</v-icon>
+                                                </template>
+                                                <v-list-item-title>Cron Expression</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ item.startCronExpression
+                                                    }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-divider />
+                                            <v-list-subheader>Next</v-list-subheader>
+                                            <v-list-group>
+                                                <template #activator="{ isOpen, props }">
+                                                    <v-list-item
+                                                        v-bind="props" class="prepend-icon-spacing"
+                                                        lines="two" @click="handleNextDatesExpand(isOpen)"
+                                                    >
+                                                        <template #prepend>
+                                                            <v-icon>mdi-calendar-arrow-right</v-icon>
+                                                        </template>
+                                                        <v-list-item-title>Next Date</v-list-item-title>
+                                                        <v-list-item-subtitle>{{ item.nextDate }}</v-list-item-subtitle>
+                                                    </v-list-item>
+                                                </template>
 
-                                        <v-col cols="12" sm="6">
-                                            <span v-if="item.hasDuration || item.hasEndTime">
-                                                <strong>Output: </strong>
-                                                <em class="text-green">True</em> on start,
-                                                <em class="text-red"> False</em> on end.
-                                            </span>
-                                            <span v-else-if="item.payloadValue">
-                                                <strong>Output: </strong>
-                                                <em
-                                                    :class="{ 'text-green': item.payloadValue, 'text-red': !item.payloadValue }"
+                                                <v-list-item
+                                                    v-for="(date, index) in item.nextDates" :key="index"
+                                                    class="px-auto"
                                                 >
-                                                    {{ item.payloadValue }}
-                                                </em>
-                                            </span>
-                                        </v-col>
+                                                    <!-- <template #prepend>
+                                                        {{ index + 1 }}.
+                                                    </template> -->
+                                                    <v-list-item-subtitle>{{ date }}</v-list-item-subtitle>
+                                                </v-list-item>
+                                            </v-list-group>
+
+                                            <v-list-item
+                                                v-if="item.nextDescription" lines="two"
+                                                class="prepend-icon-spacing" @click="requestStatus(item)"
+                                            >
+                                                <template #prepend>
+                                                    <v-icon>mdi-calendar-text</v-icon>
+                                                </template>
+                                                <v-list-item-title>Next Description</v-list-item-title>
+                                                <v-list-item-subtitle>{{ item.nextDescription }}</v-list-item-subtitle>
+                                            </v-list-item>
+                                        </v-list>
                                     </v-row>
                                 </v-card-text>
                             </v-card>
@@ -159,7 +260,7 @@
                 </v-alert>
             </v-row>
             <v-card :class="{ 'bordered-card': !$vuetify.display.xs, 'border-none': $vuetify.display.xs }" class="pa-2">
-                <v-card-title class="d-flex align-items-center justify-space-between">
+                <v-card-title class="d-flex align-items-center justify-space-between pb-0">
                     <span class="text-h5">{{ isEditing ? 'Edit Schedule' : 'New Schedule' }}</span>
                     <div class="d-flex align-items-center">
                         <v-switch
@@ -171,18 +272,21 @@
                         </v-btn>
                     </div>
                 </v-card-title>
-                <v-card-text>
+                <v-card-text class="pt-0">
                     <v-row justify="center">
-                        <v-col cols="12">
+                        <v-col cols="12" class="pt-0">
                             <v-text-field
-                                v-model="name" label="Schedule Name" :rules="[rules.required]" required
-                                :disabled="isEditing"
+                                v-if="!isEditing" v-model="name" label="Schedule Name"
+                                :rules="[rules.required]" required :disabled="isEditing"
                             >
                                 <template #append-inner>
                                     <v-icon v-if="!isNameDuplicate()" color="green" icon="mdi-check-circle" />
                                     <v-icon v-else color="red" icon="mdi-close-circle" />
                                 </template>
                             </v-text-field>
+                            <h2 v-else class="text-center pb-4">
+                                {{ name }}
+                            </h2>
                         </v-col>
                     </v-row>
                     <v-row no-gutters justify="center">
@@ -191,9 +295,13 @@
                         </v-col>
                         <v-col cols="12">
                             <v-select
-                                v-model="topic" :items="props.topics" label="Select Topic" required
-                                :rules="[rules.required]"
-                            />
+                                v-model="topic" :items="props.topics"
+                                label="Select Topic" required :rules="[rules.required]"
+                            >
+                                <template #prepend-inner>
+                                    <v-icon>mdi-sitemap-outline</v-icon>
+                                </template>
+                            </v-select>
                         </v-col>
                     </v-row>
 
@@ -305,14 +413,14 @@
                             </v-col>
                             <v-col v-if="period === 'minutes'" cols="12" class="d-flex justify-center">
                                 <v-select
-                                    v-model="minutesInterval" prepend-icon="mdi-timer-refresh-outline"
+                                    v-model="minutesInterval" prepend-icon="mdi-repeat"
                                     :items="generateNumberArray(1, 59)" label="Interval (Minutes)"
                                     :rules="[rules.required]"
                                 />
                             </v-col>
                             <v-col v-if="period === 'hourly'" cols="12" class="d-flex justify-center">
                                 <v-select
-                                    v-model="hourlyInterval" prepend-icon="mdi-timer-refresh"
+                                    v-model="hourlyInterval" prepend-icon="mdi-repeat"
                                     :items="generateNumberArray(1, 23)" label="Interval (Hours)"
                                     :rules="[rules.required]"
                                 />
@@ -329,7 +437,7 @@
                                     <template #prepend>
                                         <v-icon
                                             :color="hasEndTime ? 'green' : undefined"
-                                            icon="mdi-clock-time-four-outline"
+                                            :icon="hasEndTime ? 'mdi-clock-start' : 'mdi-clock-time-four-outline'"
                                         />
                                     </template>
                                     <v-dialog v-model="modalTime" activator="parent" width="auto">
@@ -348,7 +456,7 @@
                                     <template #prepend>
                                         <v-icon
                                             :color="hasEndTime ? 'green' : undefined"
-                                            icon="mdi-clock-time-four-outline"
+                                            :icon="hasEndTime ? 'mdi-clock-start' : 'mdi-clock-time-four-outline'"
                                         />
                                     </template>
                                 </v-text-field>
@@ -363,7 +471,7 @@
                                     :rules="[rules.endTimeRule]"
                                 >
                                     <template #prepend>
-                                        <v-icon color="red" icon="mdi-clock-time-four-outline" />
+                                        <v-icon color="red" icon="mdi-clock-end" />
                                     </template>
                                     <v-dialog v-model="modalEndTime" activator="parent" width="auto">
                                         <v-time-picker
@@ -378,7 +486,7 @@
                                     :rules="[rules.required]"
                                 >
                                     <template #prepend>
-                                        <v-icon color="red" icon="mdi-clock-time-four-outline" />
+                                        <v-icon color="red" icon="mdi-clock-end" />
                                     </template>
                                 </v-text-field>
                             </v-col>
@@ -392,8 +500,8 @@
                                     v-model="hasEndTime" mandatory divided variant="elevated" border="sm"
                                     rounded="xl" @update:model-value="setEndTime"
                                 >
-                                    <v-btn :value="false">None</v-btn>
-                                    <v-btn :value="true">End Time</v-btn>
+                                    <v-btn prepend-icon="mdi-circle-off-outline" :value="false">None</v-btn>
+                                    <v-btn prepend-icon="mdi-clock-end" :value="true">End Time</v-btn>
                                 </v-btn-toggle>
                             </v-col>
                         </v-row>
@@ -406,7 +514,7 @@
                         <v-col cols="12" class="d-flex justify-center">
                             <v-select
                                 v-model="solarEvent" :items="solarEvents" label="Select Event" required
-                                :rules="[rules.required]" prepend-icon="mdi-sun-clock-outline"
+                                :rules="[rules.required]" prepend-icon="mdi-weather-sunset"
                             />
                         </v-col>
                         <v-col cols="12" class="d-flex justify-center">
@@ -428,8 +536,8 @@
                                 v-model="hasDuration" mandatory divided variant="elevated" border="sm"
                                 rounded="xl"
                             >
-                                <v-btn :value="false">None</v-btn>
-                                <v-btn :value="true">Duration</v-btn>
+                                <v-btn prepend-icon="mdi-circle-off-outline" :value="false">None</v-btn>
+                                <v-btn prepend-icon="mdi-timer-sand-complete" :value="true">Duration</v-btn>
                             </v-btn-toggle>
                         </v-col>
                         <v-col
@@ -442,7 +550,7 @@
                             />
                         </v-col>
                     </v-row>
-                    <v-row v-if="scheduleType === 'cron'" justify="center" no-gutters class="mt-6">
+                    <v-row v-if="scheduleType === 'cron'" justify="center" no-gutters class="my-6">
                         <v-col cols="12" class="d-flex justify-center">
                             <v-label>Description</v-label>
                         </v-col>
@@ -462,19 +570,20 @@
                                             <v-list-subheader class="centered-subheader">Next Dates</v-list-subheader>
                                             <v-list-item
                                                 v-for="(date, index) in cronNextDates" :key="index"
-                                                class="pa-0 mx-auto"
+                                                class="px-auto"
                                             >
                                                 {{ date }}
                                             </v-list-item>
 
                                             <v-list-subheader class="centered-subheader">Next Time</v-list-subheader>
-                                            <v-list-item class="pa-0">{{ cronNextTime }}</v-list-item>
+                                            <v-list-item class="px-auto">{{ cronNextTime }}</v-list-item>
                                         </v-list>
                                     </v-expansion-panel-text>
                                 </v-expansion-panel>
                                 <v-expansion-panel title="Cron Info">
                                     <v-expansion-panel-text>
-                                        <CronFieldsTable />
+                                        <CronFieldsTable class="mb-4" />
+                                        <v-divider />
                                         <CronSpecialCharacters />
                                     </v-expansion-panel-text>
                                 </v-expansion-panel>
@@ -486,9 +595,11 @@
                         </v-col>
                         <v-col cols="11" class="d-flex justify-center">
                             <v-text-field
-                                label="" :model-value="cronValue" @update:model-value="getCronDescription"
+                                label="" :model-value="cronValue" prepend-icon="mdi-code-brackets"
+                                style="letter-spacing: 2px;" @update:model-value="getCronDescription"
                                 @blur="cronValue = nextCronValue"
                             />
+
                             <v-col cols="1" class="d-flex justify-center">
                                 <v-progress-circular v-if="cronLoading" indeterminate size="24" />
                                 <v-icon v-if="!cronLoading && cronExpValid" color="green" icon="mdi-check-circle" />
@@ -511,13 +622,14 @@
                                 v-if="(scheduleType === 'time' && (period === 'daily' || period === 'weekly' || period === 'monthly' || period === 'yearly')) && !hasEndTime || (scheduleType === 'time' && (period === 'minutes' || period === 'hourly') || scheduleType === 'solar') && !hasDuration || scheduleType === 'cron'"
                                 v-model="payloadValue" mandatory divided variant="elevated" border="sm" rounded="xl"
                             >
-                                <v-btn :value="false" color="red">False</v-btn>
-                                <v-btn :value="true" color="green">True</v-btn>
+                                <v-btn prepend-icon="mdi-close-circle-outline" :value="false" color="red">False</v-btn>
+                                <v-btn prepend-icon="mdi-check-circle-outline" :value="true" color="green">True</v-btn>
                             </v-btn-toggle>
-                            <span v-else>
-                                <em class="text-green">True</em> on start,
-                                <em class="text-red">False</em> on end.
-                            </span>
+                            <template v-else>
+                                <v-chip density="compact" color="green">True</v-chip> <span> on start,</span> <v-chip density="compact" color="red">
+                                    False
+                                </v-chip> <span> on end</span>
+                            </template>
                         </v-col>
                     </v-row>
                 </v-card-text>
@@ -897,7 +1009,6 @@ export default {
         setInterval(this.updateNowUTC, 1000)
     },
     unmounted () {
-        window.removeEventListener('resize', this.handleResize)
     },
 
     methods: {
@@ -935,6 +1046,14 @@ export default {
                 this.expanded = [index.item.name]
             } else {
                 this.expanded = []
+            }
+        },
+        handleNextDatesExpand (isOpen) {
+            if (!isOpen) {
+                console.log('Group expanded')
+                // You can add any other actions you want to perform here
+            } else {
+                console.log('Group collapsed')
             }
         },
 
@@ -1289,6 +1408,9 @@ export default {
             this.endTime = item.endTime || this.endTime
             this.solarEvent = this.mapSolarEvent(item.solarEvent) || this.solarEvent
             this.offset = item.offset || this.offset
+            if (this.scheduleType === 'cron') {
+                this.cronValue = item.startCronExpression || this.cronValue
+            }
             this.payloadValue = true
             this.dialog = true
         },
@@ -1330,6 +1452,7 @@ export default {
             this.hourlyInterval = 1
             this.solarEvent = 'Sunrise'
             this.offset = 0
+            this.cronValue = '*/5 * * * *'
             this.hasDuration = false
             this.duration = 1
             this.payloadValue = true

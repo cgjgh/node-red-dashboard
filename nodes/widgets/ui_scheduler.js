@@ -307,9 +307,7 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
         }
     } else {
         if (expressionType === 'cron' || expressionType === '') {
-            console.log('Expression: ', expression)
             exOk = cronosjs.validate(expression)
-            console.log('Expression Valid: ', expression)
 
             result.valid = exOk
         } else {
@@ -899,7 +897,7 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
 }
 
 function exportSchedule (schedule) {
-    const { active, nextDate, nextDescription, nextUTC, nextEndDate, nextEndDescription, nextEndUTC, currentStartTime, ...rest } = schedule
+    const { active, nextDate, nextDescription, nextUTC, nextEndDate, nextEndDescription, nextEndUTC, currentStartTime, nextDates, ...rest } = schedule
     return { ...rest }
 }
 
@@ -941,7 +939,7 @@ function isTaskFinished (_task) {
     return _task.node_limit ? _task.node_count >= _task.node_limit : false
 }
 
-function getTaskStatus (node, task, opts) {
+function getTaskStatus (node, task, opts, getNextDates = false) {
     opts = opts || {}
     opts.locationType = node.defaultLocationType
     opts.defaultLocation = node.defaultLocation
@@ -979,6 +977,12 @@ function getTaskStatus (node, task, opts) {
         serverTimeZone: localTZ,
         description: h.description
     }
+    if (getNextDates && h.nextDates && h.nextDates.length) {
+        r.nextDates = h.nextDates.map(dateString => {
+            const date = new Date(dateString)
+            return formatShortDateTimeWithTZ(date, node.timeZone, node.use24HourFormat)
+        })
+    }
     if (sol) {
         r.solarState = h.solarState
         if (h.offset) r.solarStateOffset = h.solarStateOffset
@@ -988,15 +992,19 @@ function getTaskStatus (node, task, opts) {
     return r
 }
 
-function getNextStatus (node, task) {
+function getNextStatus (node, task, getNextDates = false) {
     if (!task || task.isRunning) {
-        const status = getTaskStatus(node, task, { includeSolarStateOffset: true })
+        const status = getTaskStatus(node, task, { includeSolarStateOffset: true }, getNextDates)
+        console.log('Status: ', status)
+        console.log('getNextDates: ', getNextDates)
         const nextDate = status.nextDateTZ
         const nextUTC = status.nextDate
         let nextDescription = status.nextDescription
+        const nextDates = status.nextDates
 
         if (!nextDescription) {
-            return { nextDate, nextDescription: 'Never', nextUTC }
+            const result = { nextDate, nextDescription: 'Never', nextUTC, nextDates }
+            return result
         }
 
         if (task.node_expressionType === 'solar') {
@@ -1011,9 +1019,11 @@ function getNextStatus (node, task) {
             nextDescription = words.join(' ')
         }
 
-        return { nextDate, nextDescription, nextUTC }
+        const result = { nextDate, nextDescription, nextUTC, nextDates }
+        return result
     } else {
-        return { nextDate: 'Never', nextDescription: 'Never', nextUTC: null }
+        const result = { nextDate: 'Never', nextDescription: 'Never', nextUTC: null, nextDates: [] }
+        return result
     }
 }
 
@@ -2927,11 +2937,12 @@ module.exports = function (RED) {
             if (msg?.payload?.name) {
                 const task = getTask(node, msg.payload.name)
                 if (task) {
-                    const status = getNextStatus(node, task)
+                    const status = getNextStatus(node, task, true)
                     const props = {
                         nextDate: status.nextDate,
                         nextDescription: status.nextDescription,
-                        nextUTC: status.nextUTC
+                        nextUTC: status.nextUTC,
+                        nextDates: status.nextDates
                     }
                     updateSchedule(node, msg.payload.name, task, props, true, 'status')
                     updateNextStatus(node, true)
@@ -2977,12 +2988,10 @@ module.exports = function (RED) {
                     node.use24HourFormat
                 )
 
-                console.log('cronExpression', cronExpression)
                 if (cronExpression.description) {
                     cronExpression.description = cronExpression.description.replace(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/g, match => dayMapping[match])
                 }
                 cronExpression.expression = msg.payload.cronExpression
-                console.log('cronExpression', cronExpression)
                 if (cronExpression.nextDates && cronExpression.nextDates.length) {
                     cronExpression.nextDates = cronExpression.nextDates.map(dateString => {
                         const date = new Date(dateString)

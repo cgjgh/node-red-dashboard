@@ -19,9 +19,9 @@ export default {
     data () {
         return {
             specialHeaders: [
-                { text: 'Special Character', value: 'character' },
-                { text: 'Description', value: 'description' },
-                { text: 'Applicable Fields', value: 'fields' }
+                { title: 'Special Character', value: 'character' },
+                { title: 'Description', value: 'description' },
+                { title: 'Applicable Fields', value: 'fields' }
             ],
             specialItems: [
                 { character: '*', description: 'The asterisk substitutes all possible values for a field. For example, when used in the hour field, it indicates that the task should be executed every hour.', fields: 'All' },

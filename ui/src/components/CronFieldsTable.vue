@@ -44,8 +44,8 @@ export default {
             cronHeaders: [
                 { title: '#', value: 'number' },
                 { title: 'Field Name', value: 'field' },
-                { title: 'Allowed values', value: 'allowed' },
-                { title: 'Special symbols', value: 'special' }
+                { title: 'Allowed Values', value: 'allowed' },
+                { title: 'Special Chars', value: 'special' }
             ],
             cronItems: [
                 { number: 1, field: 'Second (optional)', allowed: '0-59', special: '* / , -' },
