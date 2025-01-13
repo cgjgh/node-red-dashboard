@@ -61,3 +61,7 @@
     width: 15px!important;
 }
 
+.no-padding-start .v-list-group__items .v-list-item {
+    padding-inline-start: 0px !important;
+  }
+  

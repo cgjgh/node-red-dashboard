@@ -419,9 +419,7 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
         }
     } else {
         if (expressionType === 'cron' || expressionType === '') {
-            console.log('Expression: ', expression)
             exOk = cronosjs.validate(expression)
-            console.log('Expression Valid: ', expression)
 
             result.valid = exOk
         } else {
@@ -465,12 +463,10 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
 
     if (exOk) {
         const ex = cronosjs.CronosExpression.parse(expression, cronOpts)
-        console.log('Expression: ', ex)
 
         // eslint-disable-next-line no-inner-declarations
         function getNext () {
             return new Promise((resolve, reject) => {
-            // Simulating a time-consuming async action
                 const next = ex.nextDate()
                 resolve(next)
             })
@@ -478,24 +474,12 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
 
         const next = await executeWithTimeLimit(getNext, 3000)
             .then((result) => {
-                console.log(result) // Handle successful completion
                 return result
             })
             .catch((error) => {
                 console.error(error) // Handle timeout or other errors
                 return null
             })
-        // const next = await executeWithTimeout(() => ex.nextDate(), 2000)
-        //     .then((next) => {
-        //         console.log('Execution completed successfully:', next)
-        //         return next // Ensure a value is returned
-        //     })
-        //     .catch((error) => {
-        //         console.error('An error occurred:', error.message)
-        //         return null
-        //     })
-
-        console.log('Next: ', next)
 
         if (next && next instanceof Date) {
             const ms = next.valueOf() - now.valueOf()
@@ -503,7 +487,6 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
             try {
                 result.nextDates = ex.nextNDates(now, 5)
             } catch (error) {
-                console.debug(error)
             }
         } else {
             result.description = 'Invalid expression'
@@ -995,8 +978,6 @@ function getTaskStatus (node, task, opts, getNextDates = false) {
 function getNextStatus (node, task, getNextDates = false) {
     if (!task || task.isRunning) {
         const status = getTaskStatus(node, task, { includeSolarStateOffset: true }, getNextDates)
-        console.log('Status: ', status)
-        console.log('getNextDates: ', getNextDates)
         const nextDate = status.nextDateTZ
         const nextUTC = status.nextDate
         let nextDescription = status.nextDescription
@@ -1183,13 +1164,21 @@ module.exports = function (RED) {
 
         // Need to improve this to handle more schedule types
         function generateScheduleObject (task) {
+            function convertStringBoolean (value) {
+                if (typeof value === 'string') {
+                    if (value.toLowerCase() === 'true') return true
+                    if (value.toLowerCase() === 'false') return false
+                }
+                return value
+            }
             if (task.node_expressionType === 'cron') {
                 const schedule = {
                     name: task.name,
                     enabled: task.node_opt.dontStartTheTask || true,
                     topic: task.node_topic,
-                    scheduleType: 'time',
+                    scheduleType: 'cron',
                     startCronExpression: task.node_expression,
+                    payloadValue: convertStringBoolean(task.node_payload),
                     description: _describeExpression(
                         task.node_opt.expression,
                         task.node_opt.expressionType,
@@ -1203,105 +1192,105 @@ module.exports = function (RED) {
                     ).description,
                     ...(task.isStatic && { isStatic: true }) // Conditionally add isStatic
                 }
-                const cronParts = task.node_expression.split(' ')
-                if (cronParts.length < 5 || cronParts.length > 7) {
-                    console.log('Invalid cron expression.', task.node_expression, cronParts)
-                    return null
-                }
+                // const cronParts = task.node_expression.split(' ')
+                // if (cronParts.length < 5 || cronParts.length > 7) {
+                //     console.log('Invalid cron expression.', task.node_expression, cronParts)
+                //     return null
+                // }
 
-                // eslint-disable-next-line no-unused-vars
-                const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts.length === 7
-                    ? cronParts
-                    : cronParts.length === 6
-                        ? cronParts
-                        : ['', ...cronParts]
+                // // eslint-disable-next-line no-unused-vars
+                // const [second, minute, hour, dayOfMonth, month, dayOfWeek, year] = cronParts.length === 7
+                //     ? cronParts
+                //     : cronParts.length === 6
+                //         ? cronParts
+                //         : ['', ...cronParts]
 
-                const daysMap = { SUN: 'Sunday', MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday' }
-                const daysOfWeekNumbersMap = { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' }
+                // const daysMap = { SUN: 'Sunday', MON: 'Monday', TUE: 'Tuesday', WED: 'Wednesday', THU: 'Thursday', FRI: 'Friday', SAT: 'Saturday' }
+                // const daysOfWeekNumbersMap = { 0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday' }
 
-                if (second.includes('/') || minute.includes('/') || hour.includes('/') || dayOfMonth.includes('/') || month.includes('/') || dayOfWeek.includes('/')) {
-                    // Handle interval-based schedules
-                    const interval = second.includes('/')
-                        ? second.split('/')[1]
-                        : minute.includes('/')
-                            ? minute.split('/')[1]
-                            : hour.includes('/')
-                                ? hour.split('/')[1]
-                                : dayOfMonth.includes('/')
-                                    ? dayOfMonth.split('/')[1]
-                                    : month.includes('/')
-                                        ? month.split('/')[1]
-                                        : dayOfWeek.split('/')[1]
+                // if (second.includes('/') || minute.includes('/') || hour.includes('/') || dayOfMonth.includes('/') || month.includes('/') || dayOfWeek.includes('/')) {
+                //     // Handle interval-based schedules
+                //     const interval = second.includes('/')
+                //         ? second.split('/')[1]
+                //         : minute.includes('/')
+                //             ? minute.split('/')[1]
+                //             : hour.includes('/')
+                //                 ? hour.split('/')[1]
+                //                 : dayOfMonth.includes('/')
+                //                     ? dayOfMonth.split('/')[1]
+                //                     : month.includes('/')
+                //                         ? month.split('/')[1]
+                //                         : dayOfWeek.split('/')[1]
 
-                    if (minute === '0' && hour.includes('/')) {
-                        schedule.period = 'hourly'
-                        schedule.hourlyInterval = parseInt(interval, 10)
-                    } else if (minute.includes('/')) {
-                        schedule.period = 'minutes'
-                        schedule.minutesInterval = parseInt(interval, 10)
-                    } else if (second.includes('/')) {
-                        schedule.period = 'seconds'
-                        schedule.secondsInterval = parseInt(interval, 10)
-                        schedule.readonly = true
-                    } else if (dayOfMonth.includes('/')) {
-                        schedule.period = 'monthly'
-                        schedule.days = Array.from({ length: 31 }, (_, i) => i + 1).filter(day => day % parseInt(interval, 10) === 0)
-                    } else if (month.includes('/')) {
-                        schedule.period = 'yearly'
-                        schedule.months = Array.from({ length: 12 }, (_, i) => i + 1).filter(month => month % parseInt(interval, 10) === 0)
-                    } else if (dayOfWeek.includes('/')) {
-                        schedule.period = 'weekly'
-                        schedule.days = dayOfWeek.split('/').map(day => {
-                            return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
-                        })
-                    }
-                } else if (dayOfWeek.includes('-')) {
-                    // Handle day-of-week ranges
-                    const [startDay, endDay] = dayOfWeek.split('-').map(day => {
-                        return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
-                    })
-                    schedule.period = 'weekly'
-                    schedule.time = `${hour}:${minute}`
-                    schedule.days = Array.from(
-                        { length: 7 },
-                        (_, i) => daysOfWeekNumbersMap[(Object.keys(daysOfWeekNumbersMap).indexOf(startDay) + i) % 7]
-                    ).slice(0, endDay - startDay + 1)
-                } else if (dayOfWeek !== '*') {
-                    // Handle specific day-of-week schedules
-                    schedule.period = 'weekly'
-                    schedule.time = `${hour}:${minute}`
-                    schedule.days = dayOfWeek.split(',').map(day => {
-                        return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
-                    })
-                } else if (dayOfMonth !== '*' && month !== '*') {
-                    // Handle specific dates
-                    schedule.period = 'yearly'
-                    schedule.time = `${hour}:${minute}`
-                    schedule.days = dayOfMonth.split(',').map(Number)
-                    schedule.month = month
-                } else if (dayOfMonth !== '*') {
-                    // Handle monthly schedules
-                    schedule.period = 'monthly'
-                    schedule.time = `${hour}:${minute}`
-                    schedule.days = dayOfMonth.split(',').map(Number)
-                } else if (hour !== '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-                    // Handle daily schedules
-                    schedule.period = 'daily'
-                    schedule.time = `${hour}:${minute}`
-                } else if (second === '*' && minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-                    // Handle secondly schedules
-                    schedule.period = 'secondly'
-                    schedule.readonly = true
-                } else if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-                    // Handle minutes schedules
-                    schedule.period = 'minutes'
-                } else if (hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
-                    // Handle hourly schedules
-                    schedule.period = 'hourly'
-                } else {
-                    // Custom schedules
-                    schedule.period = 'custom'
-                }
+                //     if (minute === '0' && hour.includes('/')) {
+                //         schedule.period = 'hourly'
+                //         schedule.hourlyInterval = parseInt(interval, 10)
+                //     } else if (minute.includes('/')) {
+                //         schedule.period = 'minutes'
+                //         schedule.minutesInterval = parseInt(interval, 10)
+                //     } else if (second.includes('/')) {
+                //         schedule.period = 'seconds'
+                //         schedule.secondsInterval = parseInt(interval, 10)
+                //         schedule.readonly = true
+                //     } else if (dayOfMonth.includes('/')) {
+                //         schedule.period = 'monthly'
+                //         schedule.days = Array.from({ length: 31 }, (_, i) => i + 1).filter(day => day % parseInt(interval, 10) === 0)
+                //     } else if (month.includes('/')) {
+                //         schedule.period = 'yearly'
+                //         schedule.months = Array.from({ length: 12 }, (_, i) => i + 1).filter(month => month % parseInt(interval, 10) === 0)
+                //     } else if (dayOfWeek.includes('/')) {
+                //         schedule.period = 'weekly'
+                //         schedule.days = dayOfWeek.split('/').map(day => {
+                //             return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                //         })
+                //     }
+                // } else if (dayOfWeek.includes('-')) {
+                //     // Handle day-of-week ranges
+                //     const [startDay, endDay] = dayOfWeek.split('-').map(day => {
+                //         return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                //     })
+                //     schedule.period = 'weekly'
+                //     schedule.time = `${hour}:${minute}`
+                //     schedule.days = Array.from(
+                //         { length: 7 },
+                //         (_, i) => daysOfWeekNumbersMap[(Object.keys(daysOfWeekNumbersMap).indexOf(startDay) + i) % 7]
+                //     ).slice(0, endDay - startDay + 1)
+                // } else if (dayOfWeek !== '*') {
+                //     // Handle specific day-of-week schedules
+                //     schedule.period = 'weekly'
+                //     schedule.time = `${hour}:${minute}`
+                //     schedule.days = dayOfWeek.split(',').map(day => {
+                //         return isNaN(day) ? daysMap[day] : daysOfWeekNumbersMap[day]
+                //     })
+                // } else if (dayOfMonth !== '*' && month !== '*') {
+                //     // Handle specific dates
+                //     schedule.period = 'yearly'
+                //     schedule.time = `${hour}:${minute}`
+                //     schedule.days = dayOfMonth.split(',').map(Number)
+                //     schedule.month = month
+                // } else if (dayOfMonth !== '*') {
+                //     // Handle monthly schedules
+                //     schedule.period = 'monthly'
+                //     schedule.time = `${hour}:${minute}`
+                //     schedule.days = dayOfMonth.split(',').map(Number)
+                // } else if (hour !== '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                //     // Handle daily schedules
+                //     schedule.period = 'daily'
+                //     schedule.time = `${hour}:${minute}`
+                // } else if (second === '*' && minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                //     // Handle secondly schedules
+                //     schedule.period = 'secondly'
+                //     schedule.readonly = true
+                // } else if (minute === '*' && hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                //     // Handle minutes schedules
+                //     schedule.period = 'minutes'
+                // } else if (hour === '*' && dayOfMonth === '*' && month === '*' && dayOfWeek === '*') {
+                //     // Handle hourly schedules
+                //     schedule.period = 'hourly'
+                // } else {
+                //     // Custom schedules
+                //     schedule.period = 'custom'
+                // }
 
                 return schedule
             } else if (task.node_expressionType === 'solar') {
@@ -1408,6 +1397,7 @@ module.exports = function (RED) {
                 }
 
                 node.tasks = []
+                base.stores.state.set(base, node, null, 'schedules', [])
                 for (let iOpt = 0; iOpt < node.options.length; iOpt++) {
                     const opt = node.options[iOpt]
                     opt.name = opt.name || opt.topic
@@ -1949,6 +1939,7 @@ module.exports = function (RED) {
             const scheduleIndex = schedules.findIndex(schedule => schedule.name === scheduleName)
             let stateChange = false
             let schedule = null
+
             if (scheduleIndex !== -1) {
                 // Get the schedule
                 schedule = schedules[scheduleIndex]
@@ -1963,6 +1954,12 @@ module.exports = function (RED) {
             }
 
             if (schedule) { // Update the schedules property
+                // Remove null properties from schedule
+                for (const key in schedule) {
+                    if (schedule[key] === null) {
+                        delete schedule[key]
+                    }
+                }
                 stateChange = true
                 base.stores.state.set(base, node, null, 'schedules', schedules)
                 if (!task) {
@@ -2084,11 +2081,9 @@ module.exports = function (RED) {
 
             // generate schedule object for UI if it doesn't exist
             if (!task.node_opt.schedule && !task.node_opt.endSchedule) {
-                const scheduleObject = generateScheduleObject(task)
-                if (scheduleObject) {
-                    console.log('generating schedule object for task', task.name)
-                    console.log('schedule object', scheduleObject)
-                    updateSchedule(node, task.name, task, scheduleObject, true, 'add')
+                const props = generateScheduleObject(task)
+                if (props) {
+                    updateSchedule(node, task.name, task, props, true, 'add')
                 }
             }
 
@@ -2188,9 +2183,12 @@ module.exports = function (RED) {
                             nextDescription: status.nextDescription,
                             nextUTC: status.nextUTC
                         }
+                        if (!task.node_opt.schedule.hasDuration && !task.node_opt.schedule.hasEndTime) {
+                            props.active = null
+                            props.currentStartTime = null
+                        }
 
                         updateSchedule(node, task.name, task, props, true, 'start')
-
                         if (task.node_expressionType === 'solar') {
                             if (task.node_opt.schedule.duration) {
                                 const duration = task.node_opt.schedule.duration * 60 * 1000 // Assuming duration is in minutes
@@ -2358,10 +2356,10 @@ module.exports = function (RED) {
         }
         async function deserialise () {
             let filePath = ''
-            const sendEmptyArray = () => {
-                const msg = { ui_update: { schedules: [] }, event: 'init' }
+            const sendSchedules = () => {
+                const uiSchedules = base.stores.state.getProperty(node.id, 'schedules') || []
+                const msg = { ui_update: { schedules: uiSchedules }, event: 'init' }
                 base.emit('msg-input:' + node.id, msg, node)
-                base.stores.state.set(base, node, null, 'schedules', [])
             }
             try {
                 // if (!node.persistDynamic) {
@@ -2373,7 +2371,7 @@ module.exports = function (RED) {
 
                 const restoreState = async (state) => {
                     if (!state) {
-                        sendEmptyArray()
+                        sendSchedules()
                         return // nothing to add
                     }
                     if (state.staticSchedules && state.staticSchedules.length) {
@@ -2393,7 +2391,7 @@ module.exports = function (RED) {
                     }
                     if (state.dynamicSchedules && state.dynamicSchedules.length) {
                         // eslint-disable-next-line prefer-const
-                        let uiSchedules = []
+                        const uiSchedules = base.stores.state.getProperty(node.id, 'schedules') || []
                         for (let iOpt = 0; iOpt < state.dynamicSchedules.length; iOpt++) {
                             const opt = state.dynamicSchedules[iOpt]
                             let task
@@ -2426,12 +2424,11 @@ module.exports = function (RED) {
                             }
                         }
                         updateNodeNextInfo(node)
-                        const msg = { ui_update: { schedules: uiSchedules }, event: 'init' }
-                        base.emit('msg-input:' + node.id, msg, node)
+                        sendSchedules()
                     }
                 }
                 if (node.storeName === 'NONE') {
-                    sendEmptyArray()
+                    sendSchedules()
                     return
                 }
                 if (node.storeName === 'local_file_system') {
@@ -2441,7 +2438,7 @@ module.exports = function (RED) {
                         const state = JSON.parse(fileData)
                         await restoreState(state)
                     } else {
-                        sendEmptyArray()
+                        sendSchedules()
                         RED.log.debug(`scheduler: no persistence data found for node '${node.id}'.`)
                     }
                 } else {
@@ -2449,14 +2446,14 @@ module.exports = function (RED) {
                     const storeName = node.storeName || 'default'
                     const contextKey = 'state'
                     if (!contextAvailable || !STORE_NAMES.indexOf(storeName)) {
-                        sendEmptyArray()
+                        sendSchedules()
                         return
                     }
                     const state = await contextGet(node.context(), contextKey, storeName)
                     await restoreState(state)
                 }
             } catch (error) {
-                sendEmptyArray()
+                sendSchedules()
                 node.error(`scheduler: Error loading persistence data '${filePath}'. ${error.message}`)
             }
         }
@@ -2954,10 +2951,7 @@ module.exports = function (RED) {
         }
 
         async function describeExpression (msg) {
-            console.log('describeExpression', msg)
             if (msg?.payload?.cronExpression) {
-                console.log('describeExpression', msg)
-
                 const cmd = {
                     expression: msg.payload.cronExpression,
                     expressionType: 'cron'
@@ -3111,7 +3105,6 @@ module.exports = function (RED) {
     })
 
     RED.httpAdmin.post('/ui-scheduler/:id/:operation', RED.auth.needsPermission('ui-scheduler.read'), async function (req, res) {
-        // console.log("/scheduler", req.body);
         try {
             const operation = req.params.operation
             const node = RED.nodes.getNode(req.params.id)
