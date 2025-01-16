@@ -12,6 +12,7 @@ import UIMarkdown from './ui-markdown/UIMarkdown.vue'
 import UINotification from './ui-notification/UINotification.vue'
 import UINumberInput from './ui-number-input/UINumberInput.vue'
 import UIRadioGroup from './ui-radio-group/UIRadioGroup.vue'
+import UISlideConfirm from './ui-slide-confirm/UISlideConfirm.vue'
 import UISlider from './ui-slider/UISlider.vue'
 import UISpacer from './ui-spacer/UISpacer.vue'
 import UISwitch from './ui-switch/UISwitch.vue'
@@ -65,6 +66,7 @@ export default {
     'ui-number-input': UINumberInput,
     'ui-radio-group': UIRadioGroup,
     'ui-slider': UISlider,
+    'ui-slide-confirm': UISlideConfirm,
     'ui-spacer': UISpacer,
     'ui-switch': UISwitch,
     'ui-table': UITable,
