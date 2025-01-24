@@ -17,13 +17,13 @@
        function generateWidgetTable (node, group = null) {
            const nodeGroup = group !== null ? group : node.group
            const widgets = getWidgetsInGroup(nodeGroup, node.id)
-           let widgetListHtml = '<table><thead><tr><th>Type</th><th>Name</th><th>Include</th></tr></thead><tbody>'
+           let widgetListHtml = '<table class="widget-table"><thead><tr><th>Type</th><th>Name</th><th>Include</th></tr></thead><tbody>'
            widgets.forEach(widget => {
-               const isChecked = node.widgets.includes(widget.id) ? 'checked' : ''
+               const isChecked = node.controlledWidgets.includes(widget.id) ? 'checked' : ''
                widgetListHtml += `<tr><td>${widget.type}</td><td>${widget.name}</td><td><input type="checkbox" name="widget" value="${widget.id}" ${isChecked}></td></tr>`
            })
            widgetListHtml += '</tbody></table>'
-           $('#node-input-widgets-container').html(widgetListHtml)
+           $('#node-input-controlledWidgets-container').html(widgetListHtml)
        }
 
        RED.nodes.registerType('ui-slide-confirm', {
@@ -50,15 +50,15 @@
                topic: { value: 'topic', validate: (hasProperty(RED.validators, 'typedInput') ? RED.validators.typedInput('topicType') : function (v) { return true }) },
                topicType: { value: 'msg' },
                className: { value: '' },
-               sliderHeight: { value: 40 },
+               sliderHeight: { value: 50 },
                textSize: { value: 24 },
                iconSuccess: { value: 'mdi-check' },
                text: { value: 'slide to confirm' },
-               successText: { value: 'success' },
+               successText: { value: 'confirmed' },
                circle: { value: true },
                animate: { value: true },
                timeout: { value: 10 },
-               widgets: { value: [] }
+               controlledWidgets: { value: [] }
            },
            inputs: 1,
            outputs: 1,
@@ -86,11 +86,10 @@
                }
                $('#node-input-topic').typedInput({ default: 'str', typeField: $('#node-input-topicType'), types: ['str', 'msg', 'flow', 'global'] })
                $('.ui-node-popover-title').tooltip({ show: { effect: 'slideDown', delay: 150 } })
-
-               if (!this.widgets) {
-                   this.widgets = []
-               }
                const node = this
+               if (!node.controlledWidgets) {
+                   node.controlledWidgets = []
+               }
                generateWidgetTable(node)
                $('#node-input-group').on('change', function () {
                    generateWidgetTable(node, $(this).val())
@@ -98,12 +97,11 @@
            },
            oneditsave: function () {
                const node = this
-               node.widgets = []
+               node.controlledWidgets = []
                $('input[name="widget"]:checked').each(function () {
                    const o = $(this).val()
-                   node.widgets.push(o)
+                   node.controlledWidgets.push(o)
                })
-               console.log(node.widgets)
            }
        })
 })()
@@ -187,55 +185,46 @@
             <div class="form-row" style="margin-bottom: 2px;">
                 <span> From Current Group</span>
             </div>
-            <div class="form-row widget-container" id="node-input-widgets-container"></div>
+            <div class="form-row widget-container widget-table" id="node-input-controlledWidgets-container"></div>
         </div>
     </script>
 <style id="nr-db2-ui-slide-confirm-styles">
-    .red-ui-editor div.ui-slide-confirm .form-row {
-        display: flex;
-        align-items: center;
-    }
-
-    .red-ui-editor div.ui-slide-confirm .form-row label {
-        margin-bottom: 0;
-    }
-
-    red-ui-editor div.ui-slide-confirm .widget-container {
-        width: 100%;
-        box-sizing: border-box;
-        /* Ensures padding and border are included in the element's total width */
-    }
-
-    table {
-    width: 100%;
-    border-collapse: collapse;
-    /* Ensures there are no gaps between the table cells */
+   .red-ui-editor div.ui-slide-confirm .form-row {
+  display: flex;
+  align-items: center;
 }
 
-th,
-td {
-    padding: 8px;
-    border: 1px solid #ddd;
-    /* Adds a border to table cells */
-    text-align: left;
-    /* Aligns text to the left */
+.red-ui-editor div.ui-slide-confirm .form-row label {
+  margin-bottom: 0;
 }
 
-th {
-    background-color: #c6c5c5;
-    /* Adds a light background to the header */
+.red-ui-editor div.ui-slide-confirm .widget-container {
+  width: 100%;
+  box-sizing: border-box;
+  /* Ensures padding and border are included in the element's total width */
 }
 
-td {
-    width: calc(33.333% - 8px);
-    /* Distributes the width evenly among the first two columns */
+.red-ui-editor .widget-table {
+  width: 100%;
+  border-collapse: collapse; /* Ensures there are no gaps between the table cells */
 }
 
-td:last-child {
-    width: 1%;
-    /* Sets the checkbox column width to fit its content */
-    white-space: nowrap;
-    /* Prevents wrapping of checkbox content */
+.red-ui-editor .widget-table th,
+.red-ui-editor .widget-table td {
+  padding: 8px;
+  border: 1px solid #ddd; /* Adds a border to table cells */
+  text-align: left; /* Aligns text to the left */
 }
+
+.red-ui-editor .widget-table td {
+  width: calc(33.333% - 8px); /* Distributes the width evenly among the first two columns */
+}
+
+.red-ui-editor .widget-table td:last-child {
+  width: 1%; /* Sets the checkbox column width to fit its content */
+  white-space: nowrap; /* Prevents wrapping of checkbox content */
+}
+
+
 
 </style>

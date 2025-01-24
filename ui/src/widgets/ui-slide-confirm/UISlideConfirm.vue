@@ -7,7 +7,7 @@
                 @completed="complete"
             />
         </v-col>
-        <v-col v-else cols="2">
+        <v-col v-else cols="2" class="d-flex justify-center align-center">
             <v-progress-circular class="mx-auto" :size="50" :width="10" :model-value="progressValue" color="green">
                 <v-icon>{{ iconSuccess }}</v-icon>
             </v-progress-circular>
@@ -17,6 +17,7 @@
 
 <script>
 import SlideUnlock from '@j2only/slide-unlock'
+// eslint-disable-next-line no-unused-vars
 import { ref } from 'vue'
 import { mapState } from 'vuex'
 
@@ -112,7 +113,7 @@ export default {
             this.updateDynamicProperty('textSize', updates.textSize)
         },
         complete () {
-            this.$socket.emit('widget-action', this.id, { payload: 'success' })
+            this.$socket.emit('widget-action', this.id, { payload: 'confirmed' })
             this.isSliderComplete = true
             this.updateSlider()
 
@@ -123,8 +124,9 @@ export default {
             }
         },
         resetComponent () {
+            this.$socket.emit('widget-action', this.id, { payload: 'reset' })
+            this.$refs?.vueSlideUnlockRef?.reset()
             this.isSliderComplete = false
-            this.$refs.vueSlideUnlockRef.reset()
             this.updateSlider()
         },
         completeComponent () {
@@ -142,24 +144,55 @@ export default {
             return this.isSliderComplete
         },
         updateWidgetStates (visible) {
-            const selectedWidgets = this.getProperty('widgets')
+            let controlledWidgets = this.getProperty('controlledWidgets')
+            if (!Array.isArray(controlledWidgets)) {
+                controlledWidgets = controlledWidgets ? [controlledWidgets] : []
+            }
             const vue = this
             Object.keys(this.widgets).forEach(key => {
-                if (selectedWidgets.includes(this.widgets[key].id)) {
-                    const state = this.widgets[key].state
-                    vue.$store.commit('ui/setProperty', {
-                        item: 'widget',
-                        itemId: key,
-                        property: 'state',
-                        value: {
-                            ...state,
-                            visible,
-                            enabled: visible
-                        }
-                    })
+                const widgetId = this.widgets[key].id
+                if (controlledWidgets.some(controlledWidgetId => widgetId.includes(controlledWidgetId))) {
+                    console.log('controlledWidgetId', this.widgets[key])
+                    if (!this.widgets[key].component.name === 'DBUITemplate') {
+                        const state = this.widgets[key].state
+                        vue.$store.commit('ui/setProperty', {
+                            item: 'widget',
+                            itemId: key,
+                            property: 'state',
+                            value: {
+                                ...state,
+                                visible,
+                                enabled: visible
+                            }
+                        })
+                    } else {
+                        const props = this.widgets[key].props
+                        vue.$store.commit('ui/setProperty', {
+                            item: 'widget',
+                            itemId: key,
+                            property: 'props',
+                            value: {
+                                ...props,
+                                visible,
+                                enabled: visible
+                            }
+                        })
+                        const state = this.widgets[key].state
+                        vue.$store.commit('ui/setProperty', {
+                            item: 'widget',
+                            itemId: key,
+                            property: 'state',
+                            value: {
+                                ...state,
+                                visible,
+                                enabled: visible
+                            }
+                        })
+                    }
                 }
             })
         },
+
         startCountdown () {
             const interval = setInterval(() => {
                 if (this.countdown > 0) {
@@ -178,24 +211,32 @@ export default {
 }
 </script>
 
-<style scoped>
-  /* Light Theme */
-  .v-theme--nrdb, .v-theme--nrdbLight {
+<style>
+  .v-theme--nrdb, .slideunlock {
     --su-color-bg: #ebebeb;
     --su-color-text-normal: #4F4F4F;
     --su-color-text-complete: #FEFEFE;
     --su-color-progress-normal-bg: #cacaca;
     --su-color-progress-complete-bg: #42b983;
     --su-color-handler-bg: #FFFFFF;
-  }
+}
+.v-theme--nrdbLight, .slideunlock {
+    --su-color-bg: #ebebeb;
+    --su-color-text-normal: #4F4F4F;
+    --su-color-text-complete: #FEFEFE;
+    --su-color-progress-normal-bg: #cacaca;
+    --su-color-progress-complete-bg: #42b983;
+    --su-color-handler-bg: #FFFFFF;
+}
 
-  /* Dark Theme */
-  .v-theme--nrdbDark {
-    --su-color-bg: #2e2e2e;
-    --su-color-text-normal: #FEFEFE;
+/* Dark Theme */
+.v-theme--nrdbDark .slideunlock {
+    --su-color-bg: #242424;
+    --su-color-text-normal: #4F4F4F;
     --su-color-text-complete: #4F4F4F;
     --su-color-progress-normal-bg: #3a3a3a;
     --su-color-progress-complete-bg: #1bc47d;
     --su-color-handler-bg: #3e3e3e;
-  }
+}
+
 </style>

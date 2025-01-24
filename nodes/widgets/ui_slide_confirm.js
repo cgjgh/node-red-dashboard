@@ -1,35 +1,39 @@
-const statestore = require('../store/state.js')
-
 module.exports = function (RED) {
     function SlideConfirmNode (config) {
         RED.nodes.createNode(this, config)
 
         function getSelectedWidgets (widgetIDs) {
             const selectedWidgets = []
+            // Ensure widgetIDs is always an array
+            const ids = Array.isArray(widgetIDs) ? widgetIDs : [widgetIDs]
 
             RED.nodes.eachNode(function (n) {
-                if (/^ui-/.test(n.type) && widgetIDs.includes(n.id)) {
-                    selectedWidgets.push(n)
-                }
+                ids.forEach(widgetID => {
+                    const idToCompare = widgetID.includes('-') ? widgetID.split('-').pop() : widgetID
+                    if (/^ui-/.test(n.type) && (idToCompare === n.id || n.id.includes(idToCompare))) {
+                        selectedWidgets.push(n)
+                    }
+                })
             })
-
-            return selectedWidgets || []
+            return selectedWidgets
         }
 
         const node = this
         // which group are we rendering this widget
         const group = RED.nodes.getNode(config.group)
         const base = group.getBase()
-        node.pt = config.passthru
-        node.widgets = config.widgets
 
+        node.pt = config.passthru
+        config.controlledWidgets = Array.isArray(config.controlledWidgets)
+            ? config.controlledWidgets
+            : (config.controlledWidgets ? [config.controlledWidgets] : [])
+        node.controlledWidgets = config.controlledWidgets
         node.state = [' ', ' ']
 
-        const uiWidgets = getSelectedWidgets(node.widgets)
-
-        uiWidgets.forEach(node => {
-            base.stores.state.set(base, node, null, 'visible', false)
-            base.stores.state.set(base, node, null, 'enabled', false)
+        const uiWidgets = getSelectedWidgets(node.controlledWidgets)
+        uiWidgets.forEach(controlledWidget => {
+            base.stores.state.set(base, controlledWidget, null, 'visible', false)
+            base.stores.state.set(base, controlledWidget, null, 'enabled', false)
         })
 
         const evts = {
@@ -42,7 +46,7 @@ module.exports = function (RED) {
                 if (updates) {
                     if (typeof (updates.label) !== 'undefined') {
                         // dynamically set "label" property
-                        statestore.set(group.getBase(), node, msg, 'label', updates.label)
+                        base.stores.state.set(group.getBase(), node, msg, 'label', updates.label)
                     }
                 }
                 return msg
@@ -51,6 +55,10 @@ module.exports = function (RED) {
 
         // inform the dashboard UI that we are adding this node
         group.register(node, config, evts)
+
+        setTimeout(() => {
+            node.send({ enabled: false, visible: false })
+        }, 100)
     }
     RED.nodes.registerType('ui-slide-confirm', SlideConfirmNode)
 }
