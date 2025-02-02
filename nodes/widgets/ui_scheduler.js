@@ -2676,23 +2676,24 @@ module.exports = function (RED) {
                             }
 
                             // Helper function to determine payload and payloadType
-                            function getPayloadAndType(valueKey, defaultValue) {
+                            // eslint-disable-next-line no-inner-declarations
+                            function getPayloadAndType (valueKey, defaultValue) {
                                 if (schedule?.payloadType === 'custom') {
                                     return {
                                         payload: schedule[valueKey] ?? defaultValue,
                                         payloadType: 'custom'
-                                    };
+                                    }
                                 } else {
                                     return {
                                         payload: schedule[valueKey] ?? defaultValue,
                                         payloadType: 'bool'
-                                    };
+                                    }
                                 }
                             }
 
                             // Determine payloads and payloadTypes for start and end commands
-                            const { payload: startPayload, payloadType: startPayloadType } = getPayloadAndType('payloadValue', true);
-                            const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType('endPayloadValue', false);
+                            const { payload: startPayload, payloadType: startPayloadType } = getPayloadAndType('payloadValue', true)
+                            const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType('endPayloadValue', false)
 
                             // Construct startCmd
                             const startCmd = {
@@ -2705,7 +2706,7 @@ module.exports = function (RED) {
                                 payloadType: startPayloadType,
                                 schedule,
                                 dontStartTheTask: !schedule.enabled
-                            };
+                            }
 
                             // Construct endCmd
                             const endCmd = {
@@ -2717,9 +2718,7 @@ module.exports = function (RED) {
                                 schedule: null,
                                 scheduleName: schedule.name,
                                 endSchedule: true
-                            };
-
-
+                            }
 
                             applyOptionDefaults(node, startCmd)
 
