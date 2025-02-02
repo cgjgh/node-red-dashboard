@@ -96,7 +96,7 @@
                                                 </template>
                                                 <v-list-item-title>Output</v-list-item-title>
                                                 <v-list-item-subtitle class="pb-2">
-                                                    <template v-if="item.hasDuration || item.hasEndTime">
+                                                    <template v-if="(item.hasDuration || item.hasEndTime) && item.payloadType === 'true_false'">
                                                         <v-chip density="compact" color="green">True</v-chip>
                                                         <span> on start,</span>
                                                         <v-chip density="compact" color="red">False</v-chip>
@@ -113,7 +113,7 @@
                                                         </v-chip>
                                                     </template>
                                                     <template v-else>
-                                                        <v-chip density="compact" color="gray">
+                                                        <v-chip density="compact" color="blue">
                                                             Custom
                                                         </v-chip>
                                                     </template>
@@ -667,22 +667,32 @@
                             <v-label>Output</v-label>
                         </v-col>
                         <v-col cols="12" class="d-flex justify-center">
-                            <template v-if="(scheduleType === 'time' && (period === 'daily' || period === 'weekly' || period === 'monthly' || period === 'yearly')) && !hasEndTime || (scheduleType === 'time' && (period === 'minutes' || period === 'hourly') || scheduleType === 'solar') && !hasDuration || scheduleType === 'cron'">
-                                <v-btn-toggle
-                                    v-if=" payloadValue === true || payloadValue === false"
-                                    v-model="payloadValue" mandatory divided variant="elevated" border="sm" rounded="xl"
-                                >
-                                    <v-btn prepend-icon="mdi-close-circle-outline" :value="false" color="red">False</v-btn>
-                                    <v-btn prepend-icon="mdi-check-circle-outline" :value="true" color="green">True</v-btn>
-                                </v-btn-toggle>
-
-                                <v-chip v-else density="compact" color="gray">Custom</v-chip>
-                            </template>
-
-                            <template v-else>
-                                <v-chip density="compact" color="green">True</v-chip> <span> on start,</span>
-                                <v-chip density="compact" color="red">False</v-chip> <span> on end</span>
-                            </template>
+                            <v-btn-toggle
+                                v-model="payloadType" mandatory divided variant="elevated" border="sm" rounded="xl"
+                            >
+                                <v-btn v-if="!isTimespanSchedule" prepend-icon="mdi-close-circle-outline" :value="false" color="red">False</v-btn>
+                                <v-btn v-if="!isTimespanSchedule" prepend-icon="mdi-check-circle-outline" :value="true" color="green">True</v-btn>
+                                <v-btn v-if="isTimespanSchedule" prepend-icon="mdi-check-circle-outline" :value="'true_false'" color="green">True/False</v-btn>
+                                <v-btn prepend-icon="mdi-check-circle-outline" :value="'custom'" color="blue">Custom</v-btn>
+                            </v-btn-toggle>
+                        </v-col>
+                        <v-col v-if="payloadType === 'custom'" cols="12" class="d-flex justify-center mt-3">
+                            <v-select
+                                v-model="customPayloadStart"
+                                :items="customPayloads"
+                                item-title="label"
+                                item-value="id"
+                                :label="isTimespanSchedule ? 'Custom Output: Start' : 'Custom Output'"
+                            />
+                        </v-col>
+                        <v-col v-if="payloadType === 'custom' && isTimespanSchedule" cols="12" class="d-flex justify-center">
+                            <v-select
+                                v-model="customPayloadEnd"
+                                :items="customPayloads"
+                                item-title="label"
+                                item-value="id"
+                                label="Custom Output: End"
+                            />
                         </v-col>
                     </v-row>
                 </v-card-text>
@@ -832,7 +842,10 @@ export default {
             hourlyInterval: null,
             solarEvent: null,
             offset: null,
+            payloadType: true,
             payloadValue: true,
+            customPayloadStart: null,
+            customPayloadEnd: null,
 
             // Modal controls
             modalTime: false,
@@ -985,6 +998,13 @@ export default {
                     return header
                 })
                 : this.headers
+        },
+        isTimespanSchedule () {
+            return (this.scheduleType === 'time' && (this.period === 'daily' || this.period === 'weekly' || this.period === 'monthly' || this.period === 'yearly') && this.hasEndTime) ||
+                (((this.scheduleType === 'time' && (this.period === 'minutes' || this.period === 'hourly')) || this.scheduleType === 'solar') && this.hasDuration)
+        },
+        customPayloads () {
+            return this.props.customPayloads || []
         }
     },
 
@@ -1024,6 +1044,30 @@ export default {
                 if (!this.durationItems.includes((this.minutesInterval ?? 0) - 1)) {
                     this.duration = null
                     this.hasDuration = false
+                }
+            }
+            if (((this.scheduleType === 'time' && ['minutes', 'hours'].includes(this.period)) || this.scheduleType === 'solar')) {
+                if (value === true) {
+                    if (this.payloadType !== 'custom') {
+                        this.payloadType = 'true_false'
+                    }
+                } else {
+                    if (this.payloadType !== 'custom') {
+                        this.payloadType = false
+                    }
+                }
+            }
+        },
+        hasEndTime (value) {
+            if (this.scheduleType === 'time' && ['daily', 'weekly', 'monthly', 'yearly'].includes(this.period)) {
+                if (value === true) {
+                    if (this.payloadType !== 'custom') {
+                        this.payloadType = 'true_false'
+                    }
+                } else {
+                    if (this.payloadType !== 'custom') {
+                        this.payloadType = false
+                    }
                 }
             }
         },
@@ -1263,11 +1307,22 @@ export default {
                 }
             }
 
-            if (this.hasDuration || this.hasEndTime) {
-                newSchedule.payloadValue = true
-                newSchedule.endPayloadValue = false
+            if (this.isTimespanSchedule) {
+                newSchedule.payloadType = this.payloadType
+                if (this.payloadType !== 'custom') {
+                    newSchedule.payloadValue = true
+                    newSchedule.endPayloadValue = false
+                } else {
+                    newSchedule.payloadValue = this.customPayloadStart
+                    newSchedule.endPayloadValue = this.customPayloadEnd
+                }
             } else {
-                newSchedule.payloadValue = this.payloadValue
+                newSchedule.payloadType = this.payloadType
+                if (this.payloadType !== 'custom' && this.payloadType !== 'true_false') {
+                    newSchedule.payloadValue = this.payloadType
+                } else if (this.payloadType === 'custom') {
+                    newSchedule.payloadValue = this.customPayloadStart
+                }
             }
 
             if (this.isEditing) {
@@ -1367,10 +1422,25 @@ export default {
                 }
             }
 
-            if (this.payloadValue === null && (this.hasDuration || this.hasEndTime)) {
+            if (this.payloadType === null) {
                 return {
                     alert: true,
                     message: 'Output value is required.'
+                }
+            }
+
+            if (this.payloadType === 'custom') {
+                if (this.customPayloadStart === null) {
+                    return {
+                        alert: true,
+                        message: 'Custom output value is required.'
+                    }
+                }
+                if (this.customPayloadEnd === null && this.isTimespanSchedule) {
+                    return {
+                        alert: true,
+                        message: 'Custom output value is required.'
+                    }
                 }
             }
 
@@ -1394,7 +1464,8 @@ export default {
             if (item.name) {
                 this.$socket.emit('widget-action', this.id, {
                     action: 'setEnabled',
-                    payload: { name: item.name, enabled }
+                    payload: { name: item.name, enabled },
+                    topic: item.topics
                 })
             }
         },
@@ -1405,7 +1476,8 @@ export default {
             if (names.length > 0) {
                 this.$socket.emit('widget-action', this.id, {
                     action: 'setEnabled',
-                    payload: { names, enabled }
+                    payload: { names, enabled, all: true },
+                    topic: this.selectedTopic
                 })
             }
         },
@@ -1458,13 +1530,22 @@ export default {
             if (this.scheduleType === 'cron') {
                 this.cronValue = item.startCronExpression || this.cronValue
             }
-            this.payloadValue = item.payloadValue !== undefined ? item.payloadValue : this.payloadValue;
+            this.payloadValue = item.payloadValue !== undefined ? item.payloadValue : this.payloadValue
+            this.payloadType = item.payloadType !== undefined ? item.payloadType : this.payloadType
+            if (item.payloadType !== undefined && item.payloadType === 'custom') {
+                if (item.payloadValue !== undefined) {
+                    this.customPayloadStart = item.payloadValue
+                }
+                if (item.endPayloadValue !== undefined) {
+                    this.customPayloadEnd = item.endPayloadValue
+                }
+            }
 
             this.dialog = true
         },
 
         resetForm () {
-            const baseName = 'New Schedule'
+            const baseName = 'Schedule'
             let newName = baseName
             let index = 2
 
@@ -1504,6 +1585,9 @@ export default {
             this.hasDuration = false
             this.duration = 1
             this.payloadValue = true
+            this.payloadType = true
+            this.customPayloadStart = null
+            this.customPayloadEnd = null
         },
         setEndTime () {
             if (!this.hasEndTime) {
