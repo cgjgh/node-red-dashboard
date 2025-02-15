@@ -122,7 +122,9 @@
                                                 </v-list-item-subtitle>
                                             </v-list-item>
                                             <v-divider />
-                                            <v-list-subheader v-if="item.period || item.solarEventTimespanTime || item.solarDays">
+                                            <v-list-subheader
+                                                v-if="item.period || item.solarEventTimespanTime || item.solarDays"
+                                            >
                                                 Time
                                                 Details
                                             </v-list-subheader>
@@ -139,11 +141,16 @@
                                                 </template>
                                                 <v-list-item-title>Days</v-list-item-title>
                                                 <v-list-item-subtitle>
-                                                    <template v-if="item.period === 'monthly' || item.period === 'yearly'">
+                                                    <template
+                                                        v-if="item.period === 'monthly' || item.period === 'yearly'"
+                                                    >
                                                         {{ item.days.join(', ') }}
                                                     </template>
                                                     <template v-else>
-                                                        <v-chip v-for="(day, index) in item.days" :key="index" :color="getChipColor(day)" density="compact">
+                                                        <v-chip
+                                                            v-for="(day, index) in item.days" :key="index"
+                                                            :color="getChipColor(day)" density="compact"
+                                                        >
                                                             <span>{{ day.slice(0, 3) }}</span>
                                                         </v-chip>
                                                     </template>
@@ -155,7 +162,10 @@
                                                 </template>
                                                 <v-list-item-title>Days</v-list-item-title>
                                                 <v-list-item-subtitle>
-                                                    <v-chip v-for="(day, index) in item.solarDays" :key="index" :color="getChipColor(day)" density="compact">
+                                                    <v-chip
+                                                        v-for="(day, index) in item.solarDays" :key="index"
+                                                        :color="getChipColor(day)" density="compact"
+                                                    >
                                                         <span>{{ day.slice(0, 3) }}</span>
                                                     </v-chip>
                                                 </v-list-item-subtitle>
@@ -441,8 +451,8 @@
                                         <v-icon>mdi-calendar-range</v-icon>
                                     </template>
 
-                                    <template #chip="{ item}">
-                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                    <template #chip="{ item }">
+                                        <v-chip :color="getChipColor(item.value)" density="comfortable">
                                             <span>{{ item.value }}</span>
                                         </v-chip>
                                     </template>
@@ -457,8 +467,8 @@
                                         <v-icon>mdi-calendar-weekend</v-icon>
                                     </template>
 
-                                    <template #chip="{ item}">
-                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                    <template #chip="{ item }">
+                                        <v-chip :color="getChipColor(item.value)" density="comfortable">
                                             <span>{{ item.value }}</span>
                                         </v-chip>
                                     </template>
@@ -473,8 +483,8 @@
                                         <v-icon>mdi-calendar-month-outline</v-icon>
                                     </template>
 
-                                    <template #chip="{ item}">
-                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                    <template #chip="{ item }">
+                                        <v-chip :color="getChipColor(item.value)" density="comfortable">
                                             <span>{{ item.value }}</span>
                                         </v-chip>
                                     </template>
@@ -637,7 +647,7 @@
                                                 <v-icon>mdi-calendar-range</v-icon>
                                             </template>
 
-                                            <template #chip="{ item}">
+                                            <template #chip="{ item }">
                                                 <v-chip :color="getChipColor(item.value)" density="comfortable">
                                                     <span>{{ item.value }}</span>
                                                 </v-chip>
