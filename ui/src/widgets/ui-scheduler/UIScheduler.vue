@@ -96,7 +96,9 @@
                                                 </template>
                                                 <v-list-item-title>Output</v-list-item-title>
                                                 <v-list-item-subtitle class="pb-2">
-                                                    <template v-if="(item.hasDuration || item.hasEndTime) && item.payloadType === 'true_false'">
+                                                    <template
+                                                        v-if="(item.hasDuration || item.hasEndTime) && item.payloadType === 'true_false'"
+                                                    >
                                                         <v-chip density="compact" color="green">True</v-chip>
                                                         <span> on start,</span>
                                                         <v-chip density="compact" color="red">False</v-chip>
@@ -120,7 +122,10 @@
                                                 </v-list-item-subtitle>
                                             </v-list-item>
                                             <v-divider />
-                                            <v-list-subheader v-if="item.period">Time Details</v-list-subheader>
+                                            <v-list-subheader v-if="item.period || item.solarEventTimespanTime || item.solarDays">
+                                                Time
+                                                Details
+                                            </v-list-subheader>
                                             <v-list-item v-if="item.yearlyMonth" class="prepend-icon-spacing">
                                                 <template #prepend>
                                                     <v-icon>mdi-calendar-month</v-icon>
@@ -134,9 +139,25 @@
                                                 </template>
                                                 <v-list-item-title>Days</v-list-item-title>
                                                 <v-list-item-subtitle>
-                                                    {{ item.period === 'monthly' || item.period ===
-                                                        'yearly' ? item.days.join(', ') :
-                                                            item.days.map((day) => day.slice(0, 3)).join(', ') }}
+                                                    <template v-if="item.period === 'monthly' || item.period === 'yearly'">
+                                                        {{ item.days.join(', ') }}
+                                                    </template>
+                                                    <template v-else>
+                                                        <v-chip v-for="(day, index) in item.days" :key="index" :color="getChipColor(day)" density="compact">
+                                                            <span>{{ day.slice(0, 3) }}</span>
+                                                        </v-chip>
+                                                    </template>
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
+                                            <v-list-item v-if="item.solarDays" lines="two" class="prepend-icon-spacing">
+                                                <template #prepend>
+                                                    <v-icon>mdi-calendar-range</v-icon>
+                                                </template>
+                                                <v-list-item-title>Days</v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    <v-chip v-for="(day, index) in item.solarDays" :key="index" :color="getChipColor(day)" density="compact">
+                                                        <span>{{ day.slice(0, 3) }}</span>
+                                                    </v-chip>
                                                 </v-list-item-subtitle>
                                             </v-list-item>
                                             <v-list-item v-if="item.time" class="prepend-icon-spacing">
@@ -158,6 +179,26 @@
                                                     {{ formatTime(item.endTime) }}
                                                 </v-list-item-subtitle>
                                             </v-list-item>
+                                            <v-list-item
+                                                v-if="item.solarEventTimespanTime"
+                                                class="prepend-icon-spacing"
+                                            >
+                                                <template #prepend>
+                                                    <v-icon
+                                                        :icon="!item.solarEventStart ? 'mdi-clock-start' : 'mdi-clock-end'"
+                                                    />
+                                                </template>
+                                                <v-list-item-title
+                                                    :class="{ 'text-green': !item.solarEventStart, 'text-red': item.solarEventStart }"
+                                                >
+                                                    {{
+                                                        !item.solarEventStart ? 'Start Time' : 'End Time' }}
+                                                </v-list-item-title>
+                                                <v-list-item-subtitle>
+                                                    {{ formatTime(item.solarEventTimespanTime)
+                                                    }}
+                                                </v-list-item-subtitle>
+                                            </v-list-item>
                                             <v-list-item v-if="item.minutesInterval" class="prepend-icon-spacing">
                                                 <template #prepend>
                                                     <v-icon>mdi-repeat</v-icon>
@@ -172,13 +213,14 @@
                                                 <v-list-item-title>Interval (hours)</v-list-item-title>
                                                 <v-list-item-subtitle>{{ item.hourlyInterval }}</v-list-item-subtitle>
                                             </v-list-item>
-                                            <v-list-item v-if="item.hasDuration" class="prepend-icon-spacing">
+                                            <v-list-item v-if="item.hasDuration === true" class="prepend-icon-spacing">
                                                 <template #prepend>
                                                     <v-icon>mdi-timer-sand</v-icon>
                                                 </template>
                                                 <v-list-item-title>Duration</v-list-item-title>
                                                 <v-list-item-subtitle>{{ item.duration }} minutes</v-list-item-subtitle>
                                             </v-list-item>
+                                            <v-divider v-if="item.solarEventTimespanTime || item.solarDays" />
                                             <v-list-subheader v-if="item.solarEvent">Solar</v-list-subheader>
                                             <v-list-item v-if="item.solarEvent" class="prepend-icon-spacing">
                                                 <template #prepend>
@@ -277,7 +319,7 @@
                             v-model="enabled" :label="enabled ? 'Enabled' : 'Disabled'"
                             :color="enabled ? 'primary' : 'default'" required class="mr-2"
                         />
-                        <v-btn v-if="isEditing" icon max-height="50" color="red-lighten-1" @click="openDeleteDialog()">
+                        <v-btn v-if="isEditing" icon color="red-lighten-1" @click="openDeleteDialog()">
                             <v-icon>mdi-delete</v-icon>
                         </v-btn>
                     </div>
@@ -393,30 +435,48 @@
                             <v-col v-if="period === 'daily'" cols="12" class="d-flex justify-center">
                                 <v-select
                                     v-model="dailyDays" :items="daysOfWeek" label="Select Days" multiple required
-                                    :rules="[rules.required]"
+                                    chips :rules="[rules.required]"
                                 >
                                     <template #prepend-inner>
                                         <v-icon>mdi-calendar-range</v-icon>
+                                    </template>
+
+                                    <template #chip="{ item}">
+                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                            <span>{{ item.value }}</span>
+                                        </v-chip>
                                     </template>
                                 </v-select>
                             </v-col>
                             <v-col v-if="period === 'weekly'" cols="12" class="d-flex justify-center">
                                 <v-select
                                     v-model="weeklyDays" :items="daysOfWeek" label="Select Days" multiple required
-                                    :rules="[rules.required]"
+                                    chips :rules="[rules.required]"
                                 >
                                     <template #prepend-inner>
                                         <v-icon>mdi-calendar-weekend</v-icon>
+                                    </template>
+
+                                    <template #chip="{ item}">
+                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                            <span>{{ item.value }}</span>
+                                        </v-chip>
                                     </template>
                                 </v-select>
                             </v-col>
                             <v-col v-if="period === 'monthly'" cols="12" class="d-flex justify-center">
                                 <v-select
-                                    v-model="monthlyDays" :items="daysOfMonth" label="Select Days" multiple
+                                    v-model="monthlyDays" :items="daysOfMonth" label="Select Days" multiple chips
                                     required :rules="[rules.required]"
                                 >
                                     <template #prepend-inner>
                                         <v-icon>mdi-calendar-month-outline</v-icon>
+                                    </template>
+
+                                    <template #chip="{ item}">
+                                       <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                            <span>{{ item.value }}</span>
+                                        </v-chip>
                                     </template>
                                 </v-select>
                             </v-col>
@@ -478,7 +538,6 @@
                                     <v-dialog v-model="modalTime" activator="parent" width="auto">
                                         <v-time-picker
                                             v-if="modalTime" v-model="time"
-                                            :max="hasEndTime ? endTime : undefined"
                                             :format="props.use24HourFormat ? '24hr' : 'ampm'"
                                             :ampm-in-title="!props.use24HourFormat"
                                         />
@@ -566,6 +625,28 @@
                                 </template>
                             </v-select>
                         </v-col>
+                        <v-col cols="12" class="d-flex justify-center">
+                            <v-expansion-panels v-model="solarShowMore" class="my-4" variant="popout">
+                                <v-expansion-panel title="More Options" value="moreOptions">
+                                    <v-expansion-panel-text>
+                                        <v-select
+                                            v-model="solarDays" :items="daysOfWeek" label="Select Days" multiple
+                                            required chips :rules="[rules.required]"
+                                        >
+                                            <template #prepend-inner>
+                                                <v-icon>mdi-calendar-range</v-icon>
+                                            </template>
+
+                                            <template #chip="{ item}">
+                                                <v-chip :color="getChipColor(item.value)" density="comfortable">
+                                                    <span>{{ item.value }}</span>
+                                                </v-chip>
+                                            </template>
+                                        </v-select>
+                                    </v-expansion-panel-text>
+                                </v-expansion-panel>
+                            </v-expansion-panels>
+                        </v-col>
                     </v-row>
 
                     <v-row
@@ -582,20 +663,65 @@
                             >
                                 <v-btn prepend-icon="mdi-circle-off-outline" :value="false">None</v-btn>
                                 <v-btn prepend-icon="mdi-timer-sand-complete" :value="true">Duration</v-btn>
+                                <v-btn
+                                    v-if="(scheduleType === 'solar')" prepend-icon="mdi-clock-time-four-outline"
+                                    :value="'time'"
+                                >
+                                    Time
+                                </v-btn>
                             </v-btn-toggle>
                         </v-col>
+                        <v-col v-if="hasDuration === 'time'" cols="12" class="d-flex justify-center">
+                            <v-radio-group v-model="solarEventStart" inline class="d-flex justify-center">
+                                <v-radio label="Start" color="green" :value="false" class="mx-6" />
+                                <v-radio label="End" color="red" :value="true" class="mx-6" />
+                            </v-radio-group>
+                        </v-col>
+
                         <v-col
-                            v-if="((period === 'minutes' || period === 'hourly') || scheduleType === 'solar') && hasDuration"
+                            v-if="((period === 'minutes' || period === 'hourly') || scheduleType === 'solar')"
                             cols="12" class="d-flex justify-center"
                         >
                             <v-select
-                                v-model="duration" :items="durationItems" label="Duration (minutes)"
-                                :rules="[rules.required]"
+                                v-if="hasDuration === true" v-model="duration" :items="durationItems"
+                                label="Duration (minutes)" :rules="[rules.required]"
                             >
                                 <template #prepend-inner>
                                     <v-icon>mdi-timer-sand-complete</v-icon>
                                 </template>
                             </v-select>
+                            <v-col v-if="hasDuration === 'time'" class="d-flex justify-center">
+                                <v-text-field
+                                    v-if="props.useNewTimePicker" v-model="formattedSolarEventTimespanTime"
+                                    :active="modalTime" :focused="modalTime" readonly :rules="[rules.required]"
+                                    label="Time"
+                                >
+                                    <template #prepend-inner>
+                                        <v-icon
+                                            :color="solarEventStart ? 'red' : 'green'"
+                                            :icon="solarEventStart ? 'mdi-clock-end' : 'mdi-clock-start'"
+                                        />
+                                    </template>
+                                    <v-dialog v-model="modalTime" activator="parent" width="auto">
+                                        <v-time-picker
+                                            v-if="modalTime" v-model="solarEventTimespanTime"
+                                            :format="props.use24HourFormat ? '24hr' : 'ampm'"
+                                            :ampm-in-title="!props.use24HourFormat"
+                                        />
+                                    </v-dialog>
+                                </v-text-field>
+                                <v-text-field
+                                    v-else v-model="solarEventTimespanTime" label="Time" type="time"
+                                    :rules="[rules.required]"
+                                >
+                                    <template #prepend-inner>
+                                        <v-icon
+                                            :color="solarEventStart ? 'red' : 'green'"
+                                            :icon="solarEventStart ? 'mdi-clock-end' : 'mdi-clock-start'"
+                                        />
+                                    </template>
+                                </v-text-field>
+                            </v-col>
                         </v-col>
                     </v-row>
 
@@ -668,33 +794,67 @@
                         </v-col>
                         <v-col cols="12" class="d-flex justify-center">
                             <v-btn-toggle
-                                v-model="payloadType" mandatory divided variant="elevated" border="sm" rounded="xl"
+                                v-model="payloadType" mandatory divided variant="elevated" border="sm"
+                                rounded="xl"
                             >
-                                <v-btn v-if="!isTimespanSchedule" prepend-icon="mdi-close-circle-outline" :value="false" color="red">False</v-btn>
-                                <v-btn v-if="!isTimespanSchedule" prepend-icon="mdi-check-circle-outline" :value="true" color="green">True</v-btn>
-                                <v-btn v-if="isTimespanSchedule" prepend-icon="mdi-check-circle-outline" :value="'true_false'" color="green">True/False</v-btn>
+                                <v-btn
+                                    v-if="!isTimespanSchedule" prepend-icon="mdi-close-circle-outline" :value="false"
+                                    color="red"
+                                >
+                                    False
+                                </v-btn>
+                                <v-btn
+                                    v-if="!isTimespanSchedule" prepend-icon="mdi-check-circle-outline" :value="true"
+                                    color="green"
+                                >
+                                    True
+                                </v-btn>
+                                <v-btn
+                                    v-if="isTimespanSchedule" prepend-icon="mdi-check-circle-outline"
+                                    :value="'true_false'" color="green"
+                                >
+                                    True/False
+                                </v-btn>
                                 <v-btn prepend-icon="mdi-code-braces" :value="'custom'" color="blue">Custom</v-btn>
                             </v-btn-toggle>
                         </v-col>
                         <v-col v-if="payloadType === 'custom'" cols="12" class="d-flex justify-center mt-3">
                             <v-select
-                                v-model="customPayloadStart"
-                                :items="customPayloads"
-                                :item-title="getCustomPayloadTitle"
-                                item-value="id"
-                                :label="isTimespanSchedule ? 'Custom Output: Start' : 'Custom Output'"
+                                v-model="customPayloadStart" :items="customPayloads"
+                                :item-title="getCustomPayloadTitle" item-value="id"
+                                :label="isTimespanSchedule ? hasDuration !== 'time' ? 'Custom Output: Start' : solarEventStart ? 'Custom Output: Solar Event' : 'Custom Output: Start Time ' : 'Custom Output'"
                                 no-data-text="No custom payloads defined"
-                            />
+                            >
+                                <template #prepend-inner>
+                                    <v-icon
+                                        v-if="isTimespanSchedule && scheduleType === 'solar' && hasDuration === 'time'"
+                                        color="green" :icon="solarEventStart ? 'mdi-weather-sunset' : 'mdi-clock'"
+                                    />
+                                    <v-icon
+                                        :color="isTimespanSchedule ? 'green' : undefined"
+                                        :icon="isTimespanSchedule ? 'mdi-arrow-expand-right' : 'mdi-arrow-right-thin'"
+                                    />
+                                </template>
+                            </v-select>
                         </v-col>
-                        <v-col v-if="payloadType === 'custom' && isTimespanSchedule" cols="12" class="d-flex justify-center">
+                        <v-col
+                            v-if="payloadType === 'custom' && isTimespanSchedule" cols="12"
+                            class="d-flex justify-center"
+                        >
                             <v-select
-                                v-model="customPayloadEnd"
-                                :items="customPayloads"
-                                :item-title="getCustomPayloadTitle"
-                                item-value="id"
-                                label="Custom Output: End"
+                                v-model="customPayloadEnd" :items="customPayloads"
+                                :item-title="getCustomPayloadTitle" item-value="id"
+                                :label="isTimespanSchedule && hasDuration !== 'time' ? 'Custom Output: End' : !solarEventStart ? 'Custom Output: Solar Event' : 'Custom Output: End Time '"
                                 no-data-text="No custom payloads defined"
-                            />
+                            >
+                                <template #prepend-inner>
+                                    <v-icon
+                                        v-if="isTimespanSchedule && scheduleType === 'solar' && hasDuration === 'time'"
+                                        color="red" :icon="!solarEventStart ? 'mdi-weather-sunset' : 'mdi-clock'"
+                                    />
+                                    <v-icon color="red" icon="mdi-arrow-collapse-right" />
+                                </template>
+                            </v-select>
                         </v-col>
                     </v-row>
                 </v-card-text>
@@ -844,6 +1004,10 @@ export default {
             hourlyInterval: null,
             solarEvent: null,
             offset: null,
+            solarDays: [],
+            solarShowMore: [],
+            solarEventStart: true,
+            solarEventTimespanTime: null,
             payloadType: true,
             payloadValue: true,
             customPayloadStart: null,
@@ -871,8 +1035,8 @@ export default {
                 'July', 'August', 'September', 'October', 'November', 'December'
             ],
             daysOfWeek: [
-                'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                'Saturday', 'Sunday'
+                'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                'Saturday'
             ],
 
             // Solar events
@@ -934,6 +1098,10 @@ export default {
         formattedEndTime () {
             if (!this.endTime) return ''
             return this.formatTime(this.endTime)
+        },
+        formattedSolarEventTimespanTime () {
+            if (!this.solarEventTimespanTime) return ''
+            return this.formatTime(this.solarEventTimespanTime)
         },
         durationItems () {
             if (this.scheduleType === 'time') {
@@ -1008,6 +1176,7 @@ export default {
         customPayloads () {
             return this.props.customPayloads || []
         }
+
     },
 
     watch: {
@@ -1053,6 +1222,8 @@ export default {
                     if (this.payloadType !== 'custom') {
                         this.payloadType = 'true_false'
                     }
+                } else if (value === 'time') {
+                    this.payloadType = 'true_false'
                 } else {
                     if (this.payloadType !== 'custom') {
                         this.payloadType = false
@@ -1089,6 +1260,21 @@ export default {
         scheduleType (value) {
             if (value === 'cron') {
                 this.getCronDescription(this.cronValue)
+            }
+        },
+        dailyDays (value) {
+            if (value?.length && Array.isArray(value) && this.period === 'daily' && this.scheduleType === 'time') {
+                this.dailyDays = this.sortDaysOfWeek(value)
+            }
+        },
+        weeklyDays (value) {
+            if (value?.length && Array.isArray(value) && this.period === 'weekly' && this.scheduleType === 'time') {
+                this.weeklyDays = this.sortDaysOfWeek(value)
+            }
+        },
+        solarDays (value) {
+            if (value?.length && Array.isArray(value) && this.scheduleType === 'solar') {
+                this.solarDays = this.sortDaysOfWeek(value)
             }
         }
 
@@ -1316,9 +1502,19 @@ export default {
                 newSchedule.solarEvent = this.mapSolarEvent(this.solarEvent, false)
                 newSchedule.offset = this.offset
 
-                if (this.hasDuration) {
+                if (this.hasDuration === true) {
                     newSchedule.hasDuration = this.hasDuration
                     newSchedule.duration = this.duration
+                }
+
+                if (this.solarDays && this.solarDays.length > 0 && this.solarDays.length < 7) {
+                    newSchedule.solarDays = this.solarDays
+                }
+
+                if (this.hasDuration === 'time') {
+                    newSchedule.hasDuration = this.hasDuration
+                    newSchedule.solarEventStart = this.solarEventStart
+                    newSchedule.solarEventTimespanTime = this.solarEventTimespanTime
                 }
             }
 
@@ -1360,6 +1556,7 @@ export default {
             this.closeDialog()
             this.expanded = []
         },
+
         validateSchedule () {
             if (!this.name) {
                 return { alert: true, message: 'Schedule Name is required.' }
@@ -1433,10 +1630,25 @@ export default {
                 if (!this.offset && this.offset !== 0) {
                     return { alert: true, message: 'Offset is required for Solar schedule type.' }
                 }
-                if (this.hasDuration && !this.duration) {
+                if (this.hasDuration === true && !this.duration) {
                     return {
                         alert: true,
                         message: 'Duration is required when Duration is enabled for Solar schedule type.'
+                    }
+                }
+                if (this.hasDuration === 'time') {
+                    if (this.solarEventStart === null) {
+                        return {
+                            alert: true,
+                            message: 'Start or end definition is required when Time is enabled for Solar schedule type.'
+                        }
+                    }
+
+                    if (!this.solarEventTimespanTime) {
+                        return {
+                            alert: true,
+                            message: 'Time is required when Time is enabled for Solar schedule type.'
+                        }
                     }
                 }
             } else if (this.scheduleType === 'cron') {
@@ -1481,6 +1693,22 @@ export default {
                 return [this.yearlyDay]
             }
             return []
+        },
+        sortDaysOfWeek (days) {
+            return days.sort((a, b) => this.daysOfWeek.indexOf(a) - this.daysOfWeek.indexOf(b))
+        },
+        getChipColor (day) {
+            const colors = {
+                Sunday: 'red',
+                Monday: 'yellow-darken-2',
+                Tuesday: 'orange-darken-1',
+                Wednesday: 'green',
+                Thursday: 'purple-lighten-1',
+                Friday: 'blue',
+                Saturday: 'pink'
+            }
+
+            return colors[day]
         },
         toggleSchedule (item) {
             const enabled = !item.enabled
@@ -1549,7 +1777,17 @@ export default {
             this.hasEndTime = item.hasEndTime !== undefined ? item.hasEndTime : this.hasEndTime
             this.endTime = item.endTime || this.endTime
             this.solarEvent = this.mapSolarEvent(item.solarEvent) || this.solarEvent
+            this.solarDays = item.solarDays || this.solarDays
+            const length = this.solarDays?.length
+            this.solarShowMore = length > 0 && length < 7 ? ['moreOptions'] : []
             this.offset = item.offset || this.offset
+            this.solarEventTimespanTime = item.solarEventTimespanTime || this.solarEventTimespanTime
+            this.solarEventStart = item.solarEventStart !== undefined ? item.solarEventStart : this.solarEventStart
+
+            if (this.scheduleType === 'cron') {
+                this.cronValue = item.startCronExpression || this.cronValue
+            }
+
             if (this.scheduleType === 'cron') {
                 this.cronValue = item.startCronExpression || this.cronValue
             }
@@ -1595,7 +1833,7 @@ export default {
             this.enabled = true
             this.scheduleType = 'time'
             this.period = 'daily'
-            this.dailyDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            this.dailyDays = [...this.daysOfWeek]
             this.weeklyDays = ['Monday']
             this.monthlyDays = [1]
             this.yearlyDay = 1
@@ -1607,6 +1845,9 @@ export default {
             this.hourlyInterval = 1
             this.solarEvent = 'Sunrise'
             this.offset = 0
+            this.solarDays = [...this.daysOfWeek]
+            this.solarEventStart = true
+            this.solarEventTimespanTime = '00:00'
             this.cronValue = '*/5 * * * *'
             this.hasDuration = false
             this.duration = 1
