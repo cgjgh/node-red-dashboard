@@ -68,6 +68,18 @@ const solarEvents = [
     { title: 'Nadir', value: 'nadir' }
 ]
 
+const dayMapping = {
+    Sunday: 'Sun',
+    Monday: 'Mon',
+    Tuesday: 'Tue',
+    Wednesday: 'Wed',
+    Thursday: 'Thu',
+    Friday: 'Fri',
+    Saturday: 'Sat'
+}
+
+const allDaysOfWeek = Object.keys(dayMapping)
+
 // accepted commands using topic as the command & (in compatible cases, the payload is the schedule name)
 // commands not supported by topic are : add/update & describe
 const controlTopics = [
@@ -284,18 +296,20 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
             name: 'dummy',
             solarType,
             solarEvents,
+            solarDays: opts.solarDays,
             payloadType: 'default',
             payload: ''
         }
-
         if (validateOpt(opt)) {
             const pos = coordParser(opt.location)
             const offset = isNumber(opt.offset) ? parseInt(opt.offset) : 0
             const nowOffset = new Date(now.getTime() - offset * 60000)
-            result = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, now, offset)
+            const daysOfWeek = opt?.solarDays || null
+
+            result = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, now, offset, daysOfWeek)
             // eslint-disable-next-line eqeqeq
             if (opts.includeSolarStateOffset && offset != 0) {
-                const ssOffset = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, nowOffset, 0)
+                const ssOffset = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, nowOffset, 0, daysOfWeek)
                 result.solarStateOffset = ssOffset.solarState
             }
             result.offset = offset
@@ -336,7 +350,9 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
                 if (solarType === 'all') {
                     result.description = 'All Solar Events'
                 } else {
-                    result.description = "Solar Events: '" + solarEvents.split(',').join(', ') + "'"
+                    const solarEventsArray = solarEvents.split(',')
+                    const events = solarEventsArray.map(event => mapSolarEvent(event)).join(', ')
+                    result.description = events + ((opts.solarDays && opts.solarDays.length) ? ' only on ' + opts.solarDays.map(day => day.substring(0, 3)).join(',') : '')
                 }
             } else {
                 if (count === 1) {
@@ -396,6 +412,7 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
             name: 'dummy',
             solarType,
             solarEvents,
+            solarDays: opts.solarDays,
             payloadType: 'default',
             payload: ''
         }
@@ -404,10 +421,11 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
             const pos = coordParser(opt.location)
             const offset = isNumber(opt.offset) ? parseInt(opt.offset) : 0
             const nowOffset = new Date(now.getTime() - offset * 60000)
-            result = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, now, offset)
+            const daysOfWeek = opt?.solarDays || null
+            result = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, now, offset, daysOfWeek)
             // eslint-disable-next-line eqeqeq
             if (opts.includeSolarStateOffset && offset != 0) {
-                const ssOffset = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, nowOffset, 0)
+                const ssOffset = getSolarTimes(pos.lat, pos.lon, 0, solarEvents, nowOffset, 0, daysOfWeek)
                 result.solarStateOffset = ssOffset.solarState
             }
             result.offset = offset
@@ -448,7 +466,9 @@ async function _asyncDescribeExpression (expression, expressionType, timeZone, o
                 if (solarType === 'all') {
                     result.description = 'All Solar Events'
                 } else {
-                    result.description = "Solar Events: '" + solarEvents.split(',').join(', ') + "'"
+                    const solarEventsArray = solarEvents.split(',')
+                    const events = solarEventsArray.map(event => mapSolarEvent(event)).join(', ')
+                    result.description = events + ((opts.solarDays && opts.solarDays.length) ? ' only on ' + opts.solarDays.map(day => day.substring(0, 3)).join(',') : '')
                 }
             } else {
                 if (count === 1) {
@@ -618,6 +638,52 @@ function applyOptionDefaults (node, option, optionIndex) {
         option.locationType = node.defaultLocationType || 'fixed'
     }
 }
+
+// Function to get the next occurrence of a specific weekday from a given start date, including the start date itself
+// function getNextWeekday (weekdays, startDate = new Date()) {
+//     const start = new Date(startDate)
+//     const startIndex = start.getUTCDay()
+//     let minDays = 7 // initialize with maximum days in a week
+//     weekdays.forEach(day => {
+//         const dayIndex = allDaysOfWeek.indexOf(day)
+//         if (dayIndex === -1) {
+//             throw new Error(`Invalid weekday name: ${day}`)
+//         }
+
+//         const daysUntilNext = (dayIndex - startIndex + 7) % 7
+//         if (daysUntilNext < minDays) {
+//             minDays = daysUntilNext
+//         }
+//     })
+//     // Add minDays to start date to get the next occurring weekday date
+//     return new Date(start.getTime() + minDays * 24 * 60 * 60 * 1000)
+// }
+
+function getNextWeekday (weekdays, startDate = new Date()) {
+    const start = new Date(startDate)
+    const startIndex = start.getUTCDay()
+    let minDays = 7 // initialize with maximum days in a week
+    const now = new Date()
+    weekdays.forEach(day => {
+        const dayIndex = allDaysOfWeek.indexOf(day)
+        if (dayIndex === -1) {
+            throw new Error(`Invalid weekday name: ${day}`)
+        }
+
+        const daysUntilNext = (dayIndex - startIndex + 7) % 7
+        if (daysUntilNext < minDays) {
+            minDays = daysUntilNext
+        }
+    })
+    // Calculate the next occurring weekday date
+    const nextDate = new Date(start.getTime() + minDays * 24 * 60 * 60 * 1000)
+    // Check if the nextDate at 00:00 is still greater than now UTC
+    if (nextDate.setUTCHours(0, 0, 0, 0) > now) {
+        return nextDate
+    }
+    return new Date(nextDate.setUTCHours(0, 0, 0, 0))
+}
+
 function parseDateSequence (expression) {
     const result = { isDateSequence: false, expression }
     let dates = expression
@@ -651,18 +717,25 @@ function parseSolarTimes (opt) {
     const pos = coordParser(opt.location || '0.0,0.0')
     const offset = opt.offset ? parseInt(opt.offset) : 0
     const date = opt.date ? new Date(opt.date) : new Date()
+    const daysOfWeek = opt.solarDays || null
     const events = opt.solarType === 'all' ? PERMITTED_SOLAR_EVENTS : opt.solarEvents
-    const result = getSolarTimes(pos.lat, pos.lon, 0, events, date, offset)
+    const result = getSolarTimes(pos.lat, pos.lon, 0, events, date, offset, daysOfWeek)
     const task = parseDateSequence(result.eventTimes.map((o) => o.timeOffset))
     task.solarEventTimes = result
     return task
 }
 
-function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offset = 0) {
+function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offset = 0, daysOfWeek = null) {
     // performance.mark('Start');
     const solarEventsPast = [...PERMITTED_SOLAR_EVENTS]
     const solarEventsFuture = [...PERMITTED_SOLAR_EVENTS]
     const solarEventsArr = []
+
+    let getNextWeek = false
+    let initialStartDate
+    let nextType
+    let nextTime
+    let nextTimeOffset
 
     // get list of usable solar events into solarEventsArr
     let solarEventsArrTemp = []
@@ -684,174 +757,212 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
     elevation = isNumber(elevation) ? parseInt(elevation) : 0// not used for now
     startDate = startDate ? new Date(startDate) : new Date()
 
-    let scanDate = new Date(startDate.toDateString()) // new Date(startDate); //scanDate = new Date(startDate.toDateString())
-    scanDate.setDate(scanDate.getDate() + 1)// fwd one day to catch times behind of scan day
-    let loopMonitor = 0
-    const result = []
+    for (let retries = 0; retries < 2; retries++) {
+        if (daysOfWeek && daysOfWeek.length > 0) {
+            startDate = getNextWeekday(daysOfWeek, startDate)
+        }
+        if (!getNextWeek) {
+            initialStartDate = startDate
+        }
 
-    // performance.mark('initEnd')
-    // performance.measure('Start to Now', 'Start', 'initEnd')
-    // performance.mark('FirstScanStart');
+        let scanDate = new Date(startDate.toDateString()) // new Date(startDate); //scanDate = new Date(startDate.toDateString())
+        scanDate.setDate(scanDate.getDate() + 1)// fwd one day to catch times behind of scan day
+        let loopMonitor = 0
+        const result = []
 
-    // first scan backwards to get prior solar events
-    while (loopMonitor < 3 && solarEventsPast.length) {
-        loopMonitor++
-        const timesIteration1 = SunCalc.getTimes(scanDate, lat, lng)
-        // timesIteration1 = new SolarCalc(scanDate,lat,lng);
+        // performance.mark('initEnd')
+        // performance.measure('Start to Now', 'Start', 'initEnd')
+        // performance.mark('FirstScanStart');
 
-        for (let index = 0; index < solarEventsPast.length; index++) {
-            const se = solarEventsPast[index]
-            const seTime = timesIteration1[se]
-            const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
-            if (isValidDateObject(seTimeOffset) && seTimeOffset <= startDate) {
-                result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
-                solarEventsPast.splice(index, 1)// remove that item
-                index--
+        // first scan backwards to get prior solar events
+        while (loopMonitor < 3 && solarEventsPast.length) {
+            loopMonitor++
+            const timesIteration1 = SunCalc.getTimes(scanDate, lat, lng)
+            // timesIteration1 = new SolarCalc(scanDate,lat,lng);
+
+            for (let index = 0; index < solarEventsPast.length; index++) {
+                const se = solarEventsPast[index]
+                const seTime = timesIteration1[se]
+                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
+                if (isValidDateObject(seTimeOffset) && seTimeOffset <= startDate) {
+                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
+                    solarEventsPast.splice(index, 1)// remove that item
+                    index--
+                }
+            }
+            scanDate.setDate(scanDate.getDate() - 1)
+        }
+
+        scanDate = new Date(startDate.toDateString())
+        scanDate.setDate(scanDate.getDate() - 1)// back one day to catch times ahead of current day
+        loopMonitor = 0
+        // now scan forwards to get future events
+        while (loopMonitor < 183 && solarEventsFuture.length) {
+            loopMonitor++
+            const timesIteration2 = SunCalc.getTimes(scanDate, lat, lng)
+            // timesIteration2 = new SolarCalc(scanDate,lat,lng);
+            for (let index = 0; index < solarEventsFuture.length; index++) {
+                const se = solarEventsFuture[index]
+                const seTime = timesIteration2[se]
+                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
+                if (isValidDateObject(seTimeOffset) && seTimeOffset > startDate) {
+                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
+                    solarEventsFuture.splice(index, 1)// remove that item
+                    index--
+                }
+            }
+            scanDate.setDate(scanDate.getDate() + 1)
+        }
+        // performance.mark('SecondScanEnd');
+        // performance.measure('FirstScanEnd to SecondScanEnd', 'FirstScanEnd', 'SecondScanEnd');
+
+        // sort the results to get a timeline
+        const sorted = result.sort((a, b) => {
+            if (a.time < b.time) {
+                return -1
+            } else if (a.time > b.time) {
+                return 1
+            } else {
+                return 0
+            }
+        })
+
+        // now scan through sorted solar events to determine day/night/twilight etc
+        let state = ''; const solarState = {}
+        for (let index = 0; index < sorted.length; index++) {
+            const event = sorted[index]
+            if (event.time < startDate) {
+                switch (event.event) {
+                case 'nightEnd':
+                    state = 'Astronomical Twilight'// todo: i18n
+                    updateSolarState(solarState, state, 'rise', false, false, true, false, false, false, false)
+                    break
+                    // case "astronomicalDawn":
+                    //     state = "Astronomical Twilight";//todo: i18n
+                    //     updateSolarState(solarState,state,"rise",false,false,true,false,false,false,false);
+                    //     break;
+                case 'nauticalDawn':
+                    state = 'Nautical Twilight'
+                    updateSolarState(solarState, state, 'rise', false, false, false, true, false, false, false)
+                    break
+                case 'civilDawn':
+                    state = 'Civil Twilight'
+                    updateSolarState(solarState, state, 'rise', false, false, false, false, true, true, false)
+                    break
+                    // case "morningGoldenHourStart":
+                    //     updateSolarState(solarState,null,"rise",false,false,false,false,true,true,false);
+                    //     break;
+                case 'sunrise':
+                    state = 'Civil Twilight'
+                    updateSolarState(solarState, state, 'rise', false, false, false, false, true, true, false)
+                    break
+                case 'sunriseEnd':
+                    state = 'Day'
+                    updateSolarState(solarState, state, 'rise', true, false, false, false, false, true, false)
+                    break
+                case 'morningGoldenHourEnd':
+                    state = 'Day'
+                    updateSolarState(solarState, state, 'rise', true, false, false, false, false, false, false)
+                    break
+                case 'solarNoon':
+                    updateSolarState(solarState, null, 'fall')
+                    break
+                case 'eveningGoldenHourStart':
+                    state = 'Day'
+                    updateSolarState(solarState, state, 'fall', true, false, false, false, false, false, true)
+                    break
+                case 'sunsetStart':
+                    state = 'Day'
+                    updateSolarState(solarState, state, 'fall', true, false, false, false, false, false, true)
+                    break
+                case 'sunset':
+                    state = 'Civil Twilight'
+                    updateSolarState(solarState, state, 'fall', false, false, false, false, true, false, true)
+                    break
+                    // case "eveningGoldenHourEnd":
+                    //     state = "Nautical Twilight";
+                    //     updateSolarState(solarState,state,"fall",false,false,false,false,true,false,false);
+                    //     break;
+                case 'civilDusk':
+                    state = 'Nautical Twilight'
+                    updateSolarState(solarState, state, 'fall', false, false, false, true, false, false, false)
+                    break
+                case 'nauticalDusk':
+                    state = 'Astronomical Twilight'
+                    updateSolarState(solarState, state, 'fall', false, false, true, false, false, false, false)
+                    break
+                    // case "astronomicalDusk":
+                case 'night':
+                case 'nightStart':
+                    state = 'Night'
+                    updateSolarState(solarState, state, 'fall', false, true, false, false, false, false, false)
+                    break
+                case 'nadir':
+                    updateSolarState(solarState, null, 'rise')
+                    break
+                }
+            } else {
+                break
             }
         }
-        scanDate.setDate(scanDate.getDate() - 1)
-    }
+        // update final states
+        updateSolarState(solarState)// only sending `stateObject` makes updateSolarState() compute dawn/dusk etc
 
-    scanDate = new Date(startDate.toDateString())
-    scanDate.setDate(scanDate.getDate() - 1)// back one day to catch times ahead of current day
-    loopMonitor = 0
-    // now scan forwards to get future events
-    while (loopMonitor < 183 && solarEventsFuture.length) {
-        loopMonitor++
-        const timesIteration2 = SunCalc.getTimes(scanDate, lat, lng)
-        // timesIteration2 = new SolarCalc(scanDate,lat,lng);
-        for (let index = 0; index < solarEventsFuture.length; index++) {
-            const se = solarEventsFuture[index]
-            const seTime = timesIteration2[se]
-            const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
-            if (isValidDateObject(seTimeOffset) && seTimeOffset > startDate) {
-                result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
-                solarEventsFuture.splice(index, 1)// remove that item
-                index--
+        // now filter to only events of interest
+        const futureEvents = !getNextWeek ? sorted.filter((e) => e && e.timeOffset >= startDate) : sorted.filter((e) => e && e.timeOffset >= initialStartDate)
+        const wantedFutureEvents = []
+        const dayOfWeekNames = Object.keys(dayMapping)
+        for (let index = 0; index < futureEvents.length; index++) {
+            const fe = futureEvents[index]
+            const eventDay = fe.timeOffset.getUTCDay()
+            const eventDayName = dayOfWeekNames[eventDay]
+
+            if (solarEventsArr.includes(fe.event) && (!daysOfWeek || daysOfWeek.includes(eventDayName))) {
+                wantedFutureEvents.push(fe)
             }
         }
-        scanDate.setDate(scanDate.getDate() + 1)
-    }
-    // performance.mark('SecondScanEnd');
-    // performance.measure('FirstScanEnd to SecondScanEnd', 'FirstScanEnd', 'SecondScanEnd');
 
-    // sort the results to get a timeline
-    const sorted = result.sort((a, b) => {
-        if (a.time < b.time) {
-            return -1
-        } else if (a.time > b.time) {
-            return 1
+        if (wantedFutureEvents[0] === undefined) {
+            startDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+            getNextWeek = true
+        } else if (wantedFutureEvents[0] !== undefined) {
+            nextType = wantedFutureEvents[0].event
+            nextTime = wantedFutureEvents[0].time
+            nextTimeOffset = wantedFutureEvents[0].timeOffset
+            return {
+                solarState,
+                nextEvent: nextType,
+                nextEventTime: nextTime,
+                nextEventTimeOffset: nextTimeOffset,
+                eventTimes: wantedFutureEvents
+                // allTimes: sorted,
+                // eventTimesByType: resultCategories
+            }
         } else {
-            return 0
-        }
-    })
-
-    // now scan through sorted solar events to determine day/night/twilight etc
-    let state = ''; const solarState = {}
-    for (let index = 0; index < sorted.length; index++) {
-        const event = sorted[index]
-        if (event.time < startDate) {
-            switch (event.event) {
-            case 'nightEnd':
-                state = 'Astronomical Twilight'// todo: i18n
-                updateSolarState(solarState, state, 'rise', false, false, true, false, false, false, false)
-                break
-                // case "astronomicalDawn":
-                //     state = "Astronomical Twilight";//todo: i18n
-                //     updateSolarState(solarState,state,"rise",false,false,true,false,false,false,false);
-                //     break;
-            case 'nauticalDawn':
-                state = 'Nautical Twilight'
-                updateSolarState(solarState, state, 'rise', false, false, false, true, false, false, false)
-                break
-            case 'civilDawn':
-                state = 'Civil Twilight'
-                updateSolarState(solarState, state, 'rise', false, false, false, false, true, true, false)
-                break
-                // case "morningGoldenHourStart":
-                //     updateSolarState(solarState,null,"rise",false,false,false,false,true,true,false);
-                //     break;
-            case 'sunrise':
-                state = 'Civil Twilight'
-                updateSolarState(solarState, state, 'rise', false, false, false, false, true, true, false)
-                break
-            case 'sunriseEnd':
-                state = 'Day'
-                updateSolarState(solarState, state, 'rise', true, false, false, false, false, true, false)
-                break
-            case 'morningGoldenHourEnd':
-                state = 'Day'
-                updateSolarState(solarState, state, 'rise', true, false, false, false, false, false, false)
-                break
-            case 'solarNoon':
-                updateSolarState(solarState, null, 'fall')
-                break
-            case 'eveningGoldenHourStart':
-                state = 'Day'
-                updateSolarState(solarState, state, 'fall', true, false, false, false, false, false, true)
-                break
-            case 'sunsetStart':
-                state = 'Day'
-                updateSolarState(solarState, state, 'fall', true, false, false, false, false, false, true)
-                break
-            case 'sunset':
-                state = 'Civil Twilight'
-                updateSolarState(solarState, state, 'fall', false, false, false, false, true, false, true)
-                break
-                // case "eveningGoldenHourEnd":
-                //     state = "Nautical Twilight";
-                //     updateSolarState(solarState,state,"fall",false,false,false,false,true,false,false);
-                //     break;
-            case 'civilDusk':
-                state = 'Nautical Twilight'
-                updateSolarState(solarState, state, 'fall', false, false, false, true, false, false, false)
-                break
-            case 'nauticalDusk':
-                state = 'Astronomical Twilight'
-                updateSolarState(solarState, state, 'fall', false, false, true, false, false, false, false)
-                break
-                // case "astronomicalDusk":
-            case 'night':
-            case 'nightStart':
-                state = 'Night'
-                updateSolarState(solarState, state, 'fall', false, true, false, false, false, false, false)
-                break
-            case 'nadir':
-                updateSolarState(solarState, null, 'rise')
-                break
+            return {
+                solarState: {},
+                nextEvent: 'N.A.',
+                nextEventTime: 'N.A.',
+                nextEventTimeOffset: 'N.A.',
+                eventTimes: []
+                // allTimes: sorted,
+                // eventTimesByType: resultCategories
             }
-        } else {
-            break
         }
     }
-    // update final states
-    updateSolarState(solarState)// only sending `stateObject` makes updateSolarState() compute dawn/dusk etc
-
-    // now filter to only events of interest
-    const futureEvents = sorted.filter((e) => e && e.timeOffset >= startDate)
-    const wantedFutureEvents = []
-    for (let index = 0; index < futureEvents.length; index++) {
-        const fe = futureEvents[index]
-        if (solarEventsArr.includes(fe.event)) {
-            wantedFutureEvents.push(fe)
-        }
-    }
-    const nextType = wantedFutureEvents[0].event
-    const nextTime = wantedFutureEvents[0].time
-    const nextTimeOffset = wantedFutureEvents[0].timeOffset
-    // performance.mark('End')
-    // performance.measure('SecondScanEnd to End', 'SecondScanEnd', 'End')
-    // performance.measure('Start to End', 'Start', 'End')
-
+    console.log('failed getting solar times')
     return {
-        solarState,
-        nextEvent: nextType,
-        nextEventTime: nextTime,
-        nextEventTimeOffset: nextTimeOffset,
-        eventTimes: wantedFutureEvents
+        solarState: {},
+        nextEvent: 'N.A.',
+        nextEventTime: 'N.A.',
+        nextEventTimeOffset: 'N.A.',
+        eventTimes: []
         // allTimes: sorted,
         // eventTimesByType: resultCategories
     }
+    // performance.mark('End')
+    // performance.measure('SecondScanEnd to End', 'SecondScanEnd', 'End')
+    // performance.measure('Start to End', 'Start', 'End')
 
     function updateSolarState (stateObject, state, direction, day, night,
         astrologicalTwilight, nauticalTwilight, civilTwilight,
@@ -895,7 +1006,9 @@ function exportTask (task, includeStatus) {
         expressionType: task.node_expressionType,
         ...(task?.node_opt?.schedule && { schedule: exportSchedule(task.node_opt.schedule) }),
         ...(task?.node_opt?.endSchedule && { endSchedule: task.node_opt.endSchedule }),
-        ...(task?.node_opt?.scheduleName && { scheduleName: task.node_opt.scheduleName })
+        ...(task?.node_opt?.scheduleName && { scheduleName: task.node_opt.scheduleName }),
+        ...(task?.node_opt?.solarTimespanSchedule && { solarTimespanSchedule: task.node_opt.solarTimespanSchedule }),
+        ...(task?.node_opt?.solarEventStart && { solarEventStart: task.node_opt.solarEventStart })
     }
 
     if (o.expressionType === 'solar') {
@@ -903,6 +1016,9 @@ function exportTask (task, includeStatus) {
         o.solarEvents = task.node_solarEvents
         o.location = task.node_location
         o.offset = task.node_offset
+        if (task.node_opt?.solarDays) {
+            o.solarDays = task.node_opt.solarDays
+        }
     } else {
         o.expression = task.node_expression
     }
@@ -927,6 +1043,7 @@ function getTaskStatus (node, task, opts, getNextDates = false) {
     opts.locationType = node.defaultLocationType
     opts.defaultLocation = node.defaultLocation
     opts.defaultLocationType = node.defaultLocationType
+    opts.solarDays = task.node_opt?.solarDays || null
     const sol = task.node_expressionType === 'solar'
     const exp = sol ? task.node_location : task.node_expression
     const h = _describeExpression(exp, task.node_expressionType, node.timeZone, task.node_offset, task.node_solarType, task.node_solarEvents, null, opts, node.use24HourFormat)
@@ -976,7 +1093,7 @@ function getTaskStatus (node, task, opts, getNextDates = false) {
 }
 
 function getNextStatus (node, task, getNextDates = false) {
-    if (!task || task.isRunning) {
+    if (task && task.isRunning) {
         const status = getTaskStatus(node, task, { includeSolarStateOffset: true }, getNextDates)
         const nextDate = status.nextDateTZ
         const nextUTC = status.nextDate
@@ -1152,16 +1269,8 @@ module.exports = function (RED) {
                 cmd.location, cmd.expressionType, cmd.timeZone || node.timeZone, cmd.offset,
                 cmd.solarType, cmd.solarEvents, cmd.time, cmd, node.use24HourFormat
             ).description
-            const words = description.replace(/['"]/g, '').replace(',', '').split(' ')
-            for (let i = 0; i < words.length; i++) {
-                if (PERMITTED_SOLAR_EVENTS.includes(words[i])) {
-                    words[i] = mapSolarEvent(words[i])
-                    if (i < words.length - 1) {
-                        words[i] += ', '
-                    }
-                }
-            }
-            return words.join('')
+
+            return description
         }
 
         // Need to improve this to handle more schedule types
@@ -1436,12 +1545,20 @@ module.exports = function (RED) {
                                     let task = null
 
                                     if (isActive && (!topicTasks[schedule.topic] || !topicTasks[schedule.topic].active)) {
-                                        task = getTask(node, schedule.name)
+                                        let scheduleName = schedule.name
+                                        if (schedule.solarEventStart === false) {
+                                            scheduleName = `${schedule.name}_end_sched_type`
+                                        }
+                                        task = getTask(node, scheduleName)
                                         if (task && task.isRunning) {
                                             topicTasks[schedule.topic] = { task, active: true }
                                         }
                                     } else if (!isActive && !topicTasks[schedule.topic]) {
-                                        task = getTask(node, `${schedule.name}_end_sched_type`)
+                                        let scheduleName = `${schedule.name}_end_sched_type`
+                                        if (schedule.solarEventStart === false) {
+                                            scheduleName = schedule.name
+                                        }
+                                        task = getTask(node, scheduleName)
                                         if (task && task.isRunning) {
                                             topicTasks[schedule.topic] = { task, active: false }
                                         }
@@ -2089,7 +2206,7 @@ module.exports = function (RED) {
             task.node_limit = opt.limit || 0
 
             // generate schedule object for UI if it doesn't exist
-            if (!task.node_opt.schedule && !task.node_opt.endSchedule) {
+            if (!task.node_opt.schedule && !task.node_opt.endSchedule && !task.node_opt.solarTimespanSchedule) {
                 const props = generateScheduleObject(task)
                 if (props) {
                     updateSchedule(node, task.name, task, props, true, 'add')
@@ -2105,13 +2222,25 @@ module.exports = function (RED) {
                 if (task.node_opt.schedule) {
                     if (task.node_opt.schedule.hasEndTime || task.node_opt.schedule.hasDuration) {
                         const status = getNextStatus(node, task)
-                        const props = {
-                            nextDate: status.nextDate,
-                            nextDescription: status.nextDescription,
-                            nextUTC: status.nextUTC,
-                            active: true,
-                            currentStartTime: new Date().toISOString()
+                        let props = {}
+                        if (task.node_opt.schedule.hasDuration === 'time' && task.node_opt.schedule.solarEventStart === false) {
+                            props = {
+                                nextEndDate: status.nextDate,
+                                nextEndDescription: status.nextDescription,
+                                nextEndUTC: status.nextUTC,
+                                active: false,
+                                currentStartTime: null
+                            }
+                        } else {
+                            props = {
+                                nextDate: status.nextDate,
+                                nextDescription: status.nextDescription,
+                                nextUTC: status.nextUTC,
+                                active: true,
+                                currentStartTime: new Date().toISOString()
+                            }
                         }
+
                         updateSchedule(node, task.name, task, props, true, 'run')
                     }
                 }
@@ -2127,6 +2256,31 @@ module.exports = function (RED) {
                     updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'run')
                 }
 
+                // solarTimespanSchedule
+                if (task.node_opt.solarTimespanSchedule) {
+                    const status = getNextStatus(node, task)
+                    let props = {}
+
+                    if (task.node_opt.solarEventStart === true) {
+                        props = {
+                            nextEndDate: status.nextDate,
+                            nextEndDescription: status.nextDescription,
+                            nextEndUTC: status.nextUTC,
+                            active: false,
+                            currentStartTime: null
+                        }
+                    } else {
+                        props = {
+                            nextDate: status.nextDate,
+                            nextDescription: status.nextDescription,
+                            nextUTC: status.nextUTC,
+                            active: true,
+                            currentStartTime: new Date().toISOString()
+                        }
+                    }
+
+                    updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'run')
+                }
                 if (isTaskFinished(task)) {
                     process.nextTick(function () {
                         // using nextTick is a work around for an issue (#3) in cronosjs where the job restarts itself after this event handler has exited
@@ -2141,7 +2295,7 @@ module.exports = function (RED) {
                     if (task.node_expressionType === 'solar') {
                         await updateTask(node, task.node_opt, null)
                         if (task.node_opt.schedule) {
-                            if (task.node_opt.schedule.duration) {
+                            if (task.node_opt.schedule.duration && task.node_opt.schedule.hasDuration === true) {
                                 const duration = task.node_opt.schedule.duration * 60 * 1000 // Assuming duration is in minutes
                                 const eventTime = task.node_solarEventTimes.nextEventTimeOffset
 
@@ -2162,6 +2316,31 @@ module.exports = function (RED) {
                                     noExport: true
                                 }
                                 await updateTask(node, endCmd, null)
+                            }
+                            if (task.node_opt.schedule.hasDuration === 'time' && task.node_opt.schedule.solarEventTimespanTime) {
+                                const solarTimespanTask = getTask(node, `${task.node_opt.schedule.name}_end_sched_type`)
+                                const status = getNextStatus(node, solarTimespanTask)
+                                let props = {}
+                                if (task.node_opt.schedule.solarEventStart === true) {
+                                    props = {
+                                        nextEndDate: status.nextDate,
+                                        nextEndDescription: status.nextDescription,
+                                        nextEndUTC: status.nextUTC
+                                    }
+                                } else {
+                                    props = {
+                                        nextDate: status.nextDate,
+                                        nextDescription: status.nextDescription,
+                                        nextUTC: status.nextUTC
+                                    }
+                                }
+                                updateSchedule(node, task.node_opt.schedule.name, null, props, true, 'update')
+                                props = {}
+
+                                const schedule = getSchedule(node, task.node_opt.schedule.name)
+
+                                props.duration = (new Date(schedule.nextUTC).getTime() - new Date(schedule.nextEndUTC).getTime()) / 60000
+                                updateSchedule(node, task.node_opt.schedule.name, null, props, true, 'update')
                             }
                         }
                     }
@@ -2186,11 +2365,21 @@ module.exports = function (RED) {
                     })
                     if (task.node_opt.schedule) {
                         const status = getNextStatus(node, task)
-                        const props = {
-                            enabled: true,
-                            nextDate: status.nextDate,
-                            nextDescription: status.nextDescription,
-                            nextUTC: status.nextUTC
+                        let props = {}
+                        if (task.node_opt.schedule.solarEventStart === false) {
+                            props = {
+                                enabled: true,
+                                nextEndDate: status.nextDate,
+                                nextEndDescription: status.nextDescription,
+                                nextEndUTC: status.nextUTC
+                            }
+                        } else {
+                            props = {
+                                enabled: true,
+                                nextDate: status.nextDate,
+                                nextDescription: status.nextDescription,
+                                nextUTC: status.nextUTC
+                            }
                         }
                         if (!task.node_opt.schedule.hasDuration && !task.node_opt.schedule.hasEndTime) {
                             props.active = null
@@ -2199,7 +2388,7 @@ module.exports = function (RED) {
 
                         updateSchedule(node, task.name, task, props, true, 'start')
                         if (task.node_expressionType === 'solar') {
-                            if (task.node_opt.schedule.duration) {
+                            if (task.node_opt.schedule.duration && task.node_opt.schedule.hasDuration === true) {
                                 const duration = task.node_opt.schedule.duration * 60 * 1000 // Assuming duration is in minutes
                                 const eventTime = task.node_solarEventTimes.nextEventTimeOffset
 
@@ -2258,6 +2447,55 @@ module.exports = function (RED) {
                                         props.active = false
                                     }
                                 } else {
+                                    console.log('Next date is the same as next end date')
+                                }
+                            } else {
+                                console.log('Invalid date format')
+                            }
+                        }
+
+                        updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'started')
+                    }
+
+                    if (task.node_opt.solarTimespanSchedule) {
+                        const status = getNextStatus(node, task)
+                        let props = {}
+                        if (task.node_opt.solarEventStart === true) {
+                            props = {
+                                nextEndDate: status.nextDate,
+                                nextEndDescription: status.nextDescription,
+                                nextEndUTC: status.nextUTC
+                            }
+                        } else {
+                            props = {
+                                nextDate: status.nextDate,
+                                nextDescription: status.nextDescription,
+                                nextUTC: status.nextUTC
+                            }
+                        }
+                        updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'update')
+                        props = {}
+                        const schedule = getSchedule(node, task.node_opt.scheduleName)
+                        if (schedule) {
+                            if (isValidDate(schedule.nextUTC) && isValidDate(schedule.nextEndUTC)) {
+                                const durationInMinutes = Math.abs(new Date(schedule.nextUTC).getTime() - new Date(schedule.nextEndUTC).getTime()) / 60000
+                                if (new Date(schedule.nextUTC) < new Date(schedule.nextEndUTC)) {
+                                    props.duration = durationInMinutes
+                                    props.active = false
+                                } else if (new Date(schedule.nextUTC) > new Date(schedule.nextEndUTC)) {
+                                    if (new Date(schedule.nextEndUTC) > new Date()) {
+                                        props.duration = 24 * 60 - durationInMinutes // Subtract from 24 hours in minutes
+                                        props.active = true
+                                        if (props.duration && schedule.nextEndUTC) {
+                                            props.currentStartTime = new Date(new Date(schedule.nextEndUTC).getTime() - (props.duration * 60000)).toISOString()
+                                        } else {
+                                            props.currentStartTime = new Date().toISOString()
+                                        }
+                                    } else {
+                                        props.active = false
+                                    }
+                                } else {
+                                    props.duration = 0
                                     console.log('Next date is the same as next end date')
                                 }
                             } else {
@@ -2564,6 +2802,21 @@ module.exports = function (RED) {
         }
         // #region UI Actions
         async function submitSchedule (msg) {
+            // Helper function to determine payload and payloadType
+            function getPayloadAndType (schedule, valueKey, defaultValue) {
+                if (schedule?.payloadType === 'custom') {
+                    return {
+                        payload: schedule[valueKey] ?? defaultValue,
+                        payloadType: 'custom'
+                    }
+                } else {
+                    return {
+                        payload: schedule[valueKey] ?? defaultValue,
+                        payloadType: 'bool'
+                    }
+                }
+            }
+
             if (msg?.payload?.schedules) {
                 try {
                     const schedules = base.stores.state.getProperty(node.id, 'schedules') || []
@@ -2675,25 +2928,9 @@ module.exports = function (RED) {
                                 startCronExpression = '0 0 31 2 ? *' // Default to never
                             }
 
-                            // Helper function to determine payload and payloadType
-                            // eslint-disable-next-line no-inner-declarations
-                            function getPayloadAndType (valueKey, defaultValue) {
-                                if (schedule?.payloadType === 'custom') {
-                                    return {
-                                        payload: schedule[valueKey] ?? defaultValue,
-                                        payloadType: 'custom'
-                                    }
-                                } else {
-                                    return {
-                                        payload: schedule[valueKey] ?? defaultValue,
-                                        payloadType: 'bool'
-                                    }
-                                }
-                            }
-
                             // Determine payloads and payloadTypes for start and end commands
-                            const { payload: startPayload, payloadType: startPayloadType } = getPayloadAndType('payloadValue', true)
-                            const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType('endPayloadValue', false)
+                            const { payload: startPayload, payloadType: startPayloadType } = getPayloadAndType(schedule, 'payloadValue', true)
+                            const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType(schedule, 'endPayloadValue', false)
 
                             // Construct startCmd
                             const startCmd = {
@@ -2723,15 +2960,6 @@ module.exports = function (RED) {
                             applyOptionDefaults(node, startCmd)
 
                             // abbreviate days of week to three letters
-                            const dayMapping = {
-                                Monday: 'Mon',
-                                Tuesday: 'Tue',
-                                Wednesday: 'Wed',
-                                Thursday: 'Thu',
-                                Friday: 'Fri',
-                                Saturday: 'Sat',
-                                Sunday: 'Sun'
-                            }
 
                             const description = _describeExpression(
                                 startCmd.expression,
@@ -2775,26 +3003,56 @@ module.exports = function (RED) {
                             }
                         } else if (schedule.scheduleType === 'solar') {
                             if (!schedule.hasDuration) {
-                                // Remove the end task if it exists
+                                // Remove the end/time task if it exists
                                 deleteTask(node, `${schedule.name}_end_sched_type`)
                             }
-                            const cmd = {
+                            // Determine payloads and payloadTypes for start and end commands
+                            const { payload: startPayload, payloadType: startPayloadType } = getPayloadAndType(schedule, 'payloadValue', true)
+                            const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType(schedule, 'endPayloadValue', false)
+
+                            const solarCmd = {
                                 command: 'add',
                                 name: schedule.name,
                                 topic: schedule.topic,
                                 expressionType: 'solar',
                                 solarType: 'selected',
                                 solarEvents: schedule.solarEvent,
+                                solarDays: schedule.solarDays || null,
                                 offset: schedule.offset,
                                 locationType: 'fixed',
-                                payload: schedule?.payloadValue || true,
-                                type: 'bool',
+                                payload: schedule.solarEventStart === false && schedule.hasDuration === 'time' ? endPayload : startPayload,
+                                payloadType: schedule.solarEventStart === false && schedule.hasDuration === 'time' ? endPayloadType : startPayloadType,
                                 schedule,
                                 dontStartTheTask: !schedule.enabled
                             }
 
-                            schedule.description = generateSolarDescription(node, cmd)
-                            cmds.push(cmd)
+                            schedule.description = generateSolarDescription(node, solarCmd)
+                            cmds.push(solarCmd)
+                            if (schedule.hasDuration === 'time' && schedule.solarEventTimespanTime) {
+                                const dailyDaysOfWeek = schedule.solarDays === undefined ? '*' : schedule.solarDays.length === 7 ? '*' : schedule.solarDays.map(day => day.substring(0, 3).toUpperCase()).join(',')
+                                const solarTime = new Date()
+                                solarTime.setHours(schedule.solarEventTimespanTime.split(':')[0])
+                                solarTime.setMinutes(schedule.solarEventTimespanTime.split(':')[1])
+                                const timeCronExpression = `0 ${schedule.solarEventTimespanTime.split(':')[1]} ${schedule.solarEventTimespanTime.split(':')[0]} * * ${dailyDaysOfWeek}`
+
+                                // Construct startCmd
+                                const timeCmd = {
+                                    command: 'add',
+                                    name: `${schedule.name}_end_sched_type`,
+                                    topic: schedule.topic,
+                                    expression: timeCronExpression,
+                                    expressionType: 'cron',
+                                    payload: schedule.solarEventStart === false && schedule.hasDuration === 'time' ? startPayload : endPayload,
+                                    payloadType: schedule.solarEventStart === false && schedule.hasDuration === 'time' ? startPayloadType : endPayloadType,
+                                    scheduleName: schedule.name,
+                                    schedule: null,
+                                    dontStartTheTask: !schedule.enabled,
+                                    solarTimespanSchedule: true,
+                                    solarEventStart: schedule.solarEventStart
+
+                                }
+                                cmds.push(timeCmd)
+                            }
                         } else if (schedule.scheduleType === 'cron') {
                             if (schedule.startCronExpression) {
                                 const startCmd = {
@@ -2809,17 +3067,6 @@ module.exports = function (RED) {
                                     dontStartTheTask: !schedule.enabled
                                 }
                                 applyOptionDefaults(node, startCmd)
-
-                                // abbreviate days of week to three letters
-                                const dayMapping = {
-                                    Monday: 'Mon',
-                                    Tuesday: 'Tue',
-                                    Wednesday: 'Wed',
-                                    Thursday: 'Thu',
-                                    Friday: 'Fri',
-                                    Saturday: 'Sat',
-                                    Sunday: 'Sun'
-                                }
 
                                 const description = _describeExpression(
                                     startCmd.expression,
@@ -2988,17 +3235,6 @@ module.exports = function (RED) {
                 }
 
                 applyOptionDefaults(node, cmd)
-
-                // abbreviate days of week to three letters
-                const dayMapping = {
-                    Monday: 'Mon',
-                    Tuesday: 'Tue',
-                    Wednesday: 'Wed',
-                    Thursday: 'Thu',
-                    Friday: 'Fri',
-                    Saturday: 'Sat',
-                    Sunday: 'Sun'
-                }
 
                 const cronExpression = await _asyncDescribeExpression(
                     cmd.expression,
