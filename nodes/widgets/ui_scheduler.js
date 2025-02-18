@@ -15,6 +15,7 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 */
+const version = '2.1.9-beta.5'
 
 const fs = require('fs')
 const path = require('path')
@@ -22,6 +23,7 @@ const path = require('path')
 const coordParser = require('coord-parser')
 const cronosjs = require('cronosjs-extended')
 const cronstrue = require('cronstrue')
+const analytics = require('node-debug-analytics')
 const prettyMs = require('pretty-ms')
 const SunCalc = require('suncalc2')
 
@@ -342,6 +344,7 @@ function _describeExpression (expression, expressionType, timeZone, offset, sola
         const dsFutureDates = dates.filter(d => d >= now)
         const count = dsFutureDates ? dsFutureDates.length : 0
         result.description = 'Date sequence with fixed dates'
+
         if (task && task._sequence && count) {
             result.nextDate = dsFutureDates[0]
             const ms = result.nextDate.valueOf() - now.valueOf()
@@ -638,30 +641,17 @@ function applyOptionDefaults (node, option, optionIndex) {
         option.locationType = node.defaultLocationType || 'fixed'
     }
 }
-
-// Function to get the next occurrence of a specific weekday from a given start date, including the start date itself
-// function getNextWeekday (weekdays, startDate = new Date()) {
-//     const start = new Date(startDate)
-//     const startIndex = start.getUTCDay()
-//     let minDays = 7 // initialize with maximum days in a week
-//     weekdays.forEach(day => {
-//         const dayIndex = allDaysOfWeek.indexOf(day)
-//         if (dayIndex === -1) {
-//             throw new Error(`Invalid weekday name: ${day}`)
-//         }
-
-//         const daysUntilNext = (dayIndex - startIndex + 7) % 7
-//         if (daysUntilNext < minDays) {
-//             minDays = daysUntilNext
-//         }
-//     })
-//     // Add minDays to start date to get the next occurring weekday date
-//     return new Date(start.getTime() + minDays * 24 * 60 * 60 * 1000)
-// }
-
+/**
+ * Calculates the next occurrence of a specified weekday from a given start date.
+ *
+ * @param {string[]} weekdays - An array of weekday names to search for the next occurrence.
+ * @param {Date} [startDate=new Date()] - The date from which to start the search. Defaults to the current date.
+ * @returns {Date} The date of the next occurrence of one of the specified weekdays.
+ * @throws {Error} If any of the provided weekday names are invalid.
+ */
 function getNextWeekday (weekdays, startDate = new Date()) {
     const start = new Date(startDate)
-    const startIndex = start.getUTCDay()
+    const startIndex = start.getDay()
     let minDays = 7 // initialize with maximum days in a week
     const now = new Date()
     weekdays.forEach(day => {
@@ -678,12 +668,83 @@ function getNextWeekday (weekdays, startDate = new Date()) {
     // Calculate the next occurring weekday date
     const nextDate = new Date(start.getTime() + minDays * 24 * 60 * 60 * 1000)
     // Check if the nextDate at 00:00 is still greater than now UTC
-    if (nextDate.setUTCHours(0, 0, 0, 0) > now) {
-        return nextDate
+
+    const tempNextDate = new Date(nextDate)
+    tempNextDate.setHours(0, 0, 0, 0)
+
+    if (tempNextDate > now) {
+        return tempNextDate
     }
-    return new Date(nextDate.setUTCHours(0, 0, 0, 0))
+    return new Date(nextDate)
 }
 
+function getLastWeekday (weekdays, startDate = new Date()) {
+    const start = new Date(startDate)
+    const startIndex = start.getDay()
+    let minDays = 7 // initialize with maximum days in a week
+
+    weekdays.forEach(day => {
+        const dayIndex = allDaysOfWeek.indexOf(day)
+        if (dayIndex === -1) {
+            throw new Error(`Invalid weekday name: ${day}`)
+        }
+
+        const daysUntilLast = (startIndex - dayIndex + 7) % 7
+
+        if (daysUntilLast !== 0 && daysUntilLast < minDays) {
+            minDays = daysUntilLast
+        }
+    })
+
+    // Calculate the last occurring weekday date
+    const lastDate = new Date(start.getTime() - minDays * 24 * 60 * 60 * 1000)
+
+    // Check if the lastDate at 00:00 is still less than now UTC
+    const tempLastDate = new Date(lastDate)
+    tempLastDate.setHours(0, 0, 0, 0)
+
+    if (tempLastDate < new Date()) {
+        return tempLastDate
+    }
+    return new Date(lastDate)
+}
+
+/**
+ * Retrieves the most recent event from a list of events that matches a specified
+ * solar event and occurred before or at the current time.
+ *
+ * @param {Array} events - An array of event objects, each containing an 'event' and 'timeOffset'.
+ * @param {Array} solarEventsArr - An array of solar event names to match against.
+ * @param {Date} now - The current date and time used to compare event occurrences.
+ * @returns {Object|null} The most recent matching event object, or null if no match is found.
+ */
+function getLastOccurredEvent (events, solarEventsArr, now) {
+    for (let i = events.length - 1; i >= 0; i--) {
+        const item = events[i]
+        if (solarEventsArr.includes(item.event) && new Date(item.timeOffset) <= now) {
+            return item
+        }
+    }
+    return null // If no matching event is found
+}
+
+/**
+ * Parses a given expression to determine if it represents a valid date sequence.
+ *
+ * The function checks if the input expression is a string and splits it by commas.
+ * Each element is trimmed and checked if it resembles a cron-like expression.
+ * If any element is cron-like, the function returns early with a result indicating
+ * failure. Otherwise, it attempts to convert each element into a Date object.
+ *
+ * If the resulting dates can form a valid CronosTask sequence, the function
+ * updates the result to indicate success and includes the sequence details.
+ *
+ * @param {string|Array} expression - The expression to parse, which can be a string
+ *                                    of comma-separated values or an array.
+ * @returns {Object} An object containing the parsing result, including whether
+ *                   the expression is a valid date sequence, the original expression,
+ *                   and the parsed dates if successful.
+ */
 function parseDateSequence (expression) {
     const result = { isDateSequence: false, expression }
     let dates = expression
@@ -727,37 +788,41 @@ function parseSolarTimes (opt) {
 
 function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offset = 0, daysOfWeek = null) {
     // performance.mark('Start');
-    const solarEventsPast = [...PERMITTED_SOLAR_EVENTS]
-    const solarEventsFuture = [...PERMITTED_SOLAR_EVENTS]
-    const solarEventsArr = []
 
     let getNextWeek = false
     let initialStartDate
     let nextType
     let nextTime
     let nextTimeOffset
-
-    // get list of usable solar events into solarEventsArr
-    let solarEventsArrTemp = []
-    if (typeof solarEvents === 'string') {
-        solarEventsArrTemp = solarEvents.split(',')
-    } else if (Array.isArray(solarEvents)) {
-        solarEventsArrTemp = [...solarEvents]
-    } else {
-        throw new Error('solarEvents must be a CSV or Array')
-    }
-    for (let index = 0; index < solarEventsArrTemp.length; index++) {
-        const se = solarEventsArrTemp[index].trim()
-        if (PERMITTED_SOLAR_EVENTS.includes(se)) {
-            solarEventsArr.push(se)
-        }
-    }
+    let lastType
+    let lastTime
+    let lastTimeOffset
+    const now = new Date()
 
     offset = isNumber(offset) ? parseInt(offset) : 0
     elevation = isNumber(elevation) ? parseInt(elevation) : 0// not used for now
     startDate = startDate ? new Date(startDate) : new Date()
-
     for (let retries = 0; retries < 2; retries++) {
+        const solarEventsPast = [...PERMITTED_SOLAR_EVENTS]
+        const solarEventsFuture = [...PERMITTED_SOLAR_EVENTS]
+        const solarEventsArr = []
+
+        // get list of usable solar events into solarEventsArr
+        let solarEventsArrTemp = []
+        if (typeof solarEvents === 'string') {
+            solarEventsArrTemp = solarEvents.split(',')
+        } else if (Array.isArray(solarEvents)) {
+            solarEventsArrTemp = [...solarEvents]
+        } else {
+            throw new Error('solarEvents must be a CSV or Array')
+        }
+        for (let index = 0; index < solarEventsArrTemp.length; index++) {
+            const se = solarEventsArrTemp[index].trim()
+            if (PERMITTED_SOLAR_EVENTS.includes(se)) {
+                solarEventsArr.push(se)
+            }
+        }
+
         if (daysOfWeek && daysOfWeek.length > 0) {
             startDate = getNextWeekday(daysOfWeek, startDate)
         }
@@ -765,67 +830,7 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
             initialStartDate = startDate
         }
 
-        let scanDate = new Date(startDate.toDateString()) // new Date(startDate); //scanDate = new Date(startDate.toDateString())
-        scanDate.setDate(scanDate.getDate() + 1)// fwd one day to catch times behind of scan day
-        let loopMonitor = 0
-        const result = []
-
-        // performance.mark('initEnd')
-        // performance.measure('Start to Now', 'Start', 'initEnd')
-        // performance.mark('FirstScanStart');
-
-        // first scan backwards to get prior solar events
-        while (loopMonitor < 3 && solarEventsPast.length) {
-            loopMonitor++
-            const timesIteration1 = SunCalc.getTimes(scanDate, lat, lng)
-            // timesIteration1 = new SolarCalc(scanDate,lat,lng);
-
-            for (let index = 0; index < solarEventsPast.length; index++) {
-                const se = solarEventsPast[index]
-                const seTime = timesIteration1[se]
-                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
-                if (isValidDateObject(seTimeOffset) && seTimeOffset <= startDate) {
-                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
-                    solarEventsPast.splice(index, 1)// remove that item
-                    index--
-                }
-            }
-            scanDate.setDate(scanDate.getDate() - 1)
-        }
-
-        scanDate = new Date(startDate.toDateString())
-        scanDate.setDate(scanDate.getDate() - 1)// back one day to catch times ahead of current day
-        loopMonitor = 0
-        // now scan forwards to get future events
-        while (loopMonitor < 183 && solarEventsFuture.length) {
-            loopMonitor++
-            const timesIteration2 = SunCalc.getTimes(scanDate, lat, lng)
-            // timesIteration2 = new SolarCalc(scanDate,lat,lng);
-            for (let index = 0; index < solarEventsFuture.length; index++) {
-                const se = solarEventsFuture[index]
-                const seTime = timesIteration2[se]
-                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
-                if (isValidDateObject(seTimeOffset) && seTimeOffset > startDate) {
-                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset })
-                    solarEventsFuture.splice(index, 1)// remove that item
-                    index--
-                }
-            }
-            scanDate.setDate(scanDate.getDate() + 1)
-        }
-        // performance.mark('SecondScanEnd');
-        // performance.measure('FirstScanEnd to SecondScanEnd', 'FirstScanEnd', 'SecondScanEnd');
-
-        // sort the results to get a timeline
-        const sorted = result.sort((a, b) => {
-            if (a.time < b.time) {
-                return -1
-            } else if (a.time > b.time) {
-                return 1
-            } else {
-                return 0
-            }
-        })
+        const sorted = getSolarEvents(startDate, solarEventsPast, solarEventsFuture)
 
         // now scan through sorted solar events to determine day/night/twilight etc
         let state = ''; const solarState = {}
@@ -907,8 +912,32 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
         }
         // update final states
         updateSolarState(solarState)// only sending `stateObject` makes updateSolarState() compute dawn/dusk etc
+        let lastOccurredEvent
 
-        // now filter to only events of interest
+        // get last occured event if included
+        if ((Math.abs(now - startDate)) <= 60000) {
+            lastOccurredEvent = getLastOccurredEvent(sorted, solarEventsArr, now)
+            console.log('lastOccurredEvent', lastOccurredEvent)
+        }
+
+        if (lastOccurredEvent) {
+            lastType = lastOccurredEvent.event
+            lastTime = lastOccurredEvent.time
+            lastTimeOffset = lastOccurredEvent.timeOffset
+        } else {
+            const lastWeekday = getLastWeekday(daysOfWeek, now)
+            console.log('lastWeekday', lastWeekday)
+            const sorted = getSolarEvents(lastWeekday, [...PERMITTED_SOLAR_EVENTS], [])
+            console.log('sorted', sorted)
+            const lastOccurredEvent = getLastOccurredEvent(sorted, solarEventsArr, now)
+            console.log('lastOccurredEvent', lastOccurredEvent)
+            if (lastOccurredEvent) {
+                lastType = lastOccurredEvent.event
+                lastTime = lastOccurredEvent.time
+                lastTimeOffset = lastOccurredEvent.timeOffset
+            }
+        }
+        // now filter to only future events of interest
         const futureEvents = !getNextWeek ? sorted.filter((e) => e && e.timeOffset >= startDate) : sorted.filter((e) => e && e.timeOffset >= initialStartDate)
         const wantedFutureEvents = []
         const dayOfWeekNames = Object.keys(dayMapping)
@@ -923,7 +952,7 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
         }
 
         if (wantedFutureEvents[0] === undefined) {
-            startDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+            startDate = new Date(startDate.getTime() + 1 * 24 * 60 * 60 * 1000)
             getNextWeek = true
         } else if (wantedFutureEvents[0] !== undefined) {
             nextType = wantedFutureEvents[0].event
@@ -934,7 +963,10 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
                 nextEvent: nextType,
                 nextEventTime: nextTime,
                 nextEventTimeOffset: nextTimeOffset,
-                eventTimes: wantedFutureEvents
+                eventTimes: wantedFutureEvents,
+                lastEvent: lastType,
+                lastEventTime: lastTime,
+                lastEventTimeOffset: lastTimeOffset
                 // allTimes: sorted,
                 // eventTimesByType: resultCategories
             }
@@ -944,7 +976,10 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
                 nextEvent: 'N.A.',
                 nextEventTime: 'N.A.',
                 nextEventTimeOffset: 'N.A.',
-                eventTimes: []
+                eventTimes: [],
+                lastEvent: lastType || 'N.A.',
+                lastEventTime: lastTime || 'N.A.',
+                lastEventTimeOffset: lastTimeOffset || 'N.A.'
                 // allTimes: sorted,
                 // eventTimesByType: resultCategories
             }
@@ -963,6 +998,72 @@ function getSolarTimes (lat, lng, elevation, solarEvents, startDate = null, offs
     // performance.mark('End')
     // performance.measure('SecondScanEnd to End', 'SecondScanEnd', 'End')
     // performance.measure('Start to End', 'Start', 'End')
+
+    function getSolarEvents (startDate, solarEventsPast, solarEventsFuture) {
+        let scanDate = new Date(startDate.toDateString()) // new Date(startDate); //scanDate = new Date(startDate.toDateString())
+        scanDate.setDate(scanDate.getDate() + 1)// fwd one day to catch times behind of scan day
+        let loopMonitor = 0
+        const result = []
+        // performance.mark('initEnd')
+        // performance.measure('Start to Now', 'Start', 'initEnd')
+        // performance.mark('FirstScanStart');
+
+        // first scan backwards to get prior solar events
+        while (loopMonitor < 3 && solarEventsPast.length) {
+            loopMonitor++
+            const timesIteration1 = SunCalc.getTimes(scanDate, lat, lng)
+            // timesIteration1 = new SolarCalc(scanDate,lat,lng);
+
+            for (let index = 0; index < solarEventsPast.length; index++) {
+                const se = solarEventsPast[index]
+                const seTime = timesIteration1[se]
+                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
+                const localTime = formatShortDateTimeWithTZ(seTimeOffset, 'CST', false)
+                if (isValidDateObject(seTimeOffset) && seTimeOffset <= startDate) {
+                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset, localTimeOffset: localTime })
+                    solarEventsPast.splice(index, 1)// remove that item
+                    index--
+                }
+            }
+            scanDate.setDate(scanDate.getDate() - 1)
+        }
+
+        scanDate = new Date(startDate.toDateString())
+        scanDate.setDate(scanDate.getDate() - 1)// back one day to catch times ahead of current day
+        loopMonitor = 0
+        // now scan forwards to get future events
+        while (loopMonitor < 183 && solarEventsFuture.length) {
+            loopMonitor++
+            const timesIteration2 = SunCalc.getTimes(scanDate, lat, lng)
+            // timesIteration2 = new SolarCalc(scanDate,lat,lng);
+            for (let index = 0; index < solarEventsFuture.length; index++) {
+                const se = solarEventsFuture[index]
+                const seTime = timesIteration2[se]
+                const seTimeOffset = new Date(seTime.getTime() + offset * 60000)
+                const localTime = formatShortDateTimeWithTZ(seTimeOffset, 'CST', false)
+                if (isValidDateObject(seTimeOffset) && seTimeOffset > startDate) {
+                    result.push({ event: se, time: seTime, timeOffset: seTimeOffset, localTimeOffset: localTime })
+                    solarEventsFuture.splice(index, 1)// remove that item
+                    index--
+                }
+            }
+            scanDate.setDate(scanDate.getDate() + 1)
+        }
+
+        // performance.mark('SecondScanEnd');
+        // performance.measure('FirstScanEnd to SecondScanEnd', 'FirstScanEnd', 'SecondScanEnd');
+
+        // sort the results to get a timeline
+        return result.sort((a, b) => {
+            if (a.time < b.time) {
+                return -1
+            } else if (a.time > b.time) {
+                return 1
+            } else {
+                return 0
+            }
+        })
+    }
 
     function updateSolarState (stateObject, state, direction, day, night,
         astrologicalTwilight, nauticalTwilight, civilTwilight,
@@ -1049,11 +1150,13 @@ function getTaskStatus (node, task, opts, getNextDates = false) {
     const h = _describeExpression(exp, task.node_expressionType, node.timeZone, task.node_offset, task.node_solarType, task.node_solarEvents, null, opts, node.use24HourFormat)
     let nextDescription = null
     let nextDate = null
+    let lastDate = null
     const running = !isTaskFinished(task)
     if (running) {
         // nextDescription = h.nextDescription;
         nextDescription = h.prettyNext
         nextDate = sol ? h.nextEventTimeOffset : h.nextDate
+        lastDate = sol ? h.lastEventTimeOffset : null
     }
     let tz = node.timeZone
     let localTZ = ''
@@ -1072,6 +1175,8 @@ function getTaskStatus (node, task, opts, getNextDates = false) {
         nextDescription,
         nextDate: running ? nextDate : null,
         nextDateTZ: running ? formatShortDateTimeWithTZ(nextDate, tz, node.use24HourFormat) : null,
+        lastDate,
+        lastDateTZ: lastDate ? formatShortDateTimeWithTZ(lastDate, tz, node.use24HourFormat) : null,
         timeZone: tz,
         serverTime: new Date(),
         serverTimeZone: localTZ,
@@ -1097,11 +1202,13 @@ function getNextStatus (node, task, getNextDates = false) {
         const status = getTaskStatus(node, task, { includeSolarStateOffset: true }, getNextDates)
         const nextDate = status.nextDateTZ
         const nextUTC = status.nextDate
+        const lastDate = status.lastDateTZ
+        const lastUTC = status.lastDate
         let nextDescription = status.nextDescription
         const nextDates = status.nextDates
 
         if (!nextDescription) {
-            const result = { nextDate, nextDescription: 'Never', nextUTC, nextDates }
+            const result = { nextDate, nextDescription: 'Never', nextUTC, nextDates, lastDate, lastUTC }
             return result
         }
 
@@ -1117,10 +1224,10 @@ function getNextStatus (node, task, getNextDates = false) {
             nextDescription = words.join(' ')
         }
 
-        const result = { nextDate, nextDescription, nextUTC, nextDates }
+        const result = { nextDate, nextDescription, nextUTC, nextDates, lastDate, lastUTC }
         return result
     } else {
-        const result = { nextDate: 'Never', nextDescription: 'Never', nextUTC: null, nextDates: [] }
+        const result = { nextDate: 'Never', nextDescription: 'Never', nextUTC: null, nextDates: [], lastDate: null, lastUTC: null }
         return result
     }
 }
@@ -1581,6 +1688,11 @@ module.exports = function (RED) {
                         })
                         .start()
                 }
+                const data = config
+                data.schedules = base?.stores?.state?.getProperty(node.id, 'schedules') || []
+                data.id = node.id
+                data.version = version
+                analytics(data, 'AKfycbyl1LXSmMQlJRXZ9cDt9PeeUUS34QeYHD2MdGDaw_X-4aXOlH3UCeYMXeBzO0HKN8wt')
                 node.postponeSerialisation = false
             } catch (err) {
                 if (node.tasks) {
@@ -2228,6 +2340,8 @@ module.exports = function (RED) {
                                 nextEndDate: status.nextDate,
                                 nextEndDescription: status.nextDescription,
                                 nextEndUTC: status.nextUTC,
+                                lastEndDate: status.lastDate,
+                                lastEndUTC: status.lastUTC,
                                 active: false,
                                 currentStartTime: null
                             }
@@ -2236,6 +2350,8 @@ module.exports = function (RED) {
                                 nextDate: status.nextDate,
                                 nextDescription: status.nextDescription,
                                 nextUTC: status.nextUTC,
+                                lastDate: status.lastDate,
+                                lastUTC: status.lastUTC,
                                 active: true,
                                 currentStartTime: new Date().toISOString()
                             }
@@ -2266,6 +2382,8 @@ module.exports = function (RED) {
                             nextEndDate: status.nextDate,
                             nextEndDescription: status.nextDescription,
                             nextEndUTC: status.nextUTC,
+                            lastEndDate: status.lastDate,
+                            lastEndUTC: status.lastUTC,
                             active: false,
                             currentStartTime: null
                         }
@@ -2274,6 +2392,8 @@ module.exports = function (RED) {
                             nextDate: status.nextDate,
                             nextDescription: status.nextDescription,
                             nextUTC: status.nextUTC,
+                            lastDate: status.lastDate,
+                            lastUTC: status.lastUTC,
                             active: true,
                             currentStartTime: new Date().toISOString()
                         }
@@ -2301,6 +2421,7 @@ module.exports = function (RED) {
 
                                 // Convert nextEvent to timestamp, add duration, and create new Date object
                                 const newDate = new Date(new Date(eventTime).getTime() + duration)
+                                const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType(task.node_opt.schedule, 'endPayloadValue', false)
 
                                 // create new task
                                 const endCmd = {
@@ -2308,8 +2429,8 @@ module.exports = function (RED) {
                                     name: `${task.node_opt.schedule.name}_end_sched_type`,
                                     topic: task.node_topic,
                                     expression: newDate,
-                                    payload: task.node_opt.schedule?.endPayload || false,
-                                    type: 'bool',
+                                    payload: endPayload,
+                                    type: endPayloadType,
                                     dontStartTheTask: !task.node_opt.schedule.enabled,
                                     scheduleName: task.node_opt.schedule.name,
                                     endSchedule: true,
@@ -2318,20 +2439,44 @@ module.exports = function (RED) {
                                 await updateTask(node, endCmd, null)
                             }
                             if (task.node_opt.schedule.hasDuration === 'time' && task.node_opt.schedule.solarEventTimespanTime) {
+                                const eventTime = task.node_solarEventTimes.nextEventTimeOffset
                                 const solarTimespanTask = getTask(node, `${task.node_opt.schedule.name}_end_sched_type`)
                                 const status = getNextStatus(node, solarTimespanTask)
                                 let props = {}
                                 if (task.node_opt.schedule.solarEventStart === true) {
+                                    const timeCronExpression = `0 ${task.node_opt.schedule.solarEventTimespanTime.split(':')[1]} ${task.node_opt.schedule.solarEventTimespanTime.split(':')[0]} * * ${dailyDaysOfWeek}`
+                                    const { payload: endPayload, payloadType: endPayloadType } = getPayloadAndType(task.node_opt.schedule, 'endPayloadValue', false)
+
+                                    // Construct startCmd
+                                    const timeCmd = {
+                                        command: 'add',
+                                        name: `${task.node_opt.schedule.name}_end_sched_type`,
+                                        topic: task.node_opt.schedule.topic,
+                                        expression: timeCronExpression,
+                                        expressionType: 'cron',
+                                        payload: endPayload,
+                                        payloadType: endPayloadType,
+                                        scheduleName: task.node_opt.schedule.name,
+                                        schedule: null,
+                                        dontStartTheTask: !task.node_opt.schedule.enabled,
+                                        solarTimespanSchedule: true,
+                                        solarEventStart: task.node_opt.schedule.solarEventStart,
+                                        limit: 1
+                                    }
                                     props = {
                                         nextEndDate: status.nextDate,
                                         nextEndDescription: status.nextDescription,
-                                        nextEndUTC: status.nextUTC
+                                        nextEndUTC: status.nextUTC,
+                                        lastEndDate: status.lastDate,
+                                        lastEndUTC: status.lastUTC
                                     }
                                 } else {
                                     props = {
                                         nextDate: status.nextDate,
                                         nextDescription: status.nextDescription,
-                                        nextUTC: status.nextUTC
+                                        nextUTC: status.nextUTC,
+                                        lastDate: status.lastDate,
+                                        lastUTC: status.lastUTC
                                     }
                                 }
                                 updateSchedule(node, task.node_opt.schedule.name, null, props, true, 'update')
@@ -2371,14 +2516,18 @@ module.exports = function (RED) {
                                 enabled: true,
                                 nextEndDate: status.nextDate,
                                 nextEndDescription: status.nextDescription,
-                                nextEndUTC: status.nextUTC
+                                nextEndUTC: status.nextUTC,
+                                lastEndDate: status.lastDate,
+                                lastEndUTC: status.lastUTC
                             }
                         } else {
                             props = {
                                 enabled: true,
                                 nextDate: status.nextDate,
                                 nextDescription: status.nextDescription,
-                                nextUTC: status.nextUTC
+                                nextUTC: status.nextUTC,
+                                lastDate: status.lastDate,
+                                lastUTC: status.lastUTC
                             }
                         }
                         if (!task.node_opt.schedule.hasDuration && !task.node_opt.schedule.hasEndTime) {
@@ -2427,7 +2576,9 @@ module.exports = function (RED) {
                         const props = {
                             nextEndDate: status.nextDate,
                             nextEndDescription: status.nextDescription,
-                            nextEndUTC: status.nextUTC
+                            nextEndUTC: status.nextUTC,
+                            lastEndDate: status.lastDate,
+                            lastEndUTC: status.lastUTC
                         }
 
                         const schedule = getSchedule(node, task.node_opt.scheduleName)
@@ -2464,13 +2615,17 @@ module.exports = function (RED) {
                             props = {
                                 nextEndDate: status.nextDate,
                                 nextEndDescription: status.nextDescription,
-                                nextEndUTC: status.nextUTC
+                                nextEndUTC: status.nextUTC,
+                                lastEndDate: status.lastDate,
+                                lastEndUTC: status.lastUTC
                             }
                         } else {
                             props = {
                                 nextDate: status.nextDate,
                                 nextDescription: status.nextDescription,
-                                nextUTC: status.nextUTC
+                                nextUTC: status.nextUTC,
+                                lastDate: status.lastDate,
+                                lastUTC: status.lastUTC
                             }
                         }
                         updateSchedule(node, task.node_opt.scheduleName, null, props, true, 'update')
@@ -2478,13 +2633,16 @@ module.exports = function (RED) {
                         const schedule = getSchedule(node, task.node_opt.scheduleName)
                         if (schedule) {
                             if (isValidDate(schedule.nextUTC) && isValidDate(schedule.nextEndUTC)) {
-                                const durationInMinutes = Math.abs(new Date(schedule.nextUTC).getTime() - new Date(schedule.nextEndUTC).getTime()) / 60000
                                 if (new Date(schedule.nextUTC) < new Date(schedule.nextEndUTC)) {
+                                    const durationInMinutes = Math.abs(new Date(schedule.nextUTC).getTime() - new Date(schedule.nextEndUTC).getTime()) / 60000
                                     props.duration = durationInMinutes
                                     props.active = false
                                 } else if (new Date(schedule.nextUTC) > new Date(schedule.nextEndUTC)) {
+                                    if (isValidDate(schedule.lastUTC)) {
+                                        props.duration = Math.abs(new Date(schedule.lastUTC).getTime() - new Date(schedule.nextEndUTC).getTime()) / 60000
+                                    }
+
                                     if (new Date(schedule.nextEndUTC) > new Date()) {
-                                        props.duration = 24 * 60 - durationInMinutes // Subtract from 24 hours in minutes
                                         props.active = true
                                         if (props.duration && schedule.nextEndUTC) {
                                             props.currentStartTime = new Date(new Date(schedule.nextEndUTC).getTime() - (props.duration * 60000)).toISOString()
@@ -2803,19 +2961,6 @@ module.exports = function (RED) {
         // #region UI Actions
         async function submitSchedule (msg) {
             // Helper function to determine payload and payloadType
-            function getPayloadAndType (schedule, valueKey, defaultValue) {
-                if (schedule?.payloadType === 'custom') {
-                    return {
-                        payload: schedule[valueKey] ?? defaultValue,
-                        payloadType: 'custom'
-                    }
-                } else {
-                    return {
-                        payload: schedule[valueKey] ?? defaultValue,
-                        payloadType: 'bool'
-                    }
-                }
-            }
 
             if (msg?.payload?.schedules) {
                 try {
@@ -3307,6 +3452,19 @@ module.exports = function (RED) {
 
     // #endregion D2
     // #endregion Node-RED
+    function getPayloadAndType (schedule, valueKey, defaultValue) {
+        if (schedule?.payloadType === 'custom') {
+            return {
+                payload: schedule[valueKey] ?? defaultValue,
+                payloadType: 'custom'
+            }
+        } else {
+            return {
+                payload: schedule[valueKey] ?? defaultValue,
+                payloadType: 'bool'
+            }
+        }
+    }
 
     function evaluateNodeProperty (value, type, node, msg) {
         return new Promise(function (resolve, reject) {
