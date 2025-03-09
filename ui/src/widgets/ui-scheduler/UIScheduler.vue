@@ -1336,7 +1336,7 @@ export default {
         yearlyMonth (newMonth) {
             const maxDays = this.getMaxDaysInMonth(newMonth)
             if (this.yearlyDay > maxDays) {
-                this.yearlyDay = null // Reset if the selected day is no longer valid
+                this.yearlyDay = maxDays // Reset if the selected day is no longer valid
             }
         },
         timespan (value) {
@@ -1356,45 +1356,6 @@ export default {
                     this.payloadType = true
                 }
             }
-
-            // if (((this.scheduleType === 'time' && ['minutes', 'hourly'].includes(this.period)) || this.scheduleType === 'solar')) {
-            //     if (value === 'duration') {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = 'true_false'
-            //         }
-            //     } else if (value === 'time') {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = 'true_false'
-            //         }
-            //     } else {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = true
-            //         }
-            //     }
-            // }
-
-            // if (this.scheduleType === 'time' && ['daily', 'weekly', 'monthly', 'yearly'].includes(this.period)) {
-            //     if (value === 'time') {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = 'true_false'
-            //         }
-            //     } else {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = true
-            //         }
-            //     }
-            // }
-            // if (this.scheduleType === 'solar' && (this.timespan === 'time')) {
-            //     if (value === 'time') {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = 'true_false'
-            //         }
-            //     } else {
-            //         if (this.payloadType !== 'custom') {
-            //             this.payloadType = true
-            //         }
-            //     }
-            // }
         },
         minutesInterval (value) {
             if (this.period === 'minutes') {
