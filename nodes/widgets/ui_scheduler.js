@@ -3357,7 +3357,7 @@ module.exports = function (RED) {
                             schedule.currentStartTime = now
                         }
                     } else {
-                        const nextStartDate = schedule?.primaryTask?.nextDate
+                        const nextStartDate = schedule?.primaryTask?.nextDate || new Date()
 
                         // handle solar timespan schedules where solar event is end time
                         if (task.node_expressionType === 'cron' && schedule.scheduleType === 'solar') {
