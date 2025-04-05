@@ -1,453 +1,454 @@
 ---
-description: Expand Node-RED Dashboard 2.0 with third-party widgets. Learn how to build and integrate them.
+description: Erweitern Sie Node-RED Dashboard 2.0 mit Widgets von Drittanbietern. Erfahren Sie, wie Sie sie bauen und integrieren können.
 ---
 
 <script setup>
-    import AddedIn from '../../components/AddedIn.vue'
+    Import hinzugefügt von '../../components/AddedIn.vue'
 </script>
 
-# Building Third Party Widgets <AddedIn version="0.8.0" />
+# Erstelle Drittanbieter-Widgets <AddedIn version="0.8.0" />
 
-A single widget consist of two key parts:
+Ein einzelnes Widget besteht aus zwei Schlüsselelementen:
 
-1. A Node-RED node that will appear in the palette of the Node-RED Editor
-2. `.vue` and client-side code that renders the widget into a dashboard
+1. Ein Knoten-RED-Knoten, der in der Palette des Node-RED-Editors angezeigt wird
+2. `.vue` und Client-seitigen Code, der das Widget in ein Dashboard verwandelt
 
-You can explore our collection of core widgets [here](../../nodes/widgets.md). If you have an idea for a widget that you'd like to build in Dashboard 2.0 we are open to Pull Requests and you can read more in our [Adding Core Widgets](./core-widgets.md) guide.
+Sie können unsere Sammlung von Kern-Widgets [here](../../nodes/widgets.md). Wenn Sie eine Idee für ein Widget haben, das Sie in Dashboard 2 erstellen möchten. wir sind offen für Pull Requests und du kannst mehr in unserem [Adding Core Widgets](./core-widgets.md) Guide lesen.
 
-We do also realise though that there are many occasions where a standalone repository/package works better as was very popular in Dashboard 1.0.
+Wir erkennen aber auch, dass es viele Gelegenheiten gibt, bei denen ein eigenständiges Repository/Paket besser funktioniert, wie es in Dashboard 1.0 sehr beliebt war.
 
-## Recommended Reading
+## Empfohlenes Lesen
 
-On the left-side navigation you'll find a "Useful Guides" section, we recommend taking a look through these as they give a good overview of the structure of the Dashboard 2.0 codebase and some of the underlying architectural principles it is built upon.
+Auf der linken Seite der Navigation finden Sie einen Abschnitt "Nützliche Anleitungen", wir empfehlen einen Blick auf diese zu werfen, da sie einen guten Überblick über die Struktur des Dashboard 2 geben. Codebase und einige der zugrunde liegenden architektonischen Prinzipien, auf denen er aufgebaut ist.
 
-In particular, the following are recommended:
+Insbesondere wird Folgendes empfohlen:
 
-- [Events Architecture](/contributing/guides/state-management.html)
+- [Ereignisarchitektur](/contributing/guides/state-management.html)
 - [State Management](/contributing/guides/state-management.html)
 
-## How Widgets are Loaded
+## Wie Widgets geladen werden
 
-Dashboard 2.0 is built on top of [VueJS](https://vuejs.org/), and as such, all widgets needs to be mapped to a Vue component. The process works as follows:
+Dashboard 2.0 ist auf [VueJS](https://vuejs.org/) gebaut und als solches müssen alle Widgets einer Vue Komponente zugeordnet werden. Der Prozess funktioniert wie folgt:
 
-1. Dashboard 2.0 client connects to Node-RED
-2. Node-RED sends `ui-config` object contianing details of all pages, themes, groups & widgets
-3. In the event handler, we loop over all widget's found in the `ui-config`:
-   - If the widget `type` matches a core component, we map it to that component
-   - If the widget is a third-party widget, we load the relevant `.umd.js` file, exposed by the widget's `/resources` folder.
-4. Dashboard 2.0 loads the relevant Layout (e.g. Grid, Fixed or Notebook) depending on the active URL/page.
-5. Within that layout manager, we loop over the widgets, and render their respective Vue components.
-   - Every component is passed `id`, `props` and `state` of the widget.
+1. Dashboard 2.0 Client verbindet sich mit Node-RED
+2. Node-RED sendet `ui-config` Objekt-Kontianing-Details aller Seiten, Themes, Gruppen & Widgets
+3. Im Ereignis-Handler schleifen wir alle Widgets in der `ui-config`:
+   - Wenn das Widget `type` zu einer Kernkomponente passt, ordnen wir es dieser Komponente zu
+   - Wenn das Widget ein Drittanbieter-Widget ist, laden wir die entsprechende Datei `.umd.js`, die im Ordner `/resources` des Widgets sichtbar ist.
+4. Dashboard 2.0 lädt das entsprechende Layout (z.B. Grid, Fixed oder Notebook) abhängig von der aktiven URL/Seite.
+5. Innerhalb dieses Layout-Managers schleifen wir die Widgets an und rendern ihre jeweiligen Vue Komponenten.
+   - Jede Komponente wird `id`, `props` und `state` des Widgets übergeben.
 
-## Getting Started
+## Erste Schritte
 
-We have created an [Example Node repository](https://github.com/FlowFuse/node-red-dashboard-example-node) that will provide foundations for your widget. It includes plenty of examples for functionality you'll likely need.
+Wir haben ein [Beispiel-Knoten-Repository](https://github.com/FlowFuse/node-red-dashboard-example-node) erstellt, das Grundlagen für dein Widget bereitstellt. Es enthält viele Beispiele für Funktionen, die Sie wahrscheinlich benötigen.
 
-It's base repository has the following file/folder structure:
+Das Basis-Repository hat folgende Datei/Ordnerstruktur:
 
-As with any Node-RED nodes, you'll need to start with two files:
+Wie bei jedem Knotenpunkt müssen Sie mit zwei Dateien beginnen:
 
-- `/nodes/ui-example.html` - defines the node’s properties, edit UI and help text.
-- `/nodes/ui-example.js` - defines the node's server-side behaviours
+- `/nodes/ui-example.html` - definiert die Eigenschaften des Knotens, bearbeiten Sie UI und Hilfetext.
+- `/nodes/ui-example.js` - definiert das serverseitige Verhalten des Knotens
 
-Each Widget then needs to have client-side code defined that control _how_ the widget is rendered within a Dashboard. Any content within `/ui` will be packaged up into a `.umd.js` file that Dashboard loads at runtime.
+Jedes Widget muss dann den Client-seitigen Code definiert haben, der die Kontrolle _how_ des Widgets in einem Dashboard darstellt. Jeder Inhalt innerhalb von `/ui` wird in eine `.umd.js`-Datei verpackt, die das Dashboard zur Laufzeit lädt.
 
-- `/ui/components/` - folder containing `.vue` files for any Vue components you require
-- `/ui/index.js` - Exports any Vue components that need to be imported into Dashbaord 2.0
+- `/ui/components/` - Ordner mit `.vue` Dateien für alle Vue Komponenten, die du benötigst
+- `/ui/index.js` - Exportiert alle Vue Komponenten, die in Dashbaord 2.0 importiert werden müssen
 
-Configuration of the node and widgets are controlled across two files:
+Konfiguration des Knotens und der Widgets werden über zwei Dateien gesteuert:
 
-- `vite.config.js` - contains the details of what to package up into the widget's built `.umd.js` file.
-- `package.json` - must contain a `node-red-dashboard-2` section that defines the widgets that Dashboard can import.
+- `vite.config.js` - enthält die Details, was in die von Widget gebaute `.umd.js`-Datei paketiert werden soll.
+- `package.json` - muss einen `node-red-dashboard-2` Abschnitt enthalten, der die Widgets definiert, die Dashboard importieren kann.
 
-### Developing Locally
+### Lokale Entwicklung
 
-To start working with your own third-party widget, locally on your machine:
+Um mit der Arbeit mit Ihrem eigenen Drittanbieter-Widget zu beginnen, lokal auf Ihrem Rechner:
 
-#### Install Node-RED & Dashboard
+#### Knoten & Dashboard installieren
 
-1. Install Node-RED ([docs](https://nodered.org/docs/getting-started/local))
-2. Install `@flowfuse/node-red-dashboard` into Node-RED via the "Manage Palette" option.
+1. Knoten installieren ([docs](https://nodered.org/docs/getting-started/local))
+2. Installieren Sie `@flowfuse/node-rod-dashboard` in Knoten-RED über die Option "Palette verwalten".
 
-#### Install the UI Example Node
+#### UI-Beispielknoten installieren
 
-1. Fork our [Example Node repository](https://github.com/FlowFuse/node-red-dashboard-example-node) and clone it locally to your machine.
-2. Inside the Example Node directory, install the required dependencies:
+1. Fork unser [Beispielknoten-Repository](https://github.com/FlowFuse/node-red-dashboard-example-node) und klone es lokal auf deinem Computer.
+2. Im Beispiel-Knoten-Verzeichnis installieren Sie die erforderlichen Abhängigkeiten:
 
       npm install
-3. Optionally generate a source map (to map the minified code to the original code), to simplify debugging of the frontend code in the browser.  On Linux this can be achieved by:
+3. Optional erstellen Sie eine Quellkarte (um den minifizierten Code dem Originalcode zuzuordnen), um das Debuggen des Frontend-Codes im Browser zu vereinfachen.  Unter Linux kann dies erreicht werden von:
 
-      export NODE_ENV=development
-4. Inside the Example Node directory, build the Example Node's `.umd.js` file (what Node-RED uses to run your widget), this will generate it's `/resources` folder, loaded by Node-RED.
+      exportiere Knoten_ENV=Entwicklung
+4. Innerhalb des Beispielknoten-Verzeichnisses erstellen Sie das Beispiel-Knoten-Verzeichnis `.umd. s`-Datei (was Node-RED verwendet, um dein Widget auszuführen), wird dies seinen `/resources`-Ordner erzeugen, der von Node-RED geladen wird.
 
-      npm run build
+      npm Ausführung
 
-#### Install UI Example into Node-RED
+#### UI-Beispiel in Node-RED installieren
 
-1. Navigate to your local Node-RED directory:
+1. Navigieren Sie zu Ihrem lokalen Knoten-ROD-Verzeichnis:
 
-       cd ~/.node-red
-2. Install the local copy of the Example Node:
+       cd ~/.node-rot
+2. Lokale Kopie des Beispielknotens installieren:
 
-      npm install /path/to/your/local/node-red-dashboard-example-node-folder
-3. Restart Node-RED
+      npm install /path/zu/Ihr/local/node-red-dashboard-example-node-folder
+3. Node-ROD neu starten
 
-_Note: Any local changes you make inside the `/ui` folder of the third party widget, you'll need to re-run `npm run build` in order to update the `umd.js` file, which is what Dashboard loads to render the widget._
+_Hinweis: Alle lokalen Änderungen, die du im `/ui`-Ordner des Drittanbieter-Widgets vornimmst, du musst `npm run build` erneut ausführen, um die `umd zu aktualisieren. s`-Datei, welche das Dashboard lädt um das Widget zu rendern
 
-## Configuring your Widget
+## Konfiguriere dein Widget
 
-### Naming Your Widget
+### Benennen des Widgets
 
-In order to import external widgets into the Dashboard core, Dashboard's `ui-base` config node reads Node-RED's `package.json` and checks for any packages that have been installed into Node-RED with `node-red-dashboard-2-` in the package name.
+Um externe Widgets in den Dashboard-Kern zu importieren, liest der `ui-base` Konfigurationsknoten des Node-RED das `package. son` und prüft alle Pakete, die in Node-RED mit `node-red-dashboard-2-` im Paketnamen installiert wurden.
 
-As such, when defining your own integration, please make sure it's named appropriately:
+Wenn du deine eigene Integration definierst, stelle bitte sicher, dass sie angemessen benannt ist:
 
 ```json
-"name": "node-red-dashboard-2-<your-widget-name>"
+"Name": "node-rod-Dashboard-2-<your-widget-name>"
 ```
 
-### Defining Your Widget
+### Definiere dein Widget
 
-Within your own `package.json`, you'll need to define a `node-red-dashboard-2` section that then tells Dashboard _how_ to load your widget. An example from `ui-example` is as follows:
+In deinem eigenen `package.json` musst du einen `node-red-dashboard-2` Abschnitt definieren, der dann Dashboard _how_ anweist, dein Widget zu laden. Ein Beispiel von `ui-example` ist wie folgt:
 
 ```json
-"node-red-dashboard-2": {
-    "version": "0.8.0",   // the minimum version of Dashboard 2.0 supported
-    "widgets": {
-        "ui-example": {   // this key must match the "type" of your widget, registered in Node-RED
-            "output": "ui-example.umd.js", // the name of the built .js file that will be imported into Dashboard, configured in vite.config.js
-            "component": "UIExample"       // the name of the primary Vue component that will be rendered as your widget in Dashboard
+"node-rod-dashboard-2": {
+    "version": "0.8.0", // die minimale Version von Dashboard 2. unterstützt
+    "Widgets": {
+        "ui-example": { // dieser Schlüssel muss dem "type" Ihres Widgets entsprechen, registriert in Node-RED
+            "output": "ui-example. d. s", // der Name der gebauten .js-Datei, die in das Dashboard importiert wird, konfiguriert in vite.config. s
+            "component": "UIExample" // der Name der primären Vue Komponente, die als Widget in Dashboard
         }
     }
 }
 ```
 
-### Registering your Node & Widget
+### Ihren Knoten & Widget registrieren
 
-_More details: [Registration](../guides/registration.md)_
+_Mehr Details: [Registration](../guides/registration.md)_
 
-Traditionally with Node-RED, you have to register your node using `RED.nodes.registerType("ui-example", UIExampleNode)`, this is still the case with Dashboard, but you must _also_ register the widget with Dashboard too.
+Traditionell müssen Sie Ihren Knoten mit `RED.nodes registrieren. egisterType("ui-example", UIExampleNode)`, das ist bei Dashboard immer noch der Fall, aber Sie müssen auch _also_ das Widget mit dem Dashboard registrieren.
 
-Dashboard registration is built upon a `.register()` function (see [docs](../guides/registration.md)). This function is available to any `ui-base`, `ui-page` or `ui-group`. For `ui-group` and `ui-page`, it brokers the function up to the `ui-base` where a store is maintained of all widgets in the Dashboard.
+Die Dashboard-Registrierung wird auf einer `.register()` Funktion aufgebaut (siehe [docs](../guides/registration.md)). Diese Funktion steht allen `ui-base`, `ui-page` oder `ui-group` zur Verfügung. Für `ui-group` und `ui-page` brokert es die Funktion bis zur `ui-base`, in der ein Shop von allen Widgets im Dashboard gewartet wird.
 
-Your widget should define one of these as a property in your Node-RED node, most likely, it'll be `ui-group`, if you want your widget to render _inside_ a Group in the Dashboard.
+Ihr Widget sollte eines als Eigenschaft in Ihrem Knotenknoten definieren, höchstwahrscheinlich Es wird `ui-group` sein, wenn Sie möchten, dass Ihr Widget eine Gruppe im Dashboard darstellt.
 
-In your `/nodes/ui-example.js` file:
+In Ihrer `/nodes/ui-example.js` Datei:
 
 ```js
 module.exports = function(RED) {
     function UIExampleNode(config) {
-        RED.nodes.createNode(this, config);
+        RED.nodes. reateNode(this, config);
         var node = this;
 
-        // which group are we rendering this widget
-        const group = RED.nodes.getNode(config.group)
+        // welche Gruppe wir dieses Widget
+        const group = RED wiedergeben. odes.getNode(config. roup)
 
         /**
-         * Further config & setup to go here
+         * Weitere Konfiguration & Einrichtung, um hierher zu gehen
          */
 
-        // register the widget with Dashboard
-        group.register(node, config, evts)
+        // das Widget mit Dashboard
+        Gruppe registrieren. egister(node, config, evts)
     }
-    // Register the node with Node-RED
-    RED.nodes.registerType("ui-example", UIExampleNode);
+    // Registrieren Sie den Knoten mit Node-RED
+    RED. odes.registerType("ui-Beispiel", UIExampleNode);
 }
 ```
 
-## Guides
+## Anleitungen
 
-The below are guides and examples on building third-party widgets. We also have the "Useful Guides" Section in the left navigation which provide more generalized development guides when contributing to Dashboard 2.0.
+Die folgenden sind Anleitungen und Beispiele zum Erstellen von Widgets von Drittanbietern. Wir haben auch den Abschnitt "Nützliche Anleitungen" in der linken Navigation, der mehr allgemeine Entwicklungsanleitungen liefert, wenn Sie zum Dashboard 2.0 beitragen.
 
-### The Basics of VueJS
+### Die Grundlagen von VueJS
 
-Aware that a lot of developers that may want to contribute to Dashboard 2.0, may be new to VueJS, so we've detailed a few fundamentals here.
+Beachten Sie, dass eine Menge von Entwicklern, die einen Beitrag zu Dashboard 2 leisten wollen. , kann neu bei VueJS sein, also haben wir hier ein paar Grundlagen beschrieben.
 
-It is very common place since VueJS to see Vue applications using the "Composition API", whilst this is lighter weight way of building your applications, it isn't the most intuitive for those unfamiliar with VueJS, as such, we're mostly using the "Options API" structure across Dashboard 2.0 and in our examples for readability.
+Es ist seit VueJS sehr üblich, Vue Anwendungen mit der "Composition API" zu sehen, während dies eine leichtere Gewichtsart für den Aufbau Ihrer Anwendungen ist es ist nicht die intuitivste für diejenigen, die mit VueJS nicht vertraut sind, da wir daher meist die "Options API"-Struktur im Dashboard 2 verwenden. und in unseren Beispielen für Lesbarkeit.
 
-With the Options API, a Vue component has the following structure:
+Mit der Options-API hat eine Vue Komponente die folgende Struktur:
 
 ```vue
 <template>
-    <!-- HTML template for the component -->
-    <!-- You can reference any variables defined on your components directly here, e.g. -->
+    <!-- HTML Template für die Komponente -->
+    <! - Sie können alle auf Ihren Komponenten definierten Variablen direkt hier referenzieren, z.B. -->
     <div>{{ myVar }}</div>
 </template>
 
 <script>
-export default {
-    // any properties that are passed to the component
-    // in Dashboard 2.0, these 3 are the ones provided:
+Export Standard {
+    // alle Eigenschaften, die an die Komponente
+    übergeben werden // im Dashboard 2. , diese 3 sind die bereitgestellt:
     props: ['id', 'props', 'state'],
-    // any data that you want to be reactive and available across your component
-    // within the <script> reference these variables with this.<myVar>
-    // within the HTML, you don't need the "this." prefix
+    // Alle Daten, die Sie reaktiv sein möchten und in Ihrer Komponente
+    // innerhalb der <script> referenzieren diese Variablen darauf.<myVar>
+    // innerhalb des HTML, Sie brauchen nicht das "dies. prefix
     data () {
         return {
             myVar: 'Hello World'
         }
     },
-    // Computed properties are variables that automatically update when their dependencies change
-    computed: {
+    // Berechnete Eigenschaften sind Variablen, die automatisch aktualisiert werden, wenn ihre Abhängigkeiten sich ändern
+    berechnet: {
         myComputedProp () {
-            return this.myVar + '!'
+            gibt dies zurück. yVar + '!
         }
     },
-    // any methods that are used within the component
-    methods: {
+    // alle Methoden, die innerhalb der Komponente
+    Methoden verwendet werden: {
         myMethod () {
-            alert(this.myVar)
+            alert(this). yVar)
         }
     },
-    // Runs when the component is built and loaded into the DOM
-    mounted () {
-        alert('Component has mounted')
+    // Läuft, wenn die Komponente gebaut und in das DOM
+    mountet () {
+        alert('Komponente hat mounted')
     },
-    // Runs when the component is removed
+    // Läuft, wenn die Komponente entfernt wird
     unmounted () {
-        alert('Component has been removed')
+        alert('Komponente wurde entfernt')
     }
 }
 </script>
 
 <style>
-/* any CSS styling for the component */
+/* beliebige CSS-Styling für die Komponente */
 </style>
 ```
 
-### Using Vuetify Components
+### Vuetify Komponenten verwenden
 
-You're free to define complety custom HTML/CSS when defining your widgets, but we've also provided native support for all of [Vuetify's Component Library](https://vuetifyjs.com/en/components/all/) to get your started with a wide range of UI components that you may want to utilise.
+Sie können bei der Definition Ihrer Widgets vollständige, benutzerdefinierte HTML/CSS definieren aber wir haben auch native Unterstützung für alle [Vuetify's Component Library](https://vuetifyjs.com/en/components/all/) bereitgestellt, um mit einer Vielzahl von UI-Komponenten loszulegen, die Sie verwenden möchten.
 
-### Accessing Properties
+### Zugriffseigenschaften
 
-When widgets are rendered in a Dashboard layout, they are passed a small collection of properties that can be used to customise the widget's behaviour:
+Wenn Widgets in einem Dashboard-Layout dargestellt werden, übergeben sie eine kleine Sammlung von Eigenschaften, die verwendet werden können, um das Verhalten des Widgets anzupassen:
 
-| property | description                                                                                                      |
-| -------- | ---------------------------------------------------------------------------------------------------------------- |
-| `id`     | The ID of the widget, assigned by Node-RED                                                                       |
-| `props`  | The properties defined in Node-RED, e.g. `this.props.name` or `this.props.group` |
-| `state`  | The state of the widget, e.g. `this.state.enabled` or `this.state.visible`       |
+| objekt  | beschreibung                                                                                                              |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`    | Die ID des Widgets, die von Node-RED zugewiesen wurde                                                                     |
+| "props" | Die in Node-RED definierten Eigenschaften, z.B. `this.props.name` oder `this.props.group` |
+| Status  | Der Status des Widgets, z.B. `this.state.enabled` oder `this.state.visible`               |
 
-When rendering these in your own Vue component, you can access them as follows:
+Wenn Sie diese in Ihrer eigenen Vue Komponente wiedergeben, können Sie auf sie wie folgt zugreifen:
 
 ```vue
 <template>
     <div>ID: {{ id }}</div>
     <div>Name: {{ props.name }}</div>
-    <div>Group: {{ props.group }}</div>
+    
+    <div>Gruppe: {{ props.group }}</div>
 </template>
 
-<script>
-export default {
+<script><script>
+Export Standard {
     props: ['id', 'props', 'state'],
-    mounted () {
-        // runs on load of the widget
-        alert(this.id)
+    mountet () {
+        // läuft bei Laden des Widgets
+        Alarm(dies. d)
     }
 }
 </script>
 ```
 
-### Communicating with Node-RED
+### Kommunikation mit Node-RED
 
-Events are sent back and forth between Node-RED and Dashboard 2.0 with SocketIO. You can see a full breakdown of these events in our [Events Architecture](../guides/events.md) guide.
+Events werden zwischen Node-RED und Dashboard 2.0 mit SocketIO hin und her geschickt. Eine vollständige Aufschlüsselung dieser Ereignisse finden Sie in unserem [Veranstaltungsarchitektur](../guides/events.md) Leitfaden .
 
-#### Receiving Node-RED Messages
+#### Empfange Node-ROD Nachrichten
 
-When your node receives a `msg` in Node-RED, the Dashboard 2.0 client will receive a `msg-input` event via SocketIO. You can subscribe to this event within your own widget's Vue component with:
+Wenn dein Knoten einen `msg` in Node-RED erhält, erhält der Dashboard 2.0 Client ein `msg-input` Event über SocketIO. Sie können dieses Ereignis innerhalb der Vue Komponente Ihres eigenen Widgets abonnieren mit:
 
 ```js
-export default {
+export Standard {
     props: ['id', 'props', 'state'],
-    // rest of your vue component here
+    // Rest Ihrer vue Komponente hier
     mounted () {
-        this.$socket.on('msg-input' + this.id, (msg) => {
-            // do something with the msg
+        dies.$socket.on('msg-input' + dies. d, (msg) => {
+            // mit dem msg
         })
     },
-    unmounted () {
-        // unsubscribe from the event when the widget is destroyed
-        this.$socket.off('msg-input:' + this.id)
+    Unmounted () {
+        // Abmelden des Ereignisses, wenn das Widget zerstört wurde
+        .$socket.off('msg-input:' + this.id)
     
     }
 }
 ```
 
-It is recommended to use our in built [Data Tracker](../widgets/core-widgets.md#data-tracker) to setup the standard input/load events for your widget. This can be done by calling the following in your widget's `.vue` file:
+Es wird empfohlen, unseren eingebauten [Data Tracker](../widgets/core-widgets.md#data-tracker) zu verwenden, um die Standard-Ein-/Load-Ereignisse für dein Widget einzurichten. Dies kann durch einen Aufruf der folgenden Datei in der `.vue`-Datei deines Widgets geschehen:
 
 ```js
-export default {
-    inject: ['$dataTracker'],
-    // rest of your vue component here
-    created () {
-        this.$dataTracker(this.id)
-        // we can override the default events if we want to with
-        // this.$dataTracker(this.id, myOnInputFunction, myOnLoadFunction, myOnDynamicPropertiesFunction)
+Standard exportieren {
+    Injektion: ['$dataTracker'],
+    // Rest Ihrer vue Komponente hier
+    erstellt () {
+        dies.$dataTracker(das. d)
+        // Wir können die Standardereignisse überschreiben, wenn wir mit
+        // dies wollen.$dataTracker(this.id, myOnInputFunction, myOnLoadFunction, myOnDynamicPropertiesFunction)
     }
 }
 ```
 
-More details on customisation of the Data Tracker can be found [here](../widgets/core-widgets.md#custom-behaviours).
+Weitere Details zur Anpassung des Data Tracker finden Sie [here](../widgets/core-widgets.md#custom-behaviours).
 
-#### Sending Node-RED Messages
+#### Node-ROD Nachrichten senden
 
-You can send a `msg` on to any connected nodes in Node-RED by calling one of the following events via SocketIO:
+Du kannst eine `msg` an alle verbundenen Knoten in Node-RED senden, indem du eines der folgenden Ereignisse über SocketIO aufrufst:
 
-- `this.$socket.emit('widget-action', this.id, msg)`: sends any `msg` onto any connected nodes in Node-RED.
-- `this.$socket.emit('widget-change', this.id, msg)`: the same as `widget-action`, but _also_ stores that latest message in the Node-RED datastore for this widget so that state can be restored when the Dashboard is refreshed.
+- `dies.$socket.emit('widget-action', this.id, msg)`: sendet jedes `msg` an alle verbundenen Knoten im Node-RED.
+- `dies.$socket.emit('widget-change', das. d, msg)`: das gleiche wie `widget-action`, aber _also_ speichert die neueste Nachricht im Node-RED Datenspeicher für dieses Widget, so dass der Status wiederhergestellt werden kann, wenn das Dashboard aktualisiert wird.
 
-#### Custom SocketIO Events
+#### Eigene SocketIO-Ereignisse
 
-If you would like to implement your own SocketIO events and handlers, you can do so in your `.vue` component with:
+Wenn du deine eigenen SocketIO-Ereignisse und -Handler implementieren möchtest, kannst du dies in deiner `.vue` Komponente tun mit:
 
 ```js
-this.$socket.emit('my-custom-event', this.id, msg)
+das.$socket.emit('my-custom-event', this.id, msg)
 ```
 
-Then, where you register your node with Dashboard on the server-side (inside your node's `.js` file), you can define the relevant event handler:
+Dann, wo du deinen Knoten mit Dashboard auf der Serverseite registriert hast (innerhalb der `.js`-Datei), kannst du den relevanten Ereignishandler definieren:
 
 ```js
 evts = {
     onSocket: {
-        // subscribe to custom events
-        'my-custom-event': function (conn, id, msg) {
+        // benutzerdefinierte Ereignisse
+        'my-custom-event' abonnieren: Funktion (conn, id, msg) {
             // emit a msg in Node-RED from this node
-            node.send(msg)
+            node. end(msg)
         }
     }
 }
 group.register(node, config, evts)
 ```
 
-### Data Retention & Data Stores
+### Datenspeicherung & Datenspeicherung
 
-We use the concept of data stores on both the client and server side of Dashboard 2.0. These are used to centralise storage of the latest state and data associated to a widget.
+Wir verwenden das Konzept der Datenspeicherung sowohl auf der Client- als auch Serverseite von Dashboard 2.0. Diese werden zur Zentralisierung der Speicherung des neuesten Zustands und der Daten, die einem Widget zugeordnet sind, verwendet.
 
-Data stores are a mapping of the widget/node's ID to the latest data received into that widget. This is most commonly used to restore state when the Dashboard is refreshed.
+Datenspeicher sind eine Zuordnung der Widget/Knoten-ID zu den neuesten Daten in diesem Widget. Dies wird am häufigsten verwendet, um den Status wiederherzustellen, wenn das Dashboard aktualisiert wird.
 
-#### Node-RED Data Store
+#### Node-ROD Datenspeicher
 
-Node-RED's data store is made accessible for third-party widgets via the associated `ui-base`.
+Der Datenspeicher von Node-RED wird über die zugehörige »ui-base« für Widgets Dritter zugänglich gemacht.
 
-To access this in your widget's `.js` file, you can use:
+Um dies in der `.js`-Datei deines Widgets zu erreichen, kannst du verwenden:
 
 ```js
 const group = RED.nodes.getNode(config.group)
 const base = group.getBase()
 ```
 
-Then, whenever you want to store data in the datastore, you can do so with:
+Wann immer Sie Daten im Datenspeicher speichern möchten, können Sie dies tun mit:
 
 ```js
 base.stores.data.save(base, node, msg)
 ```
 
-You can read more about the Node-RED data store in our [State Management](../guides/state-management.md) guide.
+Lesen Sie mehr über den Node-RED Datenspeicher in unserer [State Management](../guides/state-management.md) Anleitung.
 
-#### Node-RED State Store
+#### Node-ROD State Store
 
-State refers to any properties of your widget that have changed in runtime, and would differ from that set in the Node-RED editor.
+Status bezieht sich auf alle Eigenschaften Ihres Widgets, die sich in der Laufzeit geändert haben und von dieser im Node-RED-Editor abweichen.
 
-For example, the `ui-dropdown` can have it's `options` overriden with a `msg.options` message sent to the node. This updates `options` would be stored against the node in the state store.
+Zum Beispiel kann das `ui-dropdown` seine `options` überschreiben lassen und eine `msg.options` Nachricht an den Knoten senden. Diese Aktualisierungen `options` würden gegen den Knoten im State Store gespeichert.
 
 #### Client-Side Data Store
 
-In Dashboard 2.0's client-side, we use VueX to manage the centralised state of a UI.
+In der Client-Seite von Dashboard 2.0 verwenden wir VueX, um den zentralisierten Zustand einer Benutzeroberfläche zu verwalten.
 
-With VueX you can call `mapState` which will automatically bind the store to your Vue component, e.g:
+Mit VueX kannst du `mapState` aufrufen, der den Shop automatisch an deine Vue Komponente bindet, z. B.:
 
 ```vue
 <template>
-    <!-- Retrieve the latest data values from widget with <id> -->
+    <! - Abrufen der neuesten Werte aus dem Widget mit <id> -->
     {{ messages[id] }}
 </template>
 <script>
-// import mapState from VueX
-import { mapState } from 'vuex'
+// MapState importieren aus VueX
+Import { mapState } aus 'vuex'
 
-export default {
+Export Standard {
     props: ['id', 'props', 'state'],
-    // ... rest of your component here
-    computed: {// map the store's messages to our own Vue component
-        ...mapState('data', ['messages'])
+    // ... Rest Ihrer Komponente hier
+    berechnet: {// ordnen Sie die Nachrichten des Shops unserer eigenen Vue Komponente
+        ... apState('data', ['messages'])
     },
     mounted () {
-        // alerts the most recent message on load of the widget
-        alert(this.messages[this.id])
+        // informiert die aktuellste Meldung beim Laden des Widgets
+        Alarm(this). Aufsätze[this.id])
     }
 }
 </script>
 ```
 
-Then, to add data to the store:
+Dann, um Daten zum Shop hinzuzufügen:
 
 ```js
-this.$store.commit('data/bind', {
+das.$store.commit('data/bind', {
     widgetId: this.id,
     msg
 })
 ```
 
-#### Loading State
+#### Ladezustand
 
-When Dashboard 2.0 loads, it will send a `widget-load` event to all widgets in the Dashboard. This will contain the latest value from the Node-RED datastore. You can subscribe to this event in your widget with:
+Wenn das Dashboard 2.0 geladen wird, sendet es ein "Widget-load"-Ereignis an alle Widgets im Dashboard. Dies enthält den neuesten Wert des Node-RED Datenspeichers. Sie können dieses Ereignis in Ihrem Widget abonnieren mit:
 
 ```js
-export default {
+export Standard {
     props: ['id', 'props', 'state'],
-    // rest of your component here
+    // Rest Ihrer Komponente hier
     mounted () {
-        this.$socket.on('widget-load' + this.id, (msg) => {
-            // do something with the msg
+        dies.$socket.on('widget-load' + das. d, (msg) => {
+            // mit dem msg
         })
     },
-    unmounted () {
-        // unsubscribe from the event when the widget is destroyed
-        this.$socket.off('widget-load:' + this.id)
+    Unmounted () {
+        // Abmelden des Ereignisses, wenn das Widget zerstört wurde
+        .$socket.off('widget-load:' + this.id)
     
     }
 }
 ```
 
-### Styling with Vuetify & CSS
+### Styling mit Vuetify & CSS
 
-We can define our own CSS within the widget's repository, importing them into a `.vue` component as follows:
+Wir können unser eigenes CSS innerhalb des Widget-Repositorys definieren und es in eine `.vue`-Komponente importieren:
 
 ```vue
 <style scoped>
 .ui-example-wrapper {
     padding: 10px;
-    margin: 10px;
-    border: 1px solid black;
+    Rand: 10px;
+    Rand: 1px solid black;
 }
 </style>
 ```
 
-Vuetify also comes with a handful of utility classes to assist with styling, which can all be used out of the box:
+Vuetify enthält auch eine Handvoll von Utility-Klassen, um beim Styling zu helfen, die alle außerhalb der Box verwendet werden können:
 
 - [Responsive Displays](https://vuetifyjs.com/en/styles/display/#display)
 - [Flex](https://vuetifyjs.com/en/styles/flex/)
 - [Spacing](https://vuetifyjs.com/en/styles/spacing/#how-it-works)
-- [Text & Typography](https://vuetifyjs.com/en/styles/text-and-typography/#typography)
+- [Text & Typographie](https://vuetifyjs.com/en/styles/text-and-typography/#typography)
 
-### External Dependencies
+### Externe Abhängigkeiten
 
-Your widget can have any number of `npm` dependencies. These will all be bundled into the `.umd.js` file that Dashboard loads at runtime.
+Dein Widget kann eine beliebige Anzahl von `npm` Abhängigkeiten haben. Diese werden alle in die `.umd.js`-Datei gebündelt, die das Dashboard zur Laufzeit lädt.
 
-In `ui-example` we have a dependency on `to-title-case`, which we import into, and use in, our Vue component as follows:
+In `ui-example` haben wir eine Abhängigkeit von `to-title-case`, die wir in unsere Vue Komponente importieren und in diese einfügen:
 
 ```js
-import toTitleCase from 'to-title-case'
+import toTitleCase aus 'to-title-case'
 
 export default {
     // rest of component here
     computed: {
         titleCase () {
-            return toTitleCase(this.input.title)
+            return toTitleCase(this). nput.title)
         }
     }
 }
 ```
 
-You can also load in other Vue components from within your own repository as with any VueJS component.
+Sie können auch andere Vue Komponenten aus Ihrem eigenen Repository laden, wie bei jeder VueJS Komponente.
