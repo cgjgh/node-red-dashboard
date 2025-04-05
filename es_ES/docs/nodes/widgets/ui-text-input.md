@@ -93,7 +93,7 @@ Adds a single text input row to your dashboard, with a configurable "type" (text
 
 <ControlsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of Text Inputs Types](/images/node-examples/ui-text-input.png "Example of Text Inputs Types"){data-zoomable}
 _Example of several Text Inputs Types rendered in a Dashboard._
