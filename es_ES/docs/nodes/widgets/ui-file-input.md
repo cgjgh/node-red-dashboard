@@ -58,7 +58,7 @@ Read more about Dashboard configuration in the `settings.js` [here](/user/settin
 
 Note that we do have plans to improve this behavior by chunking files into smaller parts, and reassembling them on the server side. This will allow for larger files to be uploaded, and will be implemented in a future release.
 
-## Example
+## Ejemplo
 
 ![Example of a File Upload](/images/node-examples/ui-file-input-select.png "Example of a File Upload"){data-zoomable}
 _Screenshot to show an example file input, when ready to have a file selected_
