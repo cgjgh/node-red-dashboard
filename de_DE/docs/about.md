@@ -1,29 +1,29 @@
 ---
-description: Learn about Dashboard 2.0 technology choices
+description: Erfahren Sie mehr über Dashboard 2.0 Technologieauswahl
 ---
 
-# About Node-RED Dashboard 2.0
+# Über Node-RED Dashboard 2.0
 
-Welcome to the documentation for the Node-RED Dashboard 2.0, the successor to the original, and very popular, [Node-RED Dashboard](https://flows.nodered.org/node/node-red-dashboard).
+Willkommen in der Dokumentation für das Node-RED Dashboard 2.0, den Nachfolger des Originals und sehr beliebt [Node-RED Dashboard](https://flows.nodered.org/node/node-red-dashboard).
 
-This project was formed by [FlowFuse](https://flowfuse.com/), as part of efforts to upgrade the original Dashboard to steer away from Angular v1.0 which has long been deprecated. You can read our full statement about _why_ we're building Dashboard 2.0 [here](https://flowfuse.com/blog/2023/06/dashboard-announcement/).
+Dieses Projekt wurde von [FlowFuse](https://flowfuse.com/) gebildet, als Teil der Bemühungen, das ursprüngliche Dashboard zu verbessern, um von Winkelv1 fernzuhalten. die seit langem veraltet ist. Du kannst unsere vollständige Aussage über _warum_ lesen, wir bauen Dashboard 2.0 [here](https://flowfuse.com/blog/2023/06/dashboard-announcement/).
 
-## Technologies
+## Technologien
 
-### Node-RED
+### Knoten Rot
 
-[Node-RED](https://nodered.org/) is a flow-based programming tool, originally developed by IBM's Emerging Technology Services team and now a part of the JS Foundation. It provides a browser-based editor that makes it easy to wire together flows using the wide range of nodes in the palette that can be deployed to its runtime in a single-click.
+[Node-RED](https://nodered.org/) ist ein flussbasiertes Programmierwerkzeug, das ursprünglich vom IBM-Emerging Technology Services Team und jetzt Teil der JS Foundation entwickelt wurde. Es stellt einen browserbasierten Editor zur Verfügung, der die Zusammenführung von Strömen mit Hilfe der großen Bandbreite von Knoten in der Palette vereinfacht, die mit einem Klick zur Laufzeit eingesetzt werden kann.
 
 ### Vue.js v3.0
 
-[Vue.js](https://vuejs.org/) is a progressive, incrementally-adoptable JavaScript framework for building UI on the web. It is a popular choice for building modern web applications.
+[Vue.js](https://vuejs.org/) ist ein progressives, schrittweises JavaScript-Framework, um UI im Web zu erstellen. Es ist eine beliebte Wahl für den Aufbau moderner Web-Anwendungen.
 
-We chose Vue.js over other popular frameworks like React and Angular because of its shallow learning curve, and ease of use/readability for non-front-end developers.
+Wir wählten Vue.js gegenüber anderen populären Frameworks wie React und Winkeln, wegen seiner flachen Lernkurve und der einfachen Bedienung/Lesbarkeit für Nicht-Front-End-Entwickler.
 
-We also utilise the [Vuetify component library](https://vuetifyjs.com/en/components/all/), which is a Material Design component framework for Vue.js. It aims to provide clean, semantic and reusable components that make building your application a breeze.
+Wir verwenden auch die [Vuetify component library](https://vuetifyjs.com/en/components/all/), die ein Material Design Komponente Framework für Vue.js. Es zielt darauf ab, saubere, semantische und wiederverwendbare Komponenten zur Verfügung zu stellen, die den Aufbau Ihrer Anwendung zu einer Kinderlähmung machen.
 
 ### Socket IO
 
-[Socket.IO](https://socket.io/) enables real-time, bidirectional and event-based communication. It works on every platform, browser or device, focusing equally on reliability and speed.
+[Socket.IO](https://socket.io/) ermöglicht Echtzeit, bidirektionale und ereignisbasierte Kommunikation. Es arbeitet auf jeder Plattform, jedem Browser oder jedem Gerät und konzentriert sich dabei gleichermaßen auf Zuverlässigkeit und Geschwindigkeit.
 
-In Dashboard 2.0 we use Socket IO to communicate between Node-RED and the Dashboard UI.
+In Dashboard 2.0 verwenden wir Socket IO zur Kommunikation zwischen Node-RED und dem Dashboard UI.
