@@ -91,7 +91,7 @@ Adds a toggle switch to the user interface.
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
@@ -99,7 +99,7 @@ Adds a toggle switch to the user interface.
 
 <ControlsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of a Toggle Switch](/images/node-examples/ui-switch.png "Example of a Toggle Switch"){data-zoomable}
 _Example of rendered switches in a Dashboard._
