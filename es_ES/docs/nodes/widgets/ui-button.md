@@ -91,7 +91,7 @@ Adds a clickable button to your dashboard.
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
@@ -99,7 +99,7 @@ Adds a clickable button to your dashboard.
 
 <ControlsTable/>
 
-## Example
+## Ejemplo
 
 ### Simple Button
 
