@@ -154,11 +154,11 @@ The `Button` cell type will render a clickable button in the cell. The label of 
 
 Given the `action` and `column` keys, you can determine which button was clicked and use the `payload` to determine which row it was associated with.
 
-#### Example
+#### Ejemplo
 
 <FlowViewer :flow="examples['cellTypes']" height="200px"/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
@@ -168,7 +168,7 @@ Given the `action` and `column` keys, you can determine which button was clicked
 
 The `ui-table` node can be configured to include a search bar above the table. This will allow users to search and filter across all columns, and automatically search across all columns when you type.
 
-#### Example
+#### Ejemplo
 
 ![Example of a Data Table with Search & Filter](/images/node-examples/ui-table-search.png "Example of a Data Table with Search & Filter"){data-zoomable}
 _Example of a Data Table with Search & Filter" enabled._
