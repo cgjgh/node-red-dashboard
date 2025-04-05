@@ -8,23 +8,23 @@ description: Expand Node-RED Dashboard 2.0 with third-party widgets. Learn how t
 
 # Building Third Party Widgets <AddedIn version="0.8.0" />
 
-A single widget consist of two key parts:
+Un único widget consiste en dos partes clave:
 
-1. A Node-RED node that will appear in the palette of the Node-RED Editor
-2. `.vue` and client-side code that renders the widget into a dashboard
+1. Un nodo RED que aparecerá en la paleta del editor Node-RED
+2. `.vue` y código del lado del cliente que procesa el widget en un panel de control
 
-You can explore our collection of core widgets [here](../../nodes/widgets.md). If you have an idea for a widget that you'd like to build in Dashboard 2.0 we are open to Pull Requests and you can read more in our [Adding Core Widgets](./core-widgets.md) guide.
+Puedes explorar nuestra colección de widgets núcleo [here](../../nodes/widgets.md). If you have an idea for a widget that you'd like to build in Dashboard 2.0 we are open to Pull Requests and you can read more in our [Adding Core Widgets](./core-widgets.md) guide.
 
 We do also realise though that there are many occasions where a standalone repository/package works better as was very popular in Dashboard 1.0.
 
-## Recommended Reading
+## Lectura Recomendada
 
-On the left-side navigation you'll find a "Useful Guides" section, we recommend taking a look through these as they give a good overview of the structure of the Dashboard 2.0 codebase and some of the underlying architectural principles it is built upon.
+En el lado izquierdo de la navegación encontrarás una sección de "Guías útiles", Recomendamos echar un vistazo a estos ya que ofrecen una buena visión general de la estructura del panel de control 2. y algunos de los principios arquitectónicos subyacentes sobre los que se construye.
 
-In particular, the following are recommended:
+En particular, se recomiendan lo siguiente:
 
-- [Events Architecture](/contributing/guides/state-management.html)
-- [State Management](/contributing/guides/state-management.html)
+- [Archivo de eventos](/contributing/guides/state-management.html)
+- [Administración del Estado](/contributing/guides/state-management.html)
 
 ## How Widgets are Loaded
 
@@ -75,9 +75,9 @@ To start working with your own third-party widget, locally on your machine:
 2. Inside the Example Node directory, install the required dependencies:
 
       npm install
-3. Optionally generate a source map (to map the minified code to the original code), to simplify debugging of the frontend code in the browser.  On Linux this can be achieved by:
+3. Optionally generate a source map (to map the minified code to the original code), to simplify debugging of the frontend code in the browser.  En Linux esto se puede lograr por:
 
-      export NODE_ENV=development
+      exportar NODE_ENV=desarrollo
 4. Inside the Example Node directory, build the Example Node's `.umd.js` file (what Node-RED uses to run your widget), this will generate it's `/resources` folder, loaded by Node-RED.
 
       npm run build
@@ -86,7 +86,7 @@ To start working with your own third-party widget, locally on your machine:
 
 1. Navigate to your local Node-RED directory:
 
-       cd ~/.node-red
+       cd ~/.node-rojo
 2. Install the local copy of the Example Node:
 
       npm install /path/to/your/local/node-red-dashboard-example-node-folder
