@@ -99,7 +99,7 @@ Adds a clickable button to your dashboard.
 
 <ControlsTable/>
 
-## Example
+## Esempio
 
 ### Simple Button
 
