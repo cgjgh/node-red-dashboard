@@ -1,42 +1,42 @@
 ---
-description: Step-by-step guide on adding new core widgets to Node-RED Dashboard 2.0 to expand its interactive features.
+description: Guía paso a paso sobre la adición de nuevos widgets de núcleo al Tablero de Node-RED 2.0 para ampliar sus características interactivas.
 ---
 
-# Adding New Core Widgets
+# Añadiendo nuevos widgets de núcleo
 
-A single widget consist of two key parts:
+Un único widget consiste en dos partes clave:
 
-1. A Node-RED node that will appear in the palette of the Node-RED Editor
-2. `.vue` and client-side code that renders the widget into a dashboard
+1. Un nodo RED que aparecerá en la paleta del editor Node-RED
+2. `.vue` y código del lado del cliente que procesa el widget en un panel de control
 
-You can explore our collection of core widgets [here](../../nodes/widgets.md).
+Puedes explorar nuestra colección de widgets núcleo [here](../../nodes/widgets.md).
 
-We are always open to Pull Requests and new ideas on widgets that can be added to the core Dashboard repository.
+Siempre estamos abiertos a Pull Requests y nuevas ideas en widgets que se pueden añadir al repositorio del núcleo del Tablero.
 
-When adding a new widget to the core collection, you will need to follow the steps below to ensure that the widget is available in the Node-RED editor and renders correctly in the UI.
+Al añadir un nuevo widget a la colección del núcleo, necesitará seguir los pasos siguientes para asegurarse de que el widget está disponible en el editor Node-RED y se procesa correctamente en la interfaz de usuario.
 
-## Recommended Reading
+## Lectura Recomendada
 
-On the left-side navigation you'll find a "Useful Guides" section, we recommend taking a look through these as they give a good overview of the structure of the Dashboard 2.0 codebase and some of the underlying architectural principles it is built upon.
+En el lado izquierdo de la navegación encontrarás una sección de "Guías útiles", Recomendamos echar un vistazo a estos ya que ofrecen una buena visión general de la estructura del panel de control 2. y algunos de los principios arquitectónicos subyacentes sobre los que se construye.
 
-In particular, the following are recommended:
+En particular, se recomiendan lo siguiente:
 
-- [Events Architecture](/contributing/guides/state-management.html)
-- [State Management](/contributing/guides/state-management.html)
+- [Archivo de eventos](/contributing/guides/state-management.html)
+- [Administración del Estado](/contributing/guides/state-management.html)
 
 ## Checklist
 
-When adding a new widget to Dashboard 2.0, you'll need to ensure that the following steps have been followed for that new widget to be recognised and included in a Dashboard 2.0 build:
+Cuando se agrega un nuevo widget al panel de control 2. , necesitarás asegurarte de que se han seguido los siguientes pasos para que ese nuevo widget sea reconocido e incluido en un panel de control 2. construcción:
 
-1. In `/nodes/`:
-    - Add `<widget>.html`
-    - Add `<widget>.js`
-    - Add the reference to the `node-red/nodes` section in `package.json`
-2. In `/ui/`:
-    - Add `widgets/<widget>/<widget>.vue`
-    - Add widget to the `index.js` file in `/ui/widgets`
+1. En `/nodes/`:
+    - Añade `<widget>.html`
+    - Añade `<widget>.js`
+    - Añade la referencia a la sección `node-red/nodes` en `package.json`
+2. En `/ui/`:
+    - Añade `widgets/<widget>/<widget>.vue`
+    - Añade un widget al archivo `index.js` en `/ui/widgets`
 
-## Example <widget.vue>
+## Ejemplo <widget.vue>
 
 ```vue
 <template>
@@ -84,115 +84,115 @@ When adding a new widget to Dashboard 2.0, you'll need to ensure that the follow
 </style>
 ```
 
-## Data Tracker
+## Rastreador de datos
 
-The data tracker is a globally available utility service that helps setup the standard event handlers for widgets.
+El rastreador de datos es un servicio de utilidad disponible globalmente que ayuda a configurar los controladores de eventos estándar para los widgets.
 
-### Usage
+### Uso
 
-The data tracker is globally available across existing widgets and can be accessed using `this.$dataTracker(...)`.
+El rastreador de datos está disponible globalmente a través de los widgets existentes y se puede acceder usando `this.$dataTracker(...)`.
 
-The most simple usage of the tracker would be:
+El uso más simple del rastreador sería:
 
 ```js
 ...
-created () {
-    this.$dataTracker(this.id)
+creó () {
+    esto.$dataTracker(this.id)
 },
 ...
 ```
 
-This will setup the following events:
+Esto configurará los siguientes eventos:
 
-- `on('widget-load')` - Ensures we save any received `msg` objects when a widget is first loaded into the Dashboard.
-- `on('msg-input')` - Default behavior checks for any dynamic properties (e.g. visibility, disabled state) and also stores the incoming `msg` in the Vuex store
+- `on('widget-load')` - Asegura que guardamos cualquier objeto `msg` recibido cuando un widget se carga por primera vez en el Tablero.
+- `on('msg-input')` - El comportamiento por defecto comprueba cualquier propiedad dinámica (por ejemplo, visibilidad, estado deshabilitado) y también almacena el `msg` entrante en la tienda Vuex
 
-### Custom Behaviours
+### Comportamientos personalizados
 
-It also provides flexibility to define custom event handlers for a given widget, for example in a `ui-chart` node, we have a logic that handles the merging of data points and the rendering of the chart when a message is received.
+También proporciona flexibilidad para definir controladores de eventos personalizados para un widget determinado, por ejemplo en un nodo `ui-chart`, tenemos una lógica que maneja la fusión de puntos de datos y la representación del gráfico cuando se recibe un mensaje.
 
-The inputs for the `this.$dataTracker(widgetId, onInput, onLoad, onDynamicProperties)` function are used as follows:
+Las entradas para la función `this.$dataTracker(widgetId, onInput, onLoad, onDynamicProperties)` se utilizan de la siguiente manera:
 
-- `widgetId` - the unique ID of the widget
-- `onInput` - a function that will be called when a message is received from Node-RED through the `on(msg-input)` socket handler
-- `onLoad` - a function that will be called when the widget is loaded, and triggered by the `widget-load` event
-- `onDynamicProperties` - a function called as part of the `on(msg-input)` event, and is triggered _before_ the default `onInput` function. This is a good entry point to check against any properties that have been included in the `msg` in order to set a dynamic property (i.e. content sent into `msg.ui_update...`).
+- `widgetId` - el ID único del widget
+- `onInput` - una función que será llamada cuando un mensaje es recibido de Node-RED a través del manejador de socket `on(msg-input)`
+- `onLoad` - una función que será llamada cuando el widget esté cargado, y desencadenado por el evento `widget-load`
+- `onDynamicProperties` - una función llamada como parte del evento `on(msg-input)` y se activa _antes_ de la función predeterminada `onInput`. Este es un buen punto de entrada para comprobar las propiedades que han sido incluidas en el `msg` con el fin de establecer una propiedad dinámica (i. . contenido enviado a `msg.ui_update...`).
 
-## Dynamic Properties
+## Propiedades dinámicas
 
-Node-RED allows for definition of the underlying configuration for a node. For example, a `ui-button` would have properties such as `label`, `color`, `icon`, etc. It is often desired to have these properties be dynamic, meaning that they can be changed at runtime.
+Node-RED permite la definición de la configuración subyacente para un nodo. Por ejemplo, un `ui-button` tendría propiedades como `label`, `color`, `icon`, etc. A menudo se desea que estas propiedades sean dinámicas, lo que significa que se pueden cambiar en tiempo de ejecución.
 
-It is a standard practice within Dashboard 2.0 to support these property updates via a nested `msg.ui_update` object. As such, users can expect to be able to control these generally by passing in `msg.ui_update.<property-name>` to the node, which in turn, should update the appropriate property.
+Es una práctica estándar dentro de Dashboard 2.0 soportar estas actualizaciones de propiedades a través de un objeto `msg.ui_update` anidado. Como tal, los usuarios pueden esperar poder controlarlos generalmente pasando por `msg. i_update.<property-name>` al nodo, que a su vez, debe actualizar la propiedad apropiada.
 
-### Design Pattern
+### Patrón de diseño
 
-This section will outline the architectural design pattern for developing dynamic properties into a widget.
+Esta sección describirá el patrón de diseño arquitectónico para desarrollar propiedades dinámicas en un widget.
 
-Server-side, dynamic properties are stored in our `state` store, which is a mapping of the widget ID to the dynamic properties assigned to that widget. This is done so that we can ensure separation of the dynamic properties for a widget from the initial configuration defined, and stored, in Node-RED.
+El lado del servidor, las propiedades dinámicas se almacenan en nuestra tienda `state`, que es un mapeo del ID del widget a las propiedades dinámicas asignadas a ese widget. Esto se hace para que podamos asegurar la separación de las propiedades dinámicas de un widget de la configuración inicial definida y almacenada en Node-RED.
 
-Before the `ui-base` node emits the `ui-config` event and payload, we merge the dynamic properties with the initial configuration, with the dynamic properties permitted to override the underlying configuration. As such, when the client receives a `ui-config` message, it will have the most up-to-date configuration for the widget, wth the merging of both static and dynamic properties.
+Antes de que el nodo `ui-base` emita el evento y payload `ui-config`, fusionamos las propiedades dinámicas con la configuración inicial, con las propiedades dinámicas permitidas para sobreescribir la configuración subyacente. Por lo tanto, cuando el cliente reciba un mensaje `ui-config`, tendrá la configuración más actualizada para el widget, wth the merging of both static and dynamic properties.
 
-### Setting Dynamic Properties
+### Configurar propiedades dinámicas
 
-#### Server-Side
+#### Servidor lateral
 
-In order to set a dynamic property in the server-side `state` store we can utilise the `beforeSend` event on the node. This event is triggered on any occasion that the server-side node is about to send a message to the client, including when a new input is received into a given node.
+Para establecer una propiedad dinámica en la tienda `state` del lado del servidor podemos utilizar el evento `beforeSend` en el nodo. Este evento se activa en cualquier ocasión en que el nodo del lado del servidor está a punto de enviar un mensaje al cliente, incluyendo cuando se recibe una nueva entrada en un nodo determinado.
 
-For this, we make the most of the state store's `set` function:
+Para esto, aprovechamos al máximo la función `set` de la tienda de estados:
 
 ```js
 /**
     *
-    * @param {*} base  - associated ui-base node
-    * @param {*} node  - the Node-RED node object we're storing state for
-    * @param {*} msg   - the full received msg (allows us to check for credentials/socketid constraints)
-    * @param {*} prop  - the property we are setting on the node
-    * @param {*} value - the value we are setting
+    * @param {*} base - nodo ui-base asociado
+    * @param {*} node - el objeto node Node-RED que estamos almacenando estado para
+    * @param {*} msg - el msg recibido completo (nos permite verificar credenciales/restricciones socketid )
+    * @param {*} prop - la propiedad que estamos configurando en el nodo
+    * @param {*} valor - el valor que estamos configurando
 */
-set (base, node, msg, prop, value) {
+(base, set node, msg, prop, value) {
     if (canSaveInStore(base, node, msg)) {
-        if (!state[node.id]) {
-            state[node.id] = {}
+        if (! tate[node.id]) {
+            estado[node.id] = {}
         }
-        state[node.id][prop] = value
+        estado[node.id][prop] = valor
     }
 },
 ```
 
-For example, in `ui-dropdown`:
+Por ejemplo, en `ui-dropdown`:
 
 ```javascript
 const evts = {
     onChange: true,
     beforeSend: function (msg) {
-        if (msg.ui_update) {
-            const update = msg.ui_update
-            if (typeof update.options !== 'undefined') {
-                // dynamically set "options" property
-                statestore.set(group.getBase(), node, msg, 'options', update.options)
+        if (msg. i_update) {
+            const update = msg. i_update
+            si (actualización de tipo. ptions ! = 'undefined') {
+                // establecer dinámicamente la propiedad "options"
+                statestore. et(group.getBase(), node, msg, 'options', update. ptions)
             }
         }
         return msg
     }
 }
 
-// inform the dashboard  UI that we are adding this node
-group.register(node, config, evts)
+// informar al panel de interfaz de usuario de que estamos añadiendo este nodo
+grupo. egister(nodo, configuración, evts)
 ```
 
-#### Client Side
+#### Lado de cliente
 
-Now that we have the server-side state updating, anytime we refresh, the full `ui-config` will already contain the dynamic properties.
+Ahora que tenemos la actualización del estado del lado del servidor, en cualquier momento que actualicemos, el completo `ui-config` ya contendrá las propiedades dinámicas.
 
-We then need to ensure that the client is aware of these dynamic properties _as they change_. To do this, we can use the `onDynamicProperties` event available in the [data tracker](#data-tracker).
+Luego tenemos que asegurarnos de que el cliente esté al tanto de estas propiedades dinámicas _conforme cambian_. Para ello, podemos utilizar el evento `onDynamicProperties` disponible en el [data tracker](#data-tracker).
 
-A good pattern to follow is provide a `computed` variable on the component in question. We then provide three helpful, global, functions:
+Un buen patrón a seguir es proporcionar una variable `computado` en el componente en cuestión. A continuación, proporcionamos tres funciones, globales y útiles:
 
-- `setDynamicProperties(config)`: Will assign the provided properties (in `config`) to the widget, in the client-side store. This will automatically update the widget's state, and any references using this property.
-- `updateDynamicProperty(property, value)`: Will update the relevant `property` with the provided `value` in the client-side store. Will also ensure the property is not of type `undefined`. This will automatically update the widget's state, and any references using this property.
-- `getProperty(property)`: Automatically gets the correct value for the requested property. Will first look in the dynamic properties, and if not found, will default to the static configuration defined in the [`ui-config` event](../guides/events.md#ui-config).
+- `setDynamicProperties(config)`: Asignará las propiedades proporcionadas (en `config`) al widget, en la tienda del lado del cliente. Esto actualizará automáticamente el estado del widget, y cualquier referencia usando esta propiedad.
+- `updateDynamicProperty(property, value)`: Actualizará la `property` relevante con el `value` proporcionado en la tienda cliente. También se asegurará de que la propiedad no es de tipo 'undefined'. Esto actualizará automáticamente el estado del widget, y cualquier referencia usando esta propiedad.
+- `getProperty(property)`: Obtiene automáticamente el valor correcto para la propiedad solicitada. Buscará primero en las propiedades dinámicas, y si no se encuentra, la configuración estática definida en el evento [`ui-config`](../guides/events.md#ui-config).
 
-The computed variables can wrap the `this.getProperty` function, which will always be up-to-date with the centralized vuex store.
+Las variables calculadas pueden envolver la función `this.getProperty`, la cual estará siempre actualizada con el almacén centralizado de vuex.
 
 ```js
 {
@@ -219,35 +219,35 @@ The computed variables can wrap the `this.getProperty` function, which will alwa
 
 ```
 
-### Updating Documentation
+### Actualizando documentación
 
-There are two important places to ensure documentation is updated when adding dynamic properties:
+Hay dos lugares importantes para asegurar que la documentación se actualiza al agregar propiedades dinámicas:
 
-#### Online Documentation:
+#### Documentación en línea:
 
-Each node will have a corresponding `/docs/nodes/widgets/<node>.md` file which allows for the definition of ` `dynamic\` table in the frontmatter, e.g:
+Cada nodo tendrá un archivo `/docs/nodes/widgets/<node>.md` correspondiente que permite la definición de la tabla `dynamic` en el asunto frontal, por ejemplo:
 
 ```yaml
-dynamic:
-    Options:
-        payload: msg.options
-        structure: ["Array<String>", "Array<{value: String}>", "Array<{value: String, label: String}>"]
-    Class:
-        payload: msg.class
-        structure: ["String"]
+dinámica:
+    Opciones:
+        payload: estructura msg.options
+        : ["Array<String>", "Array<{value: String}>", "Array<{value: String, label: String}>"]
+    Clase:
+        payload: estructura msg.class
+        : ["String"]
 ```
 
-You can then render this table into the documentation with:
+Luego puede renderizar esta tabla en la documentación con:
 
 ```md
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 ```
 
-#### Editor Documentation:
+#### Documentación del Editor:
 
-Each node will have a corresponding `/locales/<locale>/<node>.html` file which should include a table of dynamic properties, e.g:
+Cada nodo tendrá un archivo `/locales/<locale>/<node>.html` que debe incluir una tabla de propiedades dinámicas, por ejemplo:
 
 ```html
 <h3>Dynamic Properties (Inputs)</h3>
@@ -267,6 +267,6 @@ Each node will have a corresponding `/locales/<locale>/<node>.html` file which s
 </dl>
 ```
 
-### Debugging Dynamic Properties
+### Depurando propiedades dinámicas
 
-Dashboard 2.0 comes with as [Debug View](/contributing/widgets/debugging.html) that includes a [specialist panel](/contributing/widgets/debugging.html#dynamic-properties) to monitor any dynamic properties assigned to a widget. This can be a very useful tool when checking whether the client is aware of any dynamic properties that have been sent.
+El panel de control 2.0 viene como [Vista de depuración](/contributing/widgets/debugging.html) que incluye un [panel de especialistas](/contributing/widgets/debugging.html#dynamic-properties) para monitorear cualquier propiedad dinámica asignada a un widget. Esta puede ser una herramienta muy útil a la hora de comprobar si el cliente está al tanto de las propiedades dinámicas que se han enviado.
