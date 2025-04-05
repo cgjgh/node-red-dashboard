@@ -113,7 +113,7 @@ Values for the gauges can be set by sending a numerical value in `msg.payload`. 
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
