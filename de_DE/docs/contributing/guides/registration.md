@@ -96,9 +96,9 @@ Similar to `onAction`, when used as a boolean, this flag will trigger the defaul
 
 #### Default `onChange` Handler
 
-1. Assigns the provided value to `msg.payload`
-2. Appends any `msg.topic` defined on the node config
-3. Runs `evts.beforeSend()` _(if provided)_
+1. Fügt den angegebenen Wert `msg.payload` zu
+2. Hängt jegliche `msg.topic` in der Knotenkonfiguration an
+3. Läuft `evts.beforeSend()` _(wenn bereitgestellt)_
 4. Store the most recent message on the widget under the `._msg` property which will contain the latest state/value of the widget
 5. Pushes a `widget-sync` event to synchronize the widgets in all clients.
 6. Sends the `msg` onwards to any connected nodes
@@ -154,7 +154,7 @@ Defining this function will override the default `onInput` handler.
 #### Default `onInput` Handler
 
 1. Store the most recent message on the widget under the `node._msg`
-2. Appends any `msg.topic` defined on the node config
+2. Hängt jegliche `msg.topic` in der Knotenkonfiguration an
 3. Checks if the widget has a `passthru` property:
  - If no `passthru` property is found, runs `send(msg)`
  - If the property is present, `send(msg)` is only run if `passthru` is set to `true`
