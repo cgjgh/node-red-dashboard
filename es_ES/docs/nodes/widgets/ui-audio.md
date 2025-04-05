@@ -58,7 +58,7 @@ The audio player can be controlled by the user or by control messages.
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
