@@ -1,145 +1,145 @@
 ---
-description: Master state management in Node-RED Dashboard 2.0 for maintaining a responsive and dynamic user interface.
+description: Administración del estado principal en Node-RED Dashboard 2.0 para mantener una interfaz de usuario dinámica y receptiva.
 ---
 
-# State Management
+# Administración del Estado
 
-Dashboard 2.0 provides a data store within Node-RED such that it's possible to refresh your Dashboard clients and data is retained. This is particularly useful for widgets like `ui-chart` where you may want to retain a history of data points, or for widgets like `ui-text` where you want to retain the last value displayed.
+El panel de control 2.0 proporciona un almacén de datos dentro de Node-RED para que sea posible actualizar los clientes del panel de control y se mantengan los datos. Esto es particularmente útil para widgets como `ui-chart` donde puede querer conservar un historial de puntos de datos, o para widgets como `ui-text` donde quieres conservar el último valor mostrado.
 
-This page details the different "stores" we have in place and what they're used for.
+Esta página detalla las diferentes "tiendas" que tenemos en su lugar y para qué se utilizan.
 
-You can also check out the [Events Architecture](./events.md) for a more detailed look at when these stores are used and how they interact with the rest of the Dashboard.
+También puedes echar un vistazo al [Archivo de eventos](./events.md) para ver más detalladamente cuándo se utilizan estas tiendas y cómo interactúan con el resto del panel.
 
-## Client-Side (Dashboard)
+## Lado de cliente (panel)
 
-![An image depicting the three client-side vuex stores we have in Dashboard 2.0](../../assets/images/stores-client-side.jpg){data-zoomable}
-_An image depicting the three client-side vuex stores we have in Dashboard 2.0_
+![Una imagen que representa las tres tiendas vuex del lado del cliente que tenemos en el tablero 2. ](../../assets/images/stores-client-side.jpg){data-zoomable}
+_Una imagen que muestra las tres tiendas vuex del lado del cliente que tenemos en el Tablero 2.0_
 
-Our client-side stores are built using [VueX](https://vuex.vuejs.org/). These stores lose their data on a client refresh (but are re-populated by the server-side stores), and are just used to maintain a centralised, consistent view of the data across the entire Vue application as the user navigates around the Dashboard.
+Nuestras tiendas del lado del cliente se construyen usando [VueX](https://vuex.vuejs.org/). Estas tiendas pierden sus datos en una actualización del cliente (pero son repobladas por las tiendas del lado del servidor), y se utilizan para mantener un centralizado, vista consistente de los datos a través de toda la aplicación Vue mientras el usuario navega alrededor del Tablero.
 
-### `setup` store
+### tienda de `configuración`
 
-This just stores the response from our initial `/_setup` request. This object, in core, contains the SocketIO configuration to help the client connect to the server.
+Esto sólo almacena la respuesta de nuestra petición inicial `/_setup`. Este objeto, en el núcleo, contiene la configuración de SocketIO para ayudar al cliente a conectarse al servidor.
 
-It is also possible for plugins to append to this object (see [Adding Plugins](../plugins/#index-js)) additional data that can be useful across the application.
+También es posible que los plugins añadan a este objeto (ver [Añadiendo Plugins](../plugins/#index-js)) datos adicionales que pueden ser útiles en toda la aplicación.
 
-### `ui` store
+### Tienda `ui`
 
-This store is where we store the full [ui-config](./events#ui-config) that details all of the pages, themes, groups and widgets to render on a Dashboard.
+Esta tienda es donde almacenamos la [ui-config]completa (./events#ui-config) que detalla todas las páginas, temas, grupos y widgets para representar en un Tablero.
 
-### `data` store
+### `data` tienda
 
-The client-side datastore is a map of widget id's to either:
+El datastore del lado del cliente es un mapa de id's del widget a:
 
-- The last `msg` received by the widget
-- An array of `msg` objects, representing all known `msg` objects received by the widget
+- El último `msg` recibido por el widget
+- Una matriz de objetos `msg` que representa todos los objetos `msg` conocidos recibidos por el widget
 
-In most cases, a widget only needs reference to the _last_ message. In some cases, e.g. `ui-chart`, the full history is required in order to render a history of data.
+En la mayoría de los casos, un widget sólo necesita referencia al mensaje _last_. En algunos casos, por ejemplo, `ui-chart`, la historia completa es necesaria para representar una historia de datos.
 
-When a widget is first loaded, we emit a `widget-load` event, which in the default `onLoad` handler, will attempt to retrieve the last message received by the widget from the server-side datastore, and store it in the client-side `data` store. You can read more about this in [Events Architecture](./events.md).
+Cuando se carga un widget por primera vez, emitimos un evento `widget-load`, que en el manejador predeterminado `onLoad`, intentará recuperar el último mensaje recibido por el widget del servidor de datastore, y guardarlo en la tienda de `datos` del lado del cliente. Puedes leer más sobre esto en [Archivo de eventos](./events.md).
 
-It is possible for a widget to access the mapped `msg` object using:
+Es posible que un widget acceda al objeto mapeado `msg` utilizando:
 
 ```vue
 <template>
-    <pre>this.messages[this.id]</pre>
+    <pre>esto. ensayos[this.id]</pre>
 </template>
 <script>
-export default {
-    computed: {
-        ...mapState('data', ['messages'])
+exportar por defecto {
+    calculado: {
+        . .mapState('data', ['mensajes'])
     }
 }
 </script>
 ```
 
-_An example Widget.vue file that uses the `data` store to access the last message received by the widget_
+_Un ejemplo de archivo Widget.vue que utiliza la tienda `data` para acceder al último mensaje recibido por el widget_
 
-This value is also updated automatically when a new message is received, as long as that widget is using the default handlers, again detailed in [Events Architecture](./events.md).
+Este valor también se actualiza automáticamente cuando se recibe un nuevo mensaje, mientras ese widget esté usando los manejadores predeterminados, se detalla de nuevo en [Archivo de eventos](./events.md).
 
-## Server-Side (Node-RED)
+## Servidor lateral (Nodo-RED)
 
-![An image depicting the two server-side vuex stores we have in Dashboard 2.0](../../assets/images/stores-server-side.jpg){data-zoomable}
-_An image depicting the two server-side stores we have in Dashboard 2.0_
+![Una imagen que representa las dos tiendas vuex del lado del servidor que tenemos en el tablero 2. ](../../assets/images/stores-server-side.jpg){data-zoomable}
+_Una imagen que muestra las dos tiendas del lado del servidor que tenemos en el panel 2.0_
 
-Our server-side stores maintain the "single source of truth". When any Dashboard client connects, the centralised data is sent to each client, and the client-side stores are populated with the relevant parts of this centralised store.
+Nuestras tiendas del lado del servidor mantienen la "única fuente de verdad". Cuando cualquier cliente de tablero se conecta, los datos centralizados se envían a cada cliente, y las tiendas del lado del cliente están pobladas con las partes relevantes de esta tienda centralizada.
 
-In our server-side architecture, we use two standalone stores:
+En nuestra arquitectura del lado del servidor, utilizamos dos tiendas independientes:
 
-- `datastore`: A map of each widget to the latest `msg` received by a respective node in the Editor.
-- `statestore`: A store for all dynamic properties set on widgets (e.g. visibility or setting a property at runtime). Often, these values are overrides of the base configuration found in the `datastore`.
+- `datastore`: Un mapa de cada widget al último `msg` recibido por un nodo respectivo en el Editor.
+- `statestore`: Un almacén para todas las propiedades dinámicas establecidas en widgets (ej. visibilidad o establecimiento de una propiedad en tiempo de ejecución). A menudo, estos valores son anulados de la configuración base encontrada en el `datastore`.
 
-Each time a function server-side wants to write into these stores, a check is done to ensure that any provided messages are permitted to be stored. An example of where this would get blocked is if `msg._client.socketid` is specified and the relevant node type is setup to listen to socket constraints (by default, this is `ui-control` and `ui-notification`). In this case, we do not want to store that data in our centralised store since it's not relevant to _all_ users of the Dashboard.
+Cada vez que un servidor de funciones quiere escribir en estas tiendas, se hace una comprobación para asegurar que todos los mensajes proporcionados estén permitidos para ser almacenados. Un ejemplo de donde se bloquearía esto es si `msg._client. ocketid` se especifica y el tipo de nodo relevante está configurado para escuchar las restricciones del socket (por defecto, este es `ui-control` y `ui-notification`). En este caso, no queremos almacenar esos datos en nuestra tienda centralizada, ya que no es relevante para _todos_ los usuarios del panel de control.
 
-### Importing Stores
+### Importando tiendas
 
-Stores are imported into a node's `.js` file with:
+Las tiendas se importan en el archivo `.js` de un nodo con:
 
 ```js
 const store = require('<path>/<to>/store.js')
 ```
 
-### Data Store
+### Tienda de datos
 
-The server-side `datastore` is a centralised store for all messages received by widgets in the Editor. It is a simple key-value store, where the key is the widget's id, and the value is the message received by the widget. In some cases, e.g. `ui-chart` instead of recording _just_ the latest `msg` received, we actually store a history.
+El servidor `datastore` es una tienda centralizada para todos los mensajes recibidos por los widgets en el Editor. Es un simple almacén clave-valor, donde la clave es el id del widget, y el valor es el mensaje recibido por el widget. En algunos casos, por ejemplo, `ui-chart` en lugar de grabar _just_ el último `msg` recibido, en realidad almacenamos un historial.
 
 #### `datastore.save`
 
-When a widget receives a message, the default `node.on('input')` handler will store the received message, mapped to the widget's id into the datastore using:
+Cuando un widget recibe un mensaje, el manejador predeterminado `node.on('input')` almacenará el mensaje recibido, asignado al id del widget en el datastore utilizando:
 
 ```js
-datastore.save(base, node, msg)
+datastore.save(base, nodo, msg)
 ```
 
-- `base`: The `ui_base` node that the store is attached to
-- `node`: The Node-RED node object we're storing state for
-- `msg`: The message that was received by the node
+- `base`: El nodo `ui_base` al que está conectado la tienda
+- `node`: El objeto node-RED estamos almacenando estado para
+- `msg`: El mensaje que fue recibido por el nodo
 
-This will store the latest message received by the widget, which can be retrieved by that same widget on load using:
+Esto almacenará el último mensaje recibido por el widget, que puede ser recuperado por ese mismo widget al usar carga:
 
 #### `datastore.get`
 
-When a widget is initialised, it will attempt to retrieve the latest message from the datastore using:
+Cuando un widget es inicializado, intentará recuperar el último mensaje del datastore utilizando:
 
 ```js
 datastore.get(node.id)
 ```
 
-This ensures, on refresh of the client, or when new clients connect after data has been generated, that the state is presented consistently.
+Esto garantiza, al actualizar el cliente, o cuando los nuevos clientes se conectan después de la generación de datos, que el estado se presenta de forma consistente.
 
 #### `datastore.append`
 
-With `.append`, we can store multiple messages against the same widget, representing a history of state, rather than a single point reference to the _last_ value only.
+Con `. ppend`, podemos almacenar varios mensajes contra el mismo widget, representando un historial de estado, en lugar de una referencia de un solo punto al valor _last_ solamente.
 
 ```js
-datastore.append(base, node, msg)
+datastore.append(base, nodo, msg)
 ```
 
-- `base`: The `ui_base` node that the store is attached to
-- `node`: The Node-RED node object we're storing state for
-- `msg`: The message that was received by the node
+- `base`: El nodo `ui_base` al que está conectado la tienda
+- `node`: El objeto node-RED estamos almacenando estado para
+- `msg`: El mensaje que fue recibido por el nodo
 
-This is used in `ui-chart` to store the history of data points, where each data point could have been an individual message received by the widget.
+Esto se utiliza en `ui-chart` para almacenar el historial de puntos de datos, donde cada punto de datos podría haber sido un mensaje individual recibido por el widget.
 
 #### `datastore.clear`
 
-When a widget is removed from the Editor, we can clear the datastore of any messages stored against that widget using:
+Cuando se elimina un widget del Editor, podemos borrar el datastore de cualquier mensaje almacenado en ese widget utilizando:
 
 ```js
 datastore.clear(node.id)
 ```
 
-This ensures that we don't have any stale data in the datastore, and that we don't have any data stored against widgets that no longer exist in the Editor.
+Esto asegura que no tenemos ningún dato obsoleto en el datastore, y que no tengamos datos almacenados contra widgets que ya no existan en el Editor.
 
-### State Store
+### Tienda de estado
 
-The `statestore` is a centralised store for all dynamic properties set against widgets in the Editor. Dynamic Properties can be set through sending `msg.<property>` payloads to a given node, e.g. for ` ui-dropdown`, we can send `msg.options` to override the "Options" property at runtime.
+El `statestore` es una tienda centralizada para todas las propiedades dinámicas establecidas contra widgets en el Editor. Las propiedades dinámicas pueden establecerse enviando payloads `msg.<property>` a un nodo determinado, p.ej. para ` ui-dropdown`, podemos enviar `msg.options` para sobreescribir la propiedad "Options" en tiempo de ejecución.
 
-At the top-level it is key-mapped to the Widget ID's, then each widget has a map, where each key is the property name, mapping to the value.
+En el nivel superior está asignado a la clave ID del widget, luego cada widget tiene un mapa, donde cada clave es el nombre de la propiedad, mapeando el valor.
 
 #### `statestore.getAll`
 
-For a given widget ID, return all dynamic properties that have been set.
+Para un ID de widget determinado, devuelve todas las propiedades dinámicas que se han establecido.
 
 ```js
 statestore.getAll(node.id)
@@ -147,7 +147,7 @@ statestore.getAll(node.id)
 
 #### `statestore.getProperty`
 
-For a given widget ID, return the value of a particular property.
+Para el ID de un widget determinado, devuelve el valor de una propiedad en particular.
 
 ```js
 statestore.getProperty(node.id, property)
@@ -155,21 +155,21 @@ statestore.getProperty(node.id, property)
 
 #### `statestore.set`
 
-Given a widget ID and property, store the associated value in the appropriate mapping
+Con un ID y propiedad de widget, almacene el valor asociado en el mapeo apropiado
 
 ```js
-statestore.set(base, node, msg, property, value)
+statestore.set(base, nodo, msg, propiedad, valor)
 ```
 
-- `base`: The `ui_base` node that the store is attached to
-- `node`: The Node-RED node object we're storing state for
-- `msg`: The message that was received by the node
-- `property`: The property name to store
-- `value`: The value to store against the property
+- `base`: El nodo `ui_base` al que está conectado la tienda
+- `node`: El objeto node-RED estamos almacenando estado para
+- `msg`: El mensaje que fue recibido por el nodo
+- `property`: El nombre de la propiedad a almacenar
+- `value`: El valor a almacenar contra la propiedad
 
 #### `statestore.reset`
 
-Remove all dynamic properties for a given Widget/Node.
+Elimina todas las propiedades dinámicas de un Widget/Node dado.
 
 ```js
 statestore.reset(node.id)
