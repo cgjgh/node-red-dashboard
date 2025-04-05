@@ -1,5 +1,5 @@
 ---
-description: Learn about Dashboard 2.0 technology choices
+description: ""
 ---
 
 # About Node-RED Dashboard 2.0
