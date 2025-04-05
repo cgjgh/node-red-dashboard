@@ -107,7 +107,7 @@ _Example of a "template" node to structure HTML content in a Text Node_
 
 <DynamicPropsTable/>
 
-## Example
+## Ejemplo
 
 ![Examples of Text](/images/node-examples/ui-text.png "Examples of Text"){data-zoomable}
 _Examples of variants of ui-text rendered in a Dashboard._
