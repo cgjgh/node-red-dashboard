@@ -56,7 +56,7 @@ Adds a form to user interface which helps to collect multiple value from the use
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
@@ -196,7 +196,7 @@ If you want to override the configuration for your `ui-form`, and provide detail
 }]
 ```
 
-## Example
+## Ejemplo
 
 ![Example of a Form](/images/node-examples/ui-form.png "Example of two-column Form"){data-zoomable}
 _Example of a rendered form in a Dashboard._
