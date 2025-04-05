@@ -79,11 +79,11 @@ To clear any selection for a dropdown, pass an empty array `[]` as `msg.payload`
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of a dropdown](/images/node-examples/ui-dropdown.png "Example of a dropdown"){data-zoomable}
 _Example of a rendered dropdown in a Dashboard._
