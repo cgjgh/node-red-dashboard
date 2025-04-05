@@ -97,7 +97,7 @@ Adds a slider to your dashboard that will emit values in Node-RED under `msg.pay
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
