@@ -1,11 +1,11 @@
 ---
-description: Kickstart your Node-RED Dashboard 2.0 journey with this getting started guide. Perfect for beginners.
+description: Kickstart il tuo viaggio Node-RED Dashboard 2.0 con questa guida iniziale. Perfetto per principianti.
 ---
 
 <script setup>
     import { ref } from 'vue'
-    import FlowViewer from './components/FlowViewer.vue'
-    import ExampleDesignPatterns from '../examples/design-patterns.json'
+    import FlowViewer from '. components/FlowViewer.vue'
+    import ExampleDesignPatterns from '.. examples/design-patterns.json'
     import RecommendedTutorials from './components/RecommendedTutorials.vue'
 
     const examples = ref({
@@ -13,172 +13,172 @@ description: Kickstart your Node-RED Dashboard 2.0 journey with this getting sta
     })
 </script>
 
-# Getting Started
+# Per Iniziare
 
-## About
+## Informazioni
 
-Welcome to the documentation for the Node-RED Dashboard 2.0, the successor to the original, and very popular, Node-RED Dashboard.
+Benvenuti nella documentazione della Dashboard Node-RED 2.0, il successore della Dashboard originale, e molto popolare, Node-RED Dashboard.
 
-This project was formed by FlowFuse, as part of efforts to upgrade the original Dashboard to steer away from Angular v1.0 which has been [officially deprecated](https://flowfuse.com/blog/2024/06/dashboard-1-deprecated/). You can read our full statement about _why_ we're building Dashboard 2.0 [here](https://flowfuse.com/blog/2023/06/dashboard-announcement/?_gl=1*cckr5u*_gcl_au*MTAzMTA0MzY1Ni4xNzE2MzY2NTAz).
+Questo progetto è stato formato da FlowFuse, come parte degli sforzi per aggiornare il cruscotto originale per allontanarsi da Angular v1. che è stato [ufficialmente deprecato](https://flowfuse.com/blog/2024/06/dashboard-1-deprecated/). Puoi leggere la nostra dichiarazione completa su _perché_ stiamo costruendo Dashboard 2.0 [here](https://flowfuse.com/blog/2023/06/dashboard-announcement/?_gl=1*cckr5u*_gcl_au*MTAzMTA0MzY1Ni4xNzE2MzY2NTAz).
 
-## Recommended Tutorials
+## Tutorial Consigliati
 
 <RecommendedTutorials />
 
-## Installation
+## Installazione
 
-[FlowFuse](https://flowfuse.com)'s Node-RED Dashboard 2.0 is available in the Node-RED Palette Manager. To install it:
+[FlowFuse](https://flowfuse.com)Node-RED Dashboard 2.0 è disponibile nel Node-RED Palette Manager. Per installarlo:
 
-- Open the menu in the top-right of Node-RED
-- Click "Manage Palette"
-- Switch to the "Install" tab
-- Search `node-red-dashboard`
-- Install the `@flowfuse/node-red-dashboard` package (not `node-red/node-red-dashboard`)
+- Apri il menu in alto a destra di Node-RED
+- Clicca Su "Gestisci Tavolozza"
+- Passa alla scheda "Installa"
+- Cerca `node-red-dashboard`
+- Installa il pacchetto `@flowfuse/node-red-dashboard` (non `node-red/node-red-dashboard`)
 
-![Install via "Manage Palette"](./assets/images/install-palette.png){data-zoomable}
-_Screenshot showing the nodes available in the Node-RED Palette Manager_
+![Installa tramite "Gestisci tavolozza"](./assets/images/install-palette.png){data-zoomable}
+_Schermata che mostra i nodi disponibili nel Gestore tavolozza Node-RED_
 
-The nodes will then be available in your editor for you to get started.
+I nodi saranno quindi disponibili nel tuo editor per iniziare.
 
-If you want to use `npm` to install your nodes, you can instead [follow these instructions](https://nodered.org/docs/user-guide/runtime/adding-nodes)
+Se vuoi usare `npm` per installare i tuoi nodi, puoi invece [seguire queste istruzioni](https://nodered.org/docs/user-guide/runtime/adding-nodes)
 
-## Dashboard Hierarchy
+## Gerarchia Dashboard
 
-Each Dashboard is a collection of widgets (e.g. charts, buttons, forms) that can be configured and arranged in our own User Interface. The hierarchy of a Dashboard is as follows:
+Ogni Dashboard è una raccolta di widget (ad esempio grafici, pulsanti, moduli) che possono essere configurati e organizzati nella nostra interfaccia utente. La gerarchia di una Dashboard è la seguente:
 
-- **Base** - Defines the base URL (e.g. `/dashboard`) for your Dashboard.
-- **Page** - A given page that a visitor can navigate to, URL will extend the base, e.g. `/dashboard/page1`. Each page can also have a defined, unique, Theme which controls the styling of all groups/widgets on the page.
-- **Group** - A collection of widgets. Rendered onto a page.
-- **Widget** - A single widget (e.g. chart, button, form) created in Dashboard.
+- **Base** - Definisce l'URL di base (es. `/dashboard`) per la tua Dashboard.
+- **Pagina** - Una data pagina alla quale un visitatore può spostarsi, l'URL estenderà la base, ad esempio `/dashboard/page1`. Ogni pagina può anche avere un tema definito, unico, che controlla lo stile di tutti i gruppi/widget della pagina.
+- **Gruppo** - Una raccolta di widget. Renderizzato su una pagina.
+- **Widget** - Un singolo widget (es. grafico, pulsante, form) creato nella Dashboard.
 
-## Adding your first widgets
+## Aggiungere i tuoi primi widget
 
-With the nodes installed, getting started is as easy as choosing a node from the Palette (the left-hand side list of nodes) in Node-RED, and dropping it onto your canvas.
+Con i nodi installati, iniziare è facile come scegliere un nodo dalla Tavolozza (l'elenco dei nodi a sinistra) in Node-RED, e cadere sulla tua tela.
 
-![Screen recording to show how easy it is to deploy your first Dashboard 2.0 application.](./assets/images/getting-started.gif){data-zoomable}
-_Screen recording to show how easy it is to deploy your first Dashboard 2.0 application._
+![Registrazione dello schermo per mostrare quanto sia facile distribuire la tua prima applicazione Dashboard 2.0. (./assets/images/getting-started.gif){data-zoomable}
+_Registrazione schermo per mostrare quanto sia facile distribuire la tua prima applicazione Dashboard 2.0_
 
-In this case, we drop in a `ui-button`, click "Deploy" and then can see the button running live in our user interface.
+In questo caso, scenderemo in un `ui-button`, clicca su "Deploy" e poi possiamo vedere il pulsante in esecuzione in diretta nella nostra interfaccia utente.
 
-Notice too that Dashboard will automatically create a new group, page, theme and base Dashboard for you.
+Nota anche che Dashboard creerà automaticamente un nuovo gruppo, pagina, tema e cruscotto di base per te.
 
-## Configuring your layout
+## Configurare il layout
 
-Dashboard 2.0 adds a corresponding "Dashboard 2.0" sidebar to the Node-RED editor . This sidebar provides an interface by which to view of your pages, themes, groups and widgets. From here you can add new pages and groups, modify existing settings, and re-order content to your liking.
+Dashboard 2.0 aggiunge una corrispondente barra laterale "Dashboard 2.0" all'editor Node-RED . Questa barra laterale fornisce un' interfaccia per visualizzare pagine, temi, gruppi e widget. Da qui puoi aggiungere nuove pagine e gruppi, modificare le impostazioni esistenti e riordinare i contenuti a tuo piacimento.
 
-![Screenshot showing the Dashboard 2.0 sidebar in the Node-RED Editor.](./assets/images/getting-started-sidebar.png){data-zoomable}
-_Screenshot showing the Dashboard 2.0 sidebar in the Node-RED Editor._
+![Screenshot che mostra la barra laterale Dashboard 2.0 nell'editor Node-RED.](./assets/images/getting-started-sidebar.png){data-zoomable}
+_Screenshot che mostra la barra laterale Dashboard 2.0 nell'editor Node-RED._
 
-Layout options in a Dashboard 2.0 user interface are controlled by two main settings:
+Le opzioni di layout in un'interfaccia utente Dashboard 2.0 sono controllate da due impostazioni principali:
 
-- **Page Layout:** Controls how the `ui-groups`'s are presented on a given page in your application.
-- **Navigation Sidebar:** Defines the left-side navigation style, defined at the `ui-base` level.
+- **Page Layout:** Controlla come i `ui-groups`'s sono presentati in una data pagina nella tua applicazione.
+- **Navigazione Barra laterale:** Definisce lo stile di navigazione a sinistra, definito al livello `ui-base`.
 
-![Example of a "Grid" page layout, with a "Collapsing" sidebar navigation.](./assets/images/getting-started-layout.png){data-zoomable}
-_Example of the "Grid" page layout, with a "Collapsing" sidebar navigation._
+![Esempio di un layout di pagina "Griglia", con una navigazione nella barra laterale "Collapsing". (./assets/images/getting-started-layout.png){data-zoomable}
+_Esempio del layout della pagina "Griglia", con una navigazione nella barra laterale "Collapsing"._
 
-### Default Page
+### Pagina Predefinita
 
-Each page in Dashboard 2.0 has a unique URL. If a user navigates to an unrecognised path, underneath the `/dashboard/` path, then a default page is used to fall back to.
+Ogni pagina nella Dashboard 2.0 ha un URL unico. Se un utente si sposta verso un percorso non riconosciuto, sotto il percorso `/dashboard/`, allora una pagina predefinita viene usata per tornare indietro.
 
-Currently, in Dashboard 2.0, the default page is chosen as the page ordered first in the list of pages in the side navigation:
+Attualmente, nella Dashboard 2.0, la pagina predefinita viene scelta come la pagina ordinata prima nella lista delle pagine nella navigazione laterale:
 
-![Screenshot of the pages list in the Dashboard 2.0 side panel](./assets/images/default-page-layout.png "Screenshot of the pages list in the Dashboard 2.0 side panel"){data-zoomable}
-_Screenshot of the pages list in the Dashboard 2.0 side panel_
+![Screenshot of the pages list in the Dashboard 2.0 side panel](./assets/images/default-page-layout.png "Screenshot of the pages list in the Dashboard 2. pannello laterale"){data-zoomable}
+_Screenshot dell'elenco delle pagine nel pannello laterale Dashboard 2.0_
 
-In this example, the _"Third Party Widgets"_ page is the default page.
+In questo esempio, la pagina _"Widget di Terzi"_ è la pagina predefinita.
 
-### Layout Options
+### Opzioni Di Layout
 
-Currently, we have three different options for a page's layout:
+Attualmente, abbiamo tre diverse opzioni per il layout di una pagina:
 
-- **Grid:** ([docs](https://dashboard.flowfuse.com/layouts/types/grid.html)) The default layout for a page. It uses a 12-column grid structure to layout the groups. The widths of each group or widget defines the number of columns they will render in. So, a "width" of 6" would render to 50% of the screen. Grid layouts are entirely responsive, and will adjust to the size of the screen.
-- **Fixed:** ([docs](https://dashboard.flowfuse.com/layouts/types/fixed.html)) Each component will render at a _fixed_ width, no matter what the screen size is. The "width" property is converted a fixed pixel value (multiples of 48px by default).
-- **Notebook:** ([docs](https://dashboard.flowfuse.com/layouts/types/notebook.html)) This layout will stretch to 100% width, up to a maximum width of 1024px, and will centrally align. It's particularly useful for storytelling (e.g. articles/blogs) or analysis type user interfaces (e.g. Jupyter Notebooks), where you want the user to digest content in a particular order through scrolling.
-- **Tabs:** ([docs](https://dashboard.flowfuse.com/layouts/types/tabs.html)) This layout organizes content into separate tabbed sections, allowing users to switch between different views or content categories without leaving the page. Each tab can contain multiple groups and widgets, and it’s specially useful for organizing large amounts of information into easily digestible segments. The "Tabs" layout ensures better navigation and a cleaner UI when multiple content categories need to be displayed in a single view.
+- **Griglia:** ([docs](https://dashboard.flowfuse.com/layouts/types/grid.html)) Il layout predefinito per una pagina. Usa una struttura a 12 colonne per posizionare i gruppi. La larghezza di ogni gruppo o widget definisce il numero di colonne in cui verrà visualizzato. Così, una "larghezza" di 6" renderebbe al 50% dello schermo. I layout della griglia sono completamente reattivi, e si adegueranno alle dimensioni dello schermo.
+- **Fisso:** ([docs](https://dashboard.flowfuse.com/layouts/types/fixed.html)) Ogni componente verrà renderizzato ad una larghezza _fissa_, indipendentemente dalla dimensione dello schermo. La proprietà "width" è convertita in un valore di pixel fisso (multipli di 48px per impostazione predefinita).
+- **Notebook:** ([docs](https://dashboard.flowfuse.com/layouts/types/notebook.html)) Questa disposizione si estenderà fino al 100% di larghezza, fino a una larghezza massima di 1024px, e si allineerà centralmente. È particolarmente utile per lo storytelling (ad esempio articoli/blog) o per le interfacce utente di tipo di analisi (ad es. Jupyter Notebooks), dove si desidera che l'utente digerisca il contenuto in un particolare ordine attraverso lo scorrimento.
+- **Schede:** ([docs](https://dashboard.flowfuse.com/layouts/types/tabs.html)) Questo layout organizza il contenuto in sezioni tabbed separate, consentire agli utenti di passare da diverse viste o categorie di contenuti senza lasciare la pagina. Ogni scheda può contenere più gruppi e widget, ed è particolarmente utile per organizzare grandi quantità di informazioni in segmenti facilmente digeribili. Il layout "Tabs" garantisce una migliore navigazione e una interfaccia utente più pulita quando più categorie di contenuti devono essere visualizzate in una singola vista.
 
 ### Navigation Sidebar
 
-Built into the framework of the UI is a side navigation bar, along with the top, page-wide "app bar". Configuration options exist such that the side navigation behaviour can be controlled. Options include:
+Costruito nel framework dell'interfaccia utente è una barra di navigazione laterale, insieme alla parte superiore, pagina "barra delle app". Esistono opzioni di configurazione tali che il comportamento di navigazione laterale possa essere controllato. Le opzioni includono:
 
-- **Collapsing:** When the sidebar is opened the page content will adjust with the width of the sidebar.
-- **Fixed:** The full sidebar will always be visible, and the page content will adjust to the width of the sidebar.
-- **Collapse to Icons:** When minimized, users can still navigate between pages by clicking on the icons representing each page in the sidebar.
-- **Appear over Content:** When the sidebar is opened, the page is given an overlay, and the sidebar sits on top.
-- **Always Hide:** The sidebar will never show, and navigation between pages can instead be driven by [`ui-control`](https://dashboard.flowfuse.com/nodes/widgets/ui-control.html).
+- **Collapsing:** Quando la barra laterale è aperta, il contenuto della pagina si regolerà con la larghezza della barra laterale.
+- **Fissato:** La barra laterale completa sarà sempre visibile, e il contenuto della pagina si regolerà alla larghezza della barra laterale.
+- **Riduci a Icon:** Quando è minimizzato, gli utenti possono ancora navigare tra le pagine facendo clic sulle icone che rappresentano ogni pagina nella barra laterale.
+- **Appare sopra Contenuto:** Quando la barra laterale è aperta, alla pagina viene dato un overlay, e la barra laterale si siede in alto.
+- **Nascondi sempre:** La barra laterale non verrà mai mostrata e la navigazione tra le pagine può invece essere guidata da [`ui-control`](https://dashboard.flowfuse.com/nodes/widgets/ui-control.html).
 
-## Design Patterns
+## Modelli Di Design
 
-There are two core Design Patterns that are possible when building with Dashboard 2.0:
+Ci sono due modelli di design core che sono possibili quando si costruisce con Dashboard 2.0:
 
-- **Single Source of Truth:** All users of your Dashboard will see the same data. This is useful for industrial IoT or Home Automation applications.
-- **Multi Tenancy:** Data shown in a particular widget is unique to a given client/session/user. This represents a more traditional web application, where each user has their own session and associated data.
+- **Singola fonte di verità:** Tutti gli utenti della tua Dashboard vedranno gli stessi dati. Ciò è utile per le applicazioni IoT o Home Automation industriali.
+- **Multi Tenancy:** I dati mostrati in un particolare widget sono unici per un determinato client/sessione/utente. Questo rappresenta un'applicazione web più tradizionale, dove ogni utente ha la propria sessione e i dati associati.
 
-It's worth noting that these two patterns can be mixed and matched within a single Dashboard 2.0 application, shown [later](#example).
+Vale la pena notare che questi due modelli possono essere mescolati e abbinati all'interno di una singola applicazione Dashboard 2.0, mostrata [later](#example).
 
-### Single Source of Truth
+### Sorgente unica della verità
 
 ![Single Source of Truth](./assets/images/design-pattern-single.png){data-zoomable}
-_Example workflow to demonstrate the "Single Source of Truth" design pattern._
+_Esempio di flusso di lavoro per dimostrare il modello di progettazione "Single Source of Truth"._
 
-This is the pattern that the original Node-RED Dashboard utilized. In this pattern, all users of the Dashboard will see the same data. Data that populates a widget is generally driven by a piece of hardware or general-purpose API call.
+Questo è il motivo che il cruscotto Node-RED originale utilizzato. In questo modello, tutti gli utenti della Dashboard vedranno gli stessi dati. I dati che popolano un widget sono generalmente guidati da una chiamata API hardware o di uso generale.
 
-When a user goes to visit a Dashboard, the widgets will load their respective state, and will display it to every user.
+Quando un utente va a visitare una Dashboard, i widget caricheranno il loro rispettivo stato e lo mostreranno a ogni utente.
 
-An example of this is that if you have interactive elements, e.g. a slider linked to a chart, then one user moving the slider will draw data to the chart of every other user's Dashboards too.
+Un esempio di ciò è che se si dispone di elementi interattivi, ad es. un cursore collegato a un grafico, quindi un utente che sposta il cursore disegnerà i dati sul grafico dei Dashboard di ogni altro utente troppo.
 
 ### Multi Tenancy
 
 ![Multi Tenancy](./assets/images/design-pattern-client.png){data-zoomable}
-_Example workflow to demonstrate the "Multi Tenancy" design pattern._
+_Esempio di flusso di lavoro per dimostrare il modello di progettazione "Multi Tenancy"._
 
-In Dashboard 2.0 we can configure a given node type to ["Accept Client Data"](/user/sidebar.html#client-data) from the sidebar:
+Nella Dashboard 2.0 possiamo configurare un dato tipo di nodo a ["Accetta i dati client"](/user/sidebar.html#client-data) dalla barra laterale:
 
-<img data-zoomable style="max-width: 400px; margin: auto;" src="/images/dashboard-sidebar-clientdata.png" alt="Screenshot of an example 'Client Data' tab"/><em>Screenshot of an example "Client Data" tab</em>
+<img data-zoomable style="max-width: 400px; margin: auto;" src="/images/dashboard-sidebar-clientdata.png" alt="Screenshot of an example 'Client Data' tab"/><em>Screenshot di un esempio di scheda "Dati Client"</em>
 
-If "Include Client Data" is toggled on, then _all_ `msg` objects emitted from _all_ nodes will contain a `msg._client` object, which will at a minimum detail the `socketId` for the connected client. It is possible to add on more data to this object, such as a username, email address, or other unique identifier with Dashboard plugins, e.g. the [FlowFuse User Plugin](https://flowfuse.com/blog/2024/04/displaying-logged-in-users-on-dashboard/).
+Se "Includi dati client" è attivato, allora _all_ oggetti `msg` emessi da _tutti_ i nodi conterranno un `msg. oggetto client`, che dettaglierà al minimo il `socketId` per il client connesso. È possibile aggiungere altri dati a questo oggetto, come un nome utente, un indirizzo email o altri identificatori univoci con plugin Dashboard, e. . il [FlowFuse User Plugin](https://flowfuse.com/blog/2024/04/displaying-logged-in-users-on-dashboard/).
 
-The "Accept Client Data" table allow configuration over which node types will pay attention to any provided `msg._client` information. Any `msg` sent _to_ one of these nodes can include a `msg._client` value to specify a particular connection (e.g. username, socket ID) that the data should be sent to, rather than to all clients.
+La tabella "Accetta i dati clienti" consente la configurazione su quali tipi di nodo prestano attenzione a tutte le informazioni `msg._client` fornite. Qualsiasi `msg` inviato _to_ uno di questi nodi può includere un valore `msg._client` per specificare una particolare connessione (e. . username, socket ID) a cui i dati devono essere inviati piuttosto che a tutti i client.
 
-For users familiar with the original Node-RED Dashboard, you'll recognise this pattern from what you could do with `ui-notification` and `ui-control`, now, in Dashboard 2.0, it's possible for _all_ widgets.
+Per gli utenti che hanno familiarità con la Dashboard Node-RED originale, riconoscerai questo modello da quello che potresti fare con `ui-notification` e `ui-control`, ora, nella Dashboard 2. , è possibile per _tutti_ widget.
 
-The key here is that data is generally injected into a node as a consequence of a user action, e.g. clicking a button, viewing a page, or submitting a form, and the responding data is sent _only_ back to that user.
+La chiave qui è che i dati vengono generalmente iniettati in un nodo come conseguenza di un'azione dell'utente, ad es. cliccando su un pulsante, visualizzando una pagina, o inviando un modulo e i dati che rispondono vengono inviati _solo_ a quell'utente.
 
-An easy example of this design pattern in Dashboard 2.0 is to utilise the [UI Event](./nodes/widgets/ui-event.md) node. The `ui-event` node emits a `msg` when a user loads a page. Within the `msg` is a full `msg._client` data object available for that client's connection. If this message is then sent onto another node that accept client data, then that full `msg` will _only_ be sent to that specified client.
+Un semplice esempio di questo modello di design nella Dashboard 2.0 è quello di utilizzare il nodo [UI Event](./nodes/widgets/ui-event.md). Il nodo `ui-event` emette un `msg` quando un utente carica una pagina. All'interno del `msg` è disponibile un oggetto dati `msg._client` completo disponibile per la connessione di quel client. Se questo messaggio viene inviato su un altro nodo che accetta i dati del client, allora quel `msg` completo verrà inviato _solo_ a quel client specificato.
 
-### Example
+### Esempio
 
-Here we have a flow that will produce some client-defined data, and some shared data. When importing, be sure to check that in the Dashboard 2.0 sidebar, both `ui-text` and `ui-template` are checked in the "Accepts Client Data" table.
+Qui abbiamo un flusso che produrrà alcuni dati definiti dal client e alcuni dati condivisi. Durante l'importazione, assicurati di controllare che nella barra laterale Dashboard 2.0, sia `ui-text` che `ui-template` siano controllati nella tabella "Accetta dati clienti".
 
 <video controls>
     <source src="./assets/videos/demo-design-patterns.mp4" type="video/mp4">
-    Your browser does not support the video tag.
+    Il tuo browser non supporta il tag video.
 </video>
 
-In the video above we see that in some cases, data is sent to just the client that triggered it (e.g. button clicks), and in others, the data is shared across all client sessions (e.g. the visualisation of slider value on the chart).
+Nel video qui sopra vediamo che in alcuni casi i dati vengono inviati solo al client che lo ha innescato (ad es. clic del pulsante), e in altri, i dati sono condivisi in tutte le sessioni client (ad esempio la visualizzazione del valore del cursore sul grafico).
 
-If you'd like to play with this example, the flow is as follows:
+Se vuoi giocare con questo esempio, il flusso è il seguente:
 
 <FlowViewer :flow="examples['design-patterns']" height="425px" style="margin-bottom: 24px;"/>
 
-To cover a little more detail about the flow itself:
+Coprire un po' più di dettaglio sul flusso stesso:
 
-#### Client-Driven Data
+#### Dati Client-Driven
 
-For this use-case we've set `ui-text` and `ui-template` configured in the sidebar to "Accept Client Constraints".
+Per questo caso di utilizzo abbiamo impostato `ui-text` e `ui-template` configurati nella barra laterale in "Accetta i vincoli dei clienti".
 
-In the top-half, the `ui-event` node will emit a message when a user loads the page. This message will contain a `msg._client` object, which is unique to that user's connection. This message is then sent to a `ui-template` node, which will display the socket ID of the specific user.
+Nella parte superiore, il nodo `ui-event` emetterà un messaggio quando un utente carica la pagina. Questo messaggio conterrà un oggetto `msg._client`, che è unico per la connessione dell'utente. Questo messaggio viene quindi inviato a un nodo `ui-template`, che visualizzerà l'ID socket dell'utente specifico.
 
-Similarly, we also have a button, which will also emit `msg._client` data (as all nodes will do), but this time it will be sent to a `ui-text` node. The `ui-text` will show the timestamp of the last time that the given client/user clicked that button.
+Allo stesso modo, abbiamo anche un pulsante, che emetterà anche `msg. dati client` (come tutti i nodi lo faranno), ma questa volta verranno inviati a un nodo `ui-text`. Il `ui-text` mostrerà il timestamp dell'ultima volta che il client/utente dato ha cliccato quel pulsante.
 
-#### Shared Data (All Clients)
+#### Dati Condivisi (Tutti I Client)
 
-This section of the flow demonstrates how a slider can be used to control a chart, note that we wire the slider straight into the chart because the `ui-chart` has not been configured to "Accept Client Data".
+Questa sezione del flusso mostra come un cursore può essere usato per controllare un grafico, nota che colleghiamo il cursore direttamente nel grafico perché il file `ui-chart` non è stato configurato in "Accetta i dati clienti".
 
-We also connect the `ui-slider` to two `ui-template` nodes. Given that `ui-template` nodes _are_ configured to "Accept Client Data", we can demonstrate both shared and client-specific data in the same flow by deleting `msg._client` data on the way to the lower `ui-template` node. By removing this, any slider data sent here will be sent to _all_ connections, because the `msg` doesn't specify a `_client`. The top `ui-template` will only update for the client that moved the slider.
+Colleghiamo anche il `ui-slider` a due nodi `ui-template`. Dato che i nodi `ui-template` _are_ configurati per "Accetta dati clienti", possiamo dimostrare sia i dati condivisi che quelli specifici del client nello stesso flusso eliminando `msg. client` dati sulla strada verso il nodo `ui-template` inferiore. Rimuovendo questo, tutti i dati del cursore inviati qui verranno inviati a _all_ connessioni, perché il `msg` non specifica un `_client`. Il top `ui-template` verrà aggiornato solo per il client che ha spostato il cursore.
 
-## Contributing
+## Contribuire
 
-If you would like to run this set of nodes locally, and specifically to help contribute to the development efforts, you can read the [Contributing](./contributing/index.md) documentation.
+Se si desidera eseguire questo set di nodi a livello locale, e in particolare per contribuire agli sforzi di sviluppo, puoi leggere la documentazione [Contributing](./contributing/index.md).
 
-If you'd like to build your own standalone nodes & widgets that integrate seamlessly with Dashboard 2.0, you can read our guide on that [here](./contributing/widgets/third-party.md).
+Se vuoi costruire i tuoi nodi e widget standalone che si integrano perfettamente con la Dashboard 2. , puoi leggere la nostra guida su quella [here](./contributing/widgets/third-party.md).
