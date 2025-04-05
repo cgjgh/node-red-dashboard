@@ -224,7 +224,7 @@ We have plans to extend this theming configuration further, such that you can al
 
 Any further customisation of the overall layout and theme of the Dashboard will require custom CSS, which can be injected via the `ui_template` node.
 
-## Layouts
+## Diseños
 
 Dashboard 2.0 follows a similar architecture to Dashboard 1.0 for managing hierarchy in the UI. The differences can be seen if we compare them side-by-side:
 
