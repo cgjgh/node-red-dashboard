@@ -13,7 +13,7 @@ description: Kickstart your Node-RED Dashboard 2.0 journey with this getting sta
     })
 </script>
 
-# Getting Started
+# Erste Schritte
 
 ## About
 
@@ -177,7 +177,7 @@ This section of the flow demonstrates how a slider can be used to control a char
 
 We also connect the `ui-slider` to two `ui-template` nodes. Given that `ui-template` nodes _are_ configured to "Accept Client Data", we can demonstrate both shared and client-specific data in the same flow by deleting `msg._client` data on the way to the lower `ui-template` node. By removing this, any slider data sent here will be sent to _all_ connections, because the `msg` doesn't specify a `_client`. The top `ui-template` will only update for the client that moved the slider.
 
-## Contributing
+## Mitwirken
 
 If you would like to run this set of nodes locally, and specifically to help contribute to the development efforts, you can read the [Contributing](./contributing/index.md) documentation.
 
