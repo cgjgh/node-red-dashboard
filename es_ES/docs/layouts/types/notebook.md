@@ -31,7 +31,7 @@ We can get finer grain width control within a group by increasing it's width. Th
 ![Notebook Layout](../../assets/images/layout-eg-notebook-width12.png){data-zoomable}
 _An example UI rendered using the "Notebook" Layout_
 
-## Breakpoints
+## Puntos de ruptura
 
 Depending on the screen size, the number of default columns rendered can change. Here you can see examples of the columns rendered at three breakpoints:
 
