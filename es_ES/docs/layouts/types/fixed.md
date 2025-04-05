@@ -1,22 +1,22 @@
 ---
-description: Learn how to use the fixed layout in Node-RED Dashboard 2.0 for static, stable dashboard designs.
+description: Aprenda cómo utilizar la disposición fija en Node-RED Dashboard 2.0 para diseños estáticos y estables.
 ---
 
-# Layout: Fixed
+# Diseño: Fijado
 
-_Note: This layout still needs work to make it more flexible and practical, it is advised to use another layout for now._
+_Nota: Este diseño todavía necesita trabajar para hacerlo más flexible y práctico, se recomienda usar otro diseño por ahora._
 
-Each "unit" is a fixed width, which was the only layout available in Dashboard 1.0.
+Cada "unidad" es un ancho fijo, que era el único diseño disponible en el tablero 1.0.
 
-It is built as a flexbox layout, with a single row of widgets. Width of each group is a fixed pixel size, calculated as the "width" property of a group, multiplied by 90px (where our default row height is 45px).
+Está construido como un diseño de flexbox, con una sola fila de widgets. Ancho de cada grupo es un tamaño de píxel fijo, calculado como la propiedad "ancho" de un grupo, multiplicado por 90px (donde nuestra altura de fila por defecto es de 45px).
 
-The groups themselves follow the same pattern as all other layouts whereby a group of width "6" would have 6 "columns", with the widgets sizing accordingly, soa  widget of size "3 x 1" would be 50% of the group's width.
+Los propios grupos siguen el mismo patrón que todos los demás diseños mediante los cuales un grupo de ancho "6" tendría 6 "columnas", con el tamaño de los widgets en consecuencia, soa widget de tamaño "3 x 1" sería el 50% de la anchura del grupo.
 
-It will automatically move widgets to the next row if they don't fit within a given screen width, and does not change size with the screen size, which often leaves a lot of empty screen real estate. The height of each row is determined by the tallest widget in that row.
+Se moverán automáticamente los widgets a la siguiente fila si no encajan dentro de un ancho de pantalla determinado, y no cambia de tamaño con el tamaño de la pantalla, que a menudo deja una gran cantidad de pantalla de bienes inmuebles. La altura de cada fila está determinada por el widget más alto de esa fila.
 
-![Fixed Layout](../../assets/images/layout-eg-flex.png){data-zoomable}
-_An example UI rendered using the "Fixed" Layout_
+![Disposición fija](../../assets/images/layout-eg-flex.png){data-zoomable}
+_Un ejemplo de IU renderizada con el diseño "Fixed"_
 
-## Breakpoints
+## Puntos de ruptura
 
-Below 576px, Fixed layouts will render in a responsive mode in order to support mobile rendering. Here, they actually become [Grid](./grid.md) layouts, with the width of each group being calculated as a portion of 3 columns, rather than a fixed pixel size.
+Debajo de 576px, Los diseños corregidos se renderizarán en modo responsivo para soportar la representación móvil. Aquí, en realidad se convierten en un diseño [Grid](./grid.md), con el ancho de cada grupo siendo calculado como una porción de 3 columnas, en lugar de un tamaño de píxeles fijo.
