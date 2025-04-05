@@ -58,7 +58,7 @@ The selected option can be set by sending a `msg.payload` with the value of the 
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
