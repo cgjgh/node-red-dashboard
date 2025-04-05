@@ -1,0 +1,6 @@
+files:
+  - source: docs/**/*.md
+    ignore:
+      - /docs/%locale_with_underscore%
+      - /docs/.vitepress/
+    translation: /%locale_with_underscore%/%original_path%/%original_file_name%
