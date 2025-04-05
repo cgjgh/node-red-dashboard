@@ -57,11 +57,11 @@ To clear any selection for a dropdown, pass an empty string `""` as `msg.payload
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of a radio group](/images/node-examples/ui-radio.png "Example of a radio group"){data-zoomable}
 _Example of a rendered radio group in a Dashboard with 2 columns._
