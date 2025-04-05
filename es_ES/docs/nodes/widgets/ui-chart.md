@@ -78,7 +78,7 @@ Provides configuration options to create the following chart types:
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
