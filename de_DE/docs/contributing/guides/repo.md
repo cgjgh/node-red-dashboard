@@ -1,20 +1,20 @@
 ---
-description: Understand the repository structure of Node-RED Dashboard 2.0 for better code management and contribution.
+description: Verstehen Sie die Repository-Struktur des Node-RED Dashboard 2.0 für ein besseres Code-Management und einen besseren Beitrag.
 ---
 
-# Repository Structure
+# Repository-Struktur
 
-The purpose of this page is to give an overview how of Dashboard 2.0 is structured so that you can better navigate around the repository and contribute effectively.
+Der Zweck dieser Seite ist es, einen Überblick über Dashboard 2 zu geben. ist so strukturiert, dass Sie besser durch das Projektarchiv navigieren und effektiv beitragen können.
 
-## Core Folders
+## Kernordner
 
-The repository contains two primary folders:
+Das Projektarchiv enthält zwei primäre Ordner:
 
 ### /nodes
 
-The `/nodes` directory contains the collection of Node-RED nodes that are available within the Node-RED editor. These nodes are responsible for handling the configuration of the Dashboard, which widgets are shown, and for sending and receiving events to and from the Dashboard, based on their configuration within the Node-RED editor.
+Das Verzeichnis `/nodes` enthält die Sammlung von Node-RED-Knoten, die im Node-RED-Editor verfügbar sind. Diese Knoten sind für die Handhabung der Konfiguration des Dashboards verantwortlich, welche Widgets angezeigt werden, und für das Senden und Empfangen von Ereignissen an und vom Dashboard, basierend auf ihrer Konfiguration innerhalb des Node-RED-Editors.
 
 ### /ui
 
-This folder contains our Vue.js Application. This can be built using `npm run build`, and the output of this build is then copied into the `/dist` directory, where it is served by Node-RED.
+Dieser Ordner enthält unsere Vue.js Anwendung. Dies kann mit `npm run build` gebaut werden, und die Ausgabe dieses Builds wird dann in das `/dist` Verzeichnis kopiert, wo es von Node-RED bedient wird.
 
