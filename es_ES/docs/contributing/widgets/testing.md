@@ -1,147 +1,147 @@
 ---
-description: Comprehensive guide on end-to-end testing for Node-RED Dashboard 2.0, ensuring reliability and performance.
+description: Guía completa sobre pruebas de extremo a extremo para Node-RED Dashboard 2.0, garantizando fiabilidad y rendimiento.
 ---
 
-# E2E Testing
+# Pruebas E2E
 
-E2E Testing consists of runnig a local environment, and automating interaction with the browser to test the widgets behaviour.
+E2E Testing consiste en runnig un entorno local, y automatizar la interacción con el navegador para probar el comportamiento de los widgets.
 
-With Dashboard 2.0, we have the following commands which are used for testing:
+Con Dashboard 2.0, tenemos los siguientes comandos que se utilizan para la prueba:
 
-- `npm run cy:server` - Runs an instance of Node-RED with Dashboard 2.0 installed.
-- `npm run cy:run` - Runs all of the Cypress tests in headless mode.
-- `npm run cy:open` - Opens the Cypress test runner, whereby you can explicitly choose which tests to run locally.
+- `npm run cy:server` - Ejecuta una instancia de Node-RED con Dashboard 2.0 instalado.
+- `npm run cy:run` - Ejecuta todas las pruebas de Cypress en modo sin cabeza.
+- `npm run cy:open` - Abre el runner de pruebas de Cypress, por lo que puedes elegir explícitamente qué pruebas ejecutar localmente.
 
-## Cypress
+## Ciprés
 
-For our E2E testing we use [Cypress](https://www.cypress.io/). This provides a framework by which we can define automated tests that will click on and interact with relevant elements in our Dashboard, and check against expected behaviours.
+Para nuestras pruebas E2E usamos [Cypress](https://www.cypress.io/). Esto proporciona un framework mediante el cual podemos definir pruebas automatizadas que harán clic e interactuarán con elementos relevantes en nuestro panel de control, y compruebe los comportamientos esperados.
 
-## Running Tests
+## Pruebas en ejecución
 
-### Install Node-RED Testing Instance
+### Instancia de prueba Node-RED
 
-Cypress has been configured to run a local instance of Node-RED with the Dashboard 2.0 installed. You will need to install the dependencies for this instance:
+Cypress ha sido configurado para ejecutar una instancia local de Node-RED con el Dashboard 2.0 instalado. Necesitarás instalar las dependencias de esta instancia:
 
 ```bash
 cd ./cypress/fixtures/user-dir/
 npm install
 ```
 
-### Running Test Server
+### Servidor de prueba en ejecución
 
-To run the test server, you will need to run the following command from the root of the repository:
+Para ejecutar el servidor de pruebas, necesitará ejecutar el siguiente comando desde la raíz del repositorio:
 
 ```bash
 npm run cy:server
 ```
 
-The test server will run at `http://localhost:1881`, and any resulting Dashboard will be available at `http://localhost:1881/dashboard`.
+El servidor de pruebas se ejecutará en `http://localhost:1881`, y cualquier panel resultante estará disponible en `http://localhost:1881/dashboard`.
 
-### Open Cypress
+### Abrir Cypress
 
-To open the Cypress test runner, you will need to run the following command from the root of the repository:
+Para abrir el runner de pruebas de Cypress, necesitará ejecutar el siguiente comando desde la raíz del repositorio:
 
 ```bash
 npm run cy:open
 ```
 
-Select "E2E Testing, and then the browser of your choice. Following this, you'll see a list of the available tests, which you can then run individually.
+Seleccione "E2E Testing, y luego el navegador de su elección. Después de esto, verás una lista de las pruebas disponibles, que puedes ejecutar individualmente.
 
-![Screenshot showing the UI Button tests running in the Cypress Test Runner](../../assets/images/cypress-ui.png)
-_Screenshot showing the UI Button tests running in the Cypress Test Runner_
+![Captura de pantalla que muestra las pruebas del botón de interfaz de usuario corriendo en el Cazador de pruebas de Cypress](../../assets/images/cypress-ui.png)
+_Captura de pantalla que muestra las pruebas del botón de interfaz de usuario corriendo en el Cicpress Test Runner_
 
-## Writing Tests
+## Escribir Pruebas
 
-With Node-RED and Dashboard 2.0, we want to be able to provide a complete `flow.json`, and then test the behaviour of the Dashboard that is deployed as a result of that flow.
+Con Node-RED y Dashboard 2.0, queremos ser capaces de proporcionar un completo `flow. hijo`, y luego probar el comportamiento del Tablero que es desplegado como resultado de ese flujo.
 
-As such, each set of tests contains two key parts:
+Como tal, cada conjunto de pruebas contiene dos partes clave:
 
-1. `<widget>.json` - the `flows.json` that details the test flows to deploy, stored in `/cypress/fixtures/flows`
-2. `<widget>.spec.js` - the test suite that defines what elements to interact with and the states to test, stored in `/cypress/tests/`
+1. `<widget>.json` - el `flows.json` que detalla los flujos de prueba a desplegar, almacenado en `/cypress/fixtures/flows`
+2. `<widget>.spec.js` - la suite de pruebas que define con qué elementos interactuar y los estados a probar, almacenados en `/cypress/tests/`
 
-### 1) Building Test Flows
+### 1) Construcción de Flujos de Prueba
 
-Each test suite will have a corresponding `flows.json` file that details the flow to deploy to the local Node-RED instance. This will contain the necessary nodes to test the behaviour of the widget in question.
+Cada suite de pruebas tendrá un archivo `flows.json` correspondiente que detalla el flujo a desplegar en la instancia local de Node-RED. Esto contendrá los nodos necesarios para probar el comportamiento del widget en cuestión.
 
-The easiest way to build this `flow.json` is in Node-RED itself:
+La forma más fácil de construir este `flow.json` es en sí mismo Node-RED:
 
-1. Build the flow you want to test in a local Node-RED instance
-2. Export it as JSON
-3. Save the exported `json` into a `json` file within `/cypress/fixtures/flows`
+1. Construye el flujo que quieres probar en una instancia local de Node-RED
+2. Exportarlo como JSON
+3. Guarda el `json` exportado en un archivo `json` dentro de `/cypress/fixtures/flows`
 
-You may also want to make the most of the [Cypress Test Helpers](#cypress-test-helpers) too.
+También puede que quieras sacar el máximo provecho de los [Cypress Test Helpers](#cypress-test-helpers) también.
 
-### 2. Example `spec.js` file
+### 2. Ejemplo archivo `spec.js`
 
-To reference your relevant `flow.json`, you can use the `cy.deployFixture` helper function which will load the flow into the local Node-RED instance.
+Para hacer referencia a su correspondiente `flow.json`, puede utilizar la función `cy.deployFixture` que cargará el flujo en la instancia local de Node-RED.
 
 ```js
-describe('Node-RED Dashboard 2.0 - Button Groups', () => {
-    // anything here will run before all of the indivudal tests below
+describe('Tablero Node-RED 2. - Grupos de botones', () => {
+    // cualquier cosa aquí se ejecutará antes de todas las pruebas indivudas por debajo de
     beforeEach(() => {
-        // here we can use our helper command to load a flow.json
-        cy.deployFixture('dashboard-button-groups')
-        // then make sure we're starting on the correct page for each test
-        cy.visit('/dashboard/page1')
+        // aquí podemos usar nuestro comando ayudante para cargar un flujo. hijo
+        cy. eployFixture('dashboard-button-groups')
+        // luego asegúrese de que estamos empezando en la página correcta para cada prueba
+        cy. isit('/dashboard/page1')
     })
 
-    // it('') specifies a new test
-    it('can be clicked and emit a string value representing the option', () => {
-        // clickAndWait is a helper command that clicks on an element and waits for a set time
-        cy.clickAndWait(cy.get('button').contains('Option 3'))
+    // it('') especifica una nueva prueba
+    it('se puede hacer clic y emitir un valor de cadena representando la opción', () => {
+        // haga clic en AndWait es un comando ayudante que hace clic en un elemento y espera un tiempo establecido
+        cy. lickAndWait(cy.get('botón'). ontains('Opción 3'))
         
-        // checkOutput then utilises the Helper APIs we have in place tho check what output came from the button
-        cy.checkOutput('msg.topic', 'first-row')
-        cy.checkOutput('msg.payload', 'option_3')
+        // checkOutput entonces utiliza las APIs Helper que tenemos en su lugar para comprobar qué salida vino del botón
+        cy. heckOutput('msg.topic', 'first-row')
+        cy. heckOutput('msg. ayload', 'option_3')
     })
 
-    it('allows for definition of custom colouring for options', () => {
-        // Click the last button in the button group
-        cy.clickAndWait(cy.get('#nrdb-ui-widget-ui-button-group-colors button').last())
+    it('permite la definición de colores personalizados para opciones', () => {
+        // Haz clic en el último botón del grupo de botones
+        cy. lickAndWait(cy.get('botón #nrdb-ui-widget-ui-botón-grupo-colores'). ast())
 
-        // check the CSS is applied correctly
-        cy.get('#nrdb-ui-widget-ui-button-group-colors button').last()
-            .should('have.css', 'background-color', 'rgb(217, 255, 209)')
+        // comprueba que el CSS se aplica correctamente
+        cy. et('#nrdb-ui-widget-ui-button-group-colors button').last()
+            . hould('have.css', 'fondo-color', 'rgb(217, 255, 209)')
     })
 })
 ```
 
-## Cypress Test Helpers
+## Ayudantes de pruebas de Cypress
 
-### Click & Wait
+### Clic y espera
 
 `cy.clickAndWait(<element>)`
 
-Cypress will automatically wait for elements to appear in the DOM before interacting with them, and wait for HTTP requests when instructed, however, it cannot perform the same for Websocket traffic.
+Cypress esperará automáticamente a que aparezcan elementos en el DOM antes de interactuar con ellos, y esperar a las peticiones HTTP cuando se les indica, sin embargo, no puede realizar lo mismo para el tráfico de Websocket.
 
-Given that most tests will involve checking for the conasequences of SocketIO traffic, we've created a Cypress "command", `clickAndWait()` which ensures a set time period after clicking before moving onto the next phase of a test.
+Dado que la mayoría de las pruebas implicarán la comprobación de las conecencias del tráfico de SocketIO, hemos creado un comando "Cypress", `clickAndWait()` que asegura un período de tiempo establecido después de hacer clic antes de pasar a la siguiente fase de una prueba.
 
-### Store Output (Function Node)
+### Tienda de salida (nodo de unición)
 
-In order to make it easier to write tests, we have created a helper function which can be used to test the output from particular widgets. This function node can be included in your Node-RED flow, and it will store the `msg` object in a `global`
+Para facilitar la escritura de las pruebas, hemos creado una función de ayuda que puede ser usada para probar la salida de widgets en particular. Este nodo de función puede incluirse en tu flujo Node-RED y almacenará el objeto `msg` en un `global`
 
 <iframe width="100%" height="250px" src="https://flows.nodered.org/flow/51259d06082d56dd79725d7675f6c4bc/share" allow="clipboard-read; clipboard-write" style="border: none;"></iframe>
 
-The "Store Latest Msg" function node here contains:
+El nodo de función "Guardar último Msg" contiene:
 
 ```js
 global.set('msg', msg)
 return msg;
 ```
 
-When a button is clicked in the Dashboard, the value emitted by that button is then stored in a global `msg` variable. We can then use this in conjuction with checking that output.
+Cuando se hace clic en un botón en el panel, el valor emitido por ese botón se almacena en una variable global `msg`. Entonces podemos utilizarlo en conjucción comprobando esa producción.
 
-### Check Output
+### Comprobar Salida
 
 `cy.checkOutput(<key>, <value>)`
 
-If using the above [Store Output](#store-output-function-node) function node, we can then use the `checkOutput` command to check the value of the `msg` object against what we expect it to be.
+Si se usa el nodo de la función anterior [Salida de tienda](#store-output-function-node) podemos usar el comando `checkOutput` para comprobar el valor del objeto `msg` contra lo que esperamos que sea.
 
-This helper flow is automatically deployed to the Node-RED instance when using the `deployFixture(<fixture>)` command.
+Este flujo de ayuda se implementa automáticamente en la instancia de Node-RED cuando se utiliza el comando `deployFixture(<fixture>)`.
 
 <iframe width="100%" height="250px;" src="https://flows.nodered.org/flow/85116e5ecfdb9da778bbbbfe34c0063b/share" allow="clipboard-read; clipboard-write" style="border: none;"></iframe>
 
-For example, from our button tests:
+Por ejemplo, desde nuestras pruebas de botón:
 
 ```js
 describe('Node-RED Dashboard 2.0 - Buttons', () => {
@@ -169,10 +169,10 @@ describe('Node-RED Dashboard 2.0 - Buttons', () => {
 
 `cy.resetContext()`
 
-The above function assists with setting and checking output that rely on Node-RED's "context" stores. This function can be used to be sure that you have a clean context store by restting it. This is best used _before_ using the [Store Output](#store-output-function-node) helper function to assign new values to the store.
+La función anterior ayuda a configurar y comprobar la salida que depende de las tiendas de "contexto" de Node-RED. Esta función se puede utilizar para asegurarse de que tiene un almacén de contexto limpio reposándolo. Esto se usa _antes_ mejor usando la función de ayuda [Salida de tienda](#store-output-function-node) para asignar nuevos valores a la tienda.
 
-### Reload Dashboard
+### Recargar panel
 
 `cy.reloadDashboard()`
 
-If at any point you want to reload the page, then utilising this command will refresh the page, but also ensure that the `/_setup` API call has finished, before proceeding with any more steps in your test.
+Si en cualquier momento quieres recargar la página, el uso de este comando actualizará la página, pero también asegúrese de que la llamada API `/_setup` ha terminado, antes de continuar con más pasos en su prueba.
