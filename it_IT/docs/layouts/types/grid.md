@@ -8,9 +8,9 @@ Similar to Bootstrap's [Grid](https://getbootstrap.com/docs/4.0/layout/grid/) Sy
 
 Each group's width represents the number of columns that it will populate in the overall Page's Grid layout, e.g. a Group, with width 12, will be full width of the screen, even when that screen width is changed.
 
-The layout will automatically move widgets to the next row if they don't fit within a given row. The height of each row is determined by the tallest widget in that row.
+The layout will automatically move widgets to the next row if they don't fit within a given row. L'altezza di ogni riga è determinata dal widget più alto di quella riga.
 
-## Breakpoints
+## Breakpoint
 
 Depending on the screen size, the number of default columns rendered can change. Here you can see examples of the columns rendered at three breakpoints:
 
