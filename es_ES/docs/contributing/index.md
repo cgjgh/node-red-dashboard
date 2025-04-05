@@ -1,107 +1,107 @@
 ---
-description: Join the development of Node-RED Dashboard 2.0. Learn how you can contribute to making it better for everyone.
+description: Únete al desarrollo de Node-RED Dashboard 2.0. Aprende cómo puedes contribuir a hacerlo mejor para todos.
 ---
 
-# Contributing
+# Contribuyendo
 
-Contributions are always welcome for Dashboard 2.0. We have a lot of great ideas we want to get built, and we'd love to have your help!
+Las contribuciones son siempre bienvenidas para Dashboard 2.0. Tenemos muchas grandes ideas que queremos construir, y nos encantaría tener tu ayuda!
 
-## Project Structure
+## Estructura del proyecto
 
 ### `/nodes`
 
-Contains the files that define each of the Node-RED nodes that make up the Dashboard 2.0 node set. You can read more about writing nodes for Node-RED [here](https://nodered.org/docs/creating-nodes/first-node).
+Contiene los archivos que definen cada uno de los nodos Node-RED que componen el conjunto de nodos del Tablero 2.0. Puede leer más sobre cómo escribir nodos para Node-RED [here](https://nodered.org/docs/creating-nodes/first-node).
 
 ### `/ui`
 
-Contains our VueJS app that forms the core of Dashboard 2.0. Inside `/ui/src/widgets`, you will find a set of subdirectories, each containing a `.vue` file. It is these files that define the appearance and functionality a users sees when viewing the Dashboard.
+Contiene nuestra aplicación VueJS que forma el núcleo del panel 2.0. Dentro de `/ui/src/widgets`, encontrarás un conjunto de subdirectorios, cada uno conteniendo un archivo `.vue`. Son estos archivos los que definen la apariencia y funcionalidad que los usuarios ven al ver el Dashboard.
 
 ### `/docs`
 
-A [VitePress](https://vitepress.dev/) documentation site that is used to generate the documentation for Dashboard 2.0 (what you're reading now).
+Un sitio de documentación [VitePress](https://vitepress.dev/) que se utiliza para generar la documentación para el Tablero 2.0 (lo que estás leyendo ahora).
 
-## Installing Locally
+## Instalar localmente
 
-### Pre-requisites
+### Requisitos previos
 
-- [GitHub Account](https://github.com/) - You will need a GitHub account in order to make a copy of the code and contribute any changes.
-- [Node.js](https://nodejs.org/en/download) - Node.js will also come packaged with the Node Package Manager (`npm`) which is used to install dependencies, and run the Dashboard (and Node-RED) locally.
-- [Git](https://git-scm.com/downloads) - Git is used to clone the repository locally to your machine, and permits you to push changes back to the central repository on GitHub.
+- [Cuenta de GitHub](https://github.com/) - Necesitarás una cuenta de GitHub para hacer una copia del código y contribuir con cualquier cambio.
+- [Node.js](https://nodejs.org/en/download) - Nodo. también vendrá empaquetado con el Node Package Manager (`npm`) que se utiliza para instalar dependencias, y ejecutar el Dashboard (y Node-RED) localmente.
+- [Git](https://git-scm.com/downloads) - Git se utiliza para clonar el repositorio localmente en su máquina, y le permite enviar cambios al repositorio central de GitHub.
 
-### Clone & Build the Repository
+### Clonar y construir el repositorio
 
-1. **Logon to Appropriate Machine:** Logon to the machine where you have installed Node-RED.
+1. **Inicie sesión para Apriar la máquina:** Inicie sesión en la máquina donde haya instalado Node-RED.
 
-2. **Fork Repository:** Fork this repository to your own Github account:
+2. **Repositorio de bifurcación:** Bifurca este repositorio a tu propia cuenta de Github:
 
    ![image](../assets/images/github-pr.png){data-zoomable}
 
-3. **Clone Git Repo:** Clone the forked repository from your Github account. This can be anywhere appropriate on your machine (e.g. `/yourname/development/`):
+3. **Clonar repositorio de Git:** Clona el repositorio bifurcado desde tu cuenta de Github. Esto puede ser apropiado en cualquier lugar de su máquina (por ejemplo, `/yourname/development/`):
 
-      git clone https://github.com/<your_github_account>/node-red-dashboard.git
+      git clon https://github.com/<your_github_account>/node-red-dashboard.git
 
-4. **Install Dependencies:** From inside your cloned directory, install all dependent packages (from the `package.json` file):
+4. **Instalar dependencias:** Desde dentro de tu directorio clonado, instala todos los paquetes dependientes (desde el archivo `package.json`):
 
       cd /node-red-dashboard
       npm install
 
-5. Optionally _**generate a source map**_ (to map the minified dashboard code to the original code), to simplify debugging of the frontend dashboard code in the browser. On Linux this can be achieved by:
+5. Opcionalmente _**generar un mapa de origen**_ (para mapear el código del tablero minimizado al código original), para simplificar la depuración del código del panel de control del frontend en el navegador. En Linux esto se puede lograr por:
 
-      export NODE_ENV=development
+      exportar NODE_ENV=desarrollo
 
-6. **Build Dashboard:** Create a static build of the Dashboard's UI, based on Vue CLI (which has been installed in step 3):
+6. **Panel de Construcción:** Crea una versión estática de la interfaz de usuario del Tablero, basada en Vue CLI (que ha sido instalada en el paso 3):
 
        npm run build
 
-   Alternatively, use `npm run build:dev` to build a developer version or use `npm run dev` to build a developer version and watch for changes (hot reload)
+   Alternativamente, usar `npm run build:dev` para construir una versión de desarrollador o usar `npm run dev` para construir una versión de desarrollador y ver cambios (hot reload)
 
-### Install into Node-RED
+### Instalar en Node-RED
 
-1. **Navigate to `.node-red`:** In a terminal, navigate to your `.node-red` folder (normally at `~/.node-red`).
+1. **Ve a `.node-red`:** En un terminal, ve a tu carpeta `.node-red` (normalmente en `~/.node-red`).
 
-      cd ~/.node-red
+      cd ~/.node-rojo
 
-2. **Remove existing Dashboard 2.0:** Note - if you have already installed this dashboard via your palette, you will need to uninstall it first. This can be done from the Palette Manager in Node-RED, or via `npm` on the terminal:
+2. **Eliminar el panel de control 2.0:** Nota: si ya has instalado este panel a través de tu paleta, necesitarás desinstalarlo primero. Esto puede hacerse desde el Administrador de Palette en Node-RED, o vía `npm` en la terminal:
 
-      npm uninstall @flowfuse/node-red-dashboard
+      npm desinstalar @flowfuse/node-red-dashboard
 
-3. **Install Dashboard 2.0:** Install the forked dashboard into your Node-RED system from inside the `.node-red` folder:
+3. **Instala el tablero 2.0:** Instala el tablero bifurcado en tu sistema Node-RED desde dentro de la carpeta `.node-red`:
 
       npm install <path_to_your_forked_dashboard>
 
-## Making Changes
+## Haciendo Cambios
 
-1. **Make Changes:** Make any appropriate edits.
-   - **Node-RED Editor:** For Node-RED node changes, you'll work inside `/nodes` - changes here will require a restart of Node-RED (and refresh of the Node-RED Editor) to see the latest changes.
-      - For convenience you can use `npm run watch:node-red` which will restart Node-RED after any changes to `/nodes`
-      - This assumes Node-RED is installed at `~/.node-red` and you have `@flowfuse/node-red-dashboard` installed in that folder (as per step 3 above)
-   - **Dashboard/UI:** For Dashboard/UI changes, see `/ui` - changes here will require a rebuild of the Dashboard's UI, which can be done by running `npm run build` (as per Step 5. in "Clone & Build the Repository").
-      - For convenience you can use `npm run watch:dashboard` which will auto-rebuild after dashboard UI changes
-   - The two watch commands are combined into one command under `npm run watch`
+1. **Hacer cambios:** Haz cualquier edición apropiada.
+   - **Editor RED del nodo:** Para cambios de nodo RED trabajarás dentro de `/nodes` - los cambios aquí requerirán un reinicio de Node-RED (y la actualización del Editor de Nodo-RED) para ver los últimos cambios.
+      - Para conveniencia puedes usar `npm run watch:node-red` que reiniciará Node-RED después de cualquier cambio en `/nodes`
+      - Esto asume que Node-RED está instalado en `~/.node-red` y tienes `@flowfuse/node-red-dashboard` instalado en esa carpeta (como por el paso 3 anterior)
+   - **Dashboard/UI:** Para los cambios en el panel/interfaz de usuario, vea `/ui` - los cambios aquí requerirán una reconstrucción de la interfaz de usuario del panel, que se puede hacer ejecutando `npm run build` (como por paso 5. en "Clonar y construir el Repositorio").
+      - Para conveniencia puedes usar `npm run watch:dashboard` que se autoreconstruirá después de los cambios en la interfaz del tablero
+   - Los dos comandos de reloj se combinan en un comando bajo `npm run watch`
 
-2. **Refresh Browser:** Refresh the dashboard in the browser on `http(s)://your_hostname_or_ip_address:1880/dashboard`
+2. **Actualizar el navegador:** Actualizar el panel de control en `http(s)://your_hostname_or_ip_address:1880/dashboard`
 
-3. **Develop:** Repeat step 1 to 2 over and over again, until you're satisfied with your results.
+3. **Desarrollo:** Repita el paso 1 a 2 una y otra vez, hasta que estés satisfecho con tus resultados.
 
-4. **Create Branch:** Once you're ready to publish your changes, in your cloned repository directory (e.g. `/yourname/development/node-red-dashboard`), create a new branch for all the files of your forked dashboard:
+4. **Crear rama:** Una vez que estés listo para publicar tus cambios, en el directorio de tu repositorio clonado (p. ej. `/yourname/development/node-red-dashboard`), crea una nueva rama para todos los archivos del panel bifurcado:
 
-      git checkout -b name_of_your_new_branch
+      git checkout -b name_of_su_nuevo_rama
 
-5. As soon as all your changes work fine, commit your changes:
+5. Tan pronto como todos los cambios funcionen bien, confirmar los cambios:
 
-       git commit -a -m "Description of your changes"
+       git commit -a -m "Descripción de tus cambios"
 
-6. Push the committed changes to the dashboard fork on your Github account:
+6. Enviar los cambios confirmados al fork del panel de control a su cuenta de Github:
 
-       git push origin
+       origen git push
 
-7. In your forked dashboard repository (on Github), switch to the new branch and [create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
+7. En su repositorio de forked dashboard (en Github), cambie a la nueva rama y [cree una solicitud de pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
 
-## Running Documentation Locally
+## Ejecutar documentación localmente
 
-1. **Run Docs Dev Server:** You can run the documentation locally by running the following command at the root of the `/node-red-dashboard` directory:
+1. **Ejecuta el servidor Dev de Docs:** Puedes ejecutar la documentación localmente ejecutando el siguiente comando en la raíz del directorio `/node-red-dashboard`:
 
       npm run docs:dev
 
-   This will then run your documentation at `http://localhost:5173/`
-2. **Make Changes:** Make any appropriate edits to the documentation (`/docs`). The documentation will live update, no need to re-build, restart the server or refresh the browser.
+   Esto ejecutará su documentación en `http://localhost:5173/`
+2. **Hacer cambios:** Haz cualquier edición apropiada a la documentación (`/docs`). La documentación se actualizará en vivo, sin necesidad de recompilar, reiniciar el servidor o actualizar el navegador.
