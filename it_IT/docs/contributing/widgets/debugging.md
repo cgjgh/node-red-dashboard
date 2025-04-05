@@ -1,34 +1,34 @@
 ---
-description: Efficient strategies and tips for debugging your Node-RED Dashboard 2.0 setups to ensure smooth operation.
+description: Strategie e suggerimenti efficaci per il debug delle impostazioni 2.0 della Dashboard Node-RED per garantire un funzionamento fluido.
 ---
 
-# Debugging Dashboard 2.0
+# Debug Dashboard 2.0
 
-Dashboard 2.0 comes with a built-in debugging tool to understand the data being configured for each dashboard, page, theme, group and widget.
+Dashboard 2.0 è dotato di uno strumento di debug integrato per comprendere i dati configurati per ogni dashboard, pagina, tema, gruppo e widget.
 
-To navigate to the tooling, head to `<your-host>:<your-port>/dashboard/_debug`.
+Per navigare nello strumento, vai a `<your-host>:<your-port>/dashboard/_debug`.
 
-![Debugging tool](/images/debug-example.png "Debugging tool"){data-zoomable}
-_Screenshot of the Dashboard 2.0 Debugging Tool_
+![Strumento di debug](/images/debug-example.png "Strumento di debug"){data-zoomable}
+_Schermata dello strumento di debug Dashboard 2.0_
 
-This tooling is particularly useful when you're building your own custom integrations, and developing on core Dashboard widgets too.
+Questo strumento è particolarmente utile quando si sta costruendo le proprie integrazioni personalizzate e sviluppando anche i widget Dashboard di base.
 
-We're hoping to grow some of the scope of what this tooling provides, but for now, it will display the current `props` for a given widget, which is defined by Node-RED configurtion, but will also include the overriden values from the `msg` object (e.g. `msg.options` can override the `Options` property for a `ui-dropdown`).
+Speriamo di far crescere una parte della portata di ciò che questo strumento fornisce, ma per ora, mostrerà il file `props` corrente per un dato widget, che è definito dalla configurazione Node-RED, ma includerà anche i valori overriden dall'oggetto `msg` (e. . `msg.options` può sovrascrivere la proprietà `Options` per un `ui-dropdown`).
 
-## Message History
+## Cronologia Messaggi
 
-![Debugging tool](/images/debug-example-datastore.png "Debugging tool"){data-zoomable}
-_Screenshot of the "Message History" tab for a widget_
+![Strumento di debug](/images/debug-example-datastore.png "Strumento di debug"){data-zoomable}
+_Schermata della scheda "Cronologia messaggi" per un widget_
 
-This tab will show the latest `msg` values that the associated node has received in Node-RED's `datastore` for a given widget.
+Questa scheda mostrerà gli ultimi valori `msg` che il nodo associato ha ricevuto nel `datastore` di Node-RED per un dato widget.
 
-This is useful to understand what data will load when a new client connects to Node-RED. It will need refreshing to reflect the latest state if you're expecting new messages since the debug tool was last opened.
+Questo è utile per capire quali dati caricheranno quando un nuovo client si connette a Node-RED. Sarà necessario aggiornare per riflettere lo stato più recente se ti aspetti nuovi messaggi dall'ultima apertura dello strumento di debug.
 
-## Dynamic Properties
+## Proprietà Dinamiche
 
-![Debugging tool](/images/debug-example-statestore.png "Debugging tool"){data-zoomable}
-_Screenshot of the "Dynamic Properties" tab for a widget_
+![Strumento di debug](/images/debug-example-statestore.png "Strumento di debug"){data-zoomable}
+_Schermata della scheda "Proprietà dinamiche" per un widget_
 
-This tab shows any dynamic properties (properties set with an injection of a `msg.<property>` that have been set since the Node-RED server has been running. Within our server-side architecture, these are stored in our `statestore`.
+Questa scheda mostra tutte le proprietà dinamiche (set di proprietà con un'iniezione di un `msg.<property>` che sono stati impostati da quando il server Node-RED è in esecuzione. All'interno della nostra architettura lato server, questi sono memorizzati nel nostro `statestore`.
 
-These values are generally overriding the default properties set within the Node-RED Editor, and can be used to sanity check why a particular widget renders the way that it does.
+Questi valori generalmente sovrascrivono alle proprietà predefinite impostate all'interno dell'editor Node-RED, e può essere usato per sanity controllare perché un particolare widget rende il modo in cui fa.
