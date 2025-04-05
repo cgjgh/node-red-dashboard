@@ -21,7 +21,7 @@ Each page will be rendered in a navigation drawer within the UI, and can be acce
 
 <PropsTable :hide-dynamic="true"/>
 
-### Breakpoints
+### Puntos de ruptura
 
 ![Breakpoints](../../assets/images/breakpoints-config.png)
 _Screenshot showing the default breakpoints configuration_
