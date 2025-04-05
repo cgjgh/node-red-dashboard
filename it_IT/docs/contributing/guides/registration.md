@@ -1,183 +1,183 @@
 ---
-description: Learn the process of widget registration in Node-RED Dashboard 2.0 to enhance your dashboard's functionality.
+description: Impara il processo di registrazione del widget nella Dashboard 2.0 Node-RED per migliorare la funzionalità del tuo dashboard.
 ---
 
-# Widget Registration
+# Registrazione Widget
 
-Every `ui-base`, `ui-page` and `ui-group` has a `.register` function. The core registration function can be found in `ui-base`.
+Ogni `ui-base`, `ui-page` e `ui-group` ha una funzione `.register`. La funzione di registrazione principale può essere trovata in `ui-base`.
 
-This function is used by all of the widgets to inform Dashboard of their existence, and allows the widget to define which group/page/ui it belongs too, along with the relevant properties that widget has and any event handlers (e.g. `onInput` or `onAction`).
+Questa funzione è usata da tutti i widget per informare Dashboard della loro esistenza, e permette al widget di definire quale gruppo/page/ui appartiene, insieme alle proprietà rilevanti che il widget ha e a qualsiasi gestore di eventi (e. . `onInput` o `onAction`).
 
-The function is called within the node's Node-RED `.js` file, and in th case of a widget registering as part of a group (the most common use case), would look something like this:
+La funzione è chiamata all'interno del nodo Node-RED `. s` file, e nel quarto caso di registrazione di un widget come parte di un gruppo (il caso di uso più comune), assomiglierebbe a questo:
 
 ```js
-module.exports = function (RED) {
+modulo. xports = function (RED) {
     function MyNode (config) {
         // create node in Node-RED
-        RED.nodes.createNode(this, config)
+        RED. odi. reateNode(questo, config)
         // store reference to our Node-RED node
         const node = this
 
         // which group are we rendering this widget
-        const group = RED.nodes.getNode(config.group)
+        const group = RED. odes.getNode(config. roup)
 
-        // an object detailing the events to subscribe to
+        // un oggetto che descrive gli eventi da sottoscrivere a
         const evts = {}
 
-        // inform the dashboard UI that we are adding this node
-        group.register(node, config, evts)
+        // informa l'interfaccia utente del cruscotto che stiamo aggiungendo questo gruppo di nodo
+        . egister(node, config, evts)
     }
 
     RED.nodes.registerType('ui-mywidget', MyNode)
 }
 ```
 
-## Arguments
+## Argomenti
 
-The registration function inputs differ slightly depending on whether being called on the `ui-group`, `ui-page` or `ui-base`:
+Gli input della funzione di registrazione differiscono leggermente a seconda se vengono chiamati su `ui-group`, `ui-page` o `ui-base`:
 
 - `group.register(node, config, evts)`
 - `page.register(group, node, config, evts)`
 - `base.register(page, group, node, config, evts)`
 
-Note though, they do all have 3 inputs in common:
+Notare però, che tutti hanno 3 ingressi in comune:
 
 ### `node`
 
-This is the `this` of your node's constructor, and can be used directly from the value provided from Node-RED.
+Questo è il `this` del costruttore del tuo nodo e può essere usato direttamente dal valore fornito da Node-RED.
 
 ### `config`
 
-This is made available by Node-RED as the input to the constructor, and can generally passed straight into the `.register` function without modification, it will be an object that maps all of the properties and values that have been described in the node's `.html` definition.
+Questo è reso disponibile da Node-RED come input per il costruttore, e può generalmente passare dritto nel `. funzione egister` senza modifiche, sarà un oggetto che mapperà tutte le proprietà e i valori descritti nel nodo `. tml` definizione.
 
 ### `evts`
 
-We expose a range of different event handlers as part of the `register` function. All of these handlers run server (Node-RED) side.
+Esprimiamo una gamma di diversi gestori di eventi come parte della funzione `register`. Tutti questi gestori eseguono server (Node-RED) lato.
 
-In some cases, it is possible to define full functions (that will run at the appropriate point in the event lifecycle), in other occasions, it's only possible to define a `true`/`false` value that informs Dashboard that you wish for the widget to send or subscribe to that event.
+In alcuni casi, è possibile definire funzioni complete (che saranno eseguite al punto appropriato della durata dell'evento), in altre occasioni, è possibile definire solo un valore `true`/`false` che informa la Dashboard che si desidera per il widget di inviare o iscriversi a quell'evento.
 
-A full breakdown of the event lifecycle can be found [here](../../contributing/guides/events.md).
+È possibile trovare una ripartizione completa del ciclo di vita dell'evento [here](../../contributing/guides/events.md).
 
 ```js
 const evts = {
-    onAction:   // boolean
-    onChange:   // boolean || function
+    onAction: // boolean
+    onChange: // boolean <unk> <unk> function
     beforeSend: // function
-    onInput:    // function
-    onError:    // function
-    onSocket    // object
+    onInput: // function
+    onError: // function
+    onSocket // object
 }
 ```
 
-## Events
+## Eventi
 
-All of these event handlers define behaviour that is run server-side (i.e. within Node-RED). If you're looking for client-side event handlers see [here](../widgets/third-party.md#configuring-your-node).
+Tutti questi gestori di eventi definiscono il comportamento che viene eseguito lato server (cioè all'interno di Node-RED). Se stai cercando dei gestori di eventi lato client vedi [here](../widgets/third-party.md#configuring-your-node).
 
 ### `.onAction` (`boolean`)
 
-When set as `true`, this flag will trigger the default handler when the Dashboard widgets sends an `widget-action` event.
+Quando impostato come `true`, questo flag attiverà il gestore predefinito quando il widget Dashboard invia un evento `widget-action`.
 
-1. Assigns the provided value to `msg.payload`
-2. Appends any `msg.topic` defined on the node config
-3. Runs `evts.beforeSend()` _(if provided)_
-4. Sends the `msg` onwards to any connected nodes using `node.send(msg)`
+1. Assegna il valore fornito a `msg.payload`
+2. Aggiunge qualsiasi `msg.topic` definito nella configurazione del nodo
+3. Esegue `evts.beforeSend()` _(se fornito)_
+4. Invia il file `msg` in avanti a qualsiasi nodo connesso usando `node.send(msg)`
 
-An example of this is with `ui-button`, where the widget's `UIButton` contains an `@click` function, containing:
+Un esempio di questo è con `ui-button`, dove il `UIButton` del widget contiene una funzione `@click`, contenente:
 
 ```js
 this.$socket.emit('widget-action', this.id, msg)
 ```
 
-This sends a message via SocketIO to Node-RED, with the topic of the widget's ID. Because the `ui-button` has `onAction: true` in it's registration, it will consequently run the default handler detailed above.
+Questo invia un messaggio tramite SocketIO a Node-RED, con l'argomento dell'ID del widget. Poiché il `ui-button` ha `onAction: true` nella sua registrazione, verrà quindi eseguito il gestore predefinito descritto sopra.
 
 ### `.onChange` (`boolean` || `function`)
 
-Similar to `onAction`, when used as a boolean, this flag will trigger the default handler for an `onChange` event.
+Simile a `onAction`, se usato come booleano, questo flag attiverà il gestore predefinito per un evento `onChange`.
 
 #### Default `onChange` Handler
 
-1. Assigns the provided value to `msg.payload`
-2. Appends any `msg.topic` defined on the node config
-3. Runs `evts.beforeSend()` _(if provided)_
-4. Store the most recent message on the widget under the `._msg` property which will contain the latest state/value of the widget
-5. Pushes a `widget-sync` event to synchronize the widgets in all clients.
-6. Sends the `msg` onwards to any connected nodes
+1. Assegna il valore fornito a `msg.payload`
+2. Aggiunge qualsiasi `msg.topic` definito nella configurazione del nodo
+3. Esegue `evts.beforeSend()` _(se fornito)_
+4. Memorizza il messaggio più recente sul widget sotto la proprietà `._msg` che conterrà l'ultimo stato/valore del widget
+5. Spinge un evento `widget-sync` per sincronizzare i widget in tutti i client.
+6. Invia il file `msg` in avanti a qualsiasi nodo connesso
 
 #### Custom `onChange` Handler
 
-Alternatively, you can override this default behaviour by providing a custom `onChange` function. An example of this is in the `ui-switch` node which needs to do `node.status` updates to in order for the Node-RED Editor to reflect it's latest status:
+In alternativa, puoi sovrascrivere questo comportamento predefinito fornendo una funzione `onChange` personalizzata. Un esempio di questo è nel nodo `ui-switch` che deve fare `node. tatus` aggiornamenti per consentire all'editor Node-RED di riflettere il suo stato più recente:
 
 ```js
 /**
- * Handle the input from the widget
- * @param {object} msg - the last known msg received (prior to this new value)
- * @param {boolean} value - the updated value sent by the widget
- * @param {Socket} conn - socket.io socket connecting to the server
- * @param {String} id - widget id sending the action
+ * Gestire l'input dal widget
+ * @param {object} msg - l'ultimo msg conosciuto ricevuto (prima di questo nuovo valore)
+ * @param {boolean} valore - il valore aggiornato inviato dal widget
+ * @param {Socket} conn - socket. o socket che si connette al server
+ * @param {String} id - id widget che invia l'azione
  */
-onChange: async function (msg, value, conn, id) {
+onChange: async function (msg, valore, conn, id) {
     // ensure we have latest instance of the widget's node
-    const wNode = RED.nodes.getNode(node.id)
+    const wNode = RED. odes.getNode(node.id)
 
-    node.status({
-        fill: value ? 'green' : 'red',
-        shape: 'ring',
-        text: value ? states[1] : states[0]
+    node. tatus({
+        fill: value ? 'verde' : 'red',
+        forma: 'ring',
+        testo: valore ? stati[1] : stati[0]
     })
 
-    // retrieve the assigned on/off value
-    const on = RED.util.evaluateNodeProperty(config.onvalue, config.onvalueType, wNode)
-    const off = RED.util.evaluateNodeProperty(config.offvalue, config.offvalueType, wNode)
-    msg.payload = value ? on : off
+    // recupera il valore on/off assegnato
+    const su = RED. til.evaluateNodeProperty(config.onvalue, config.onvalueType, wNode)
+    const off = RED.util. valuateNodeProperty(config.offvalue, config.offvalueType, wNode)
+    msg. ayload = valore ? on : off
 
-    // sync this change to all clients with the same widget
+    // sync this change to all client with the same widget
     const exclude = [conn.id] 
-    base.emit('widget-sync:' + id, msg, node, exclude)
+    base. mit('widget-sync:' + id, msg, node, exclude)
 
-    // simulate Node-RED node receiving an input
-    wNode.send(msg)
+    // simula Node-RED node ricevendo un input
+    wNode. end(msg)
 }
 ```
 
 ### `.beforeSend(msg)` (`function`)
 
-This middleware function will run before the node sends any `msg` to consequent nodes connected in the Editor (e.g. in `onInput`, `onAction` and `onChange` default handlers).
+Questa funzione middleware verrà eseguita prima che il nodo invii qualsiasi `msg` ai nodi conseguenti connessi nell'editor (e. . in `onInput`, `onAction` e `onChange` i gestori predefiniti).
 
-The function must take `msg` as an input, and also return `msg` as an output.
+La funzione deve prendere `msg` come input, e anche restituire `msg` come output.
 
-In `ui-button`, we use `beforeSend` evaluate the `msg.payload` as we have a `TypedInput` ([docs](https://nodered.org/docs/api/ui/typedInput/). The `TypedInput` needs evaluating within Node-RED, as it can reference variables outside of the domain of the button's node (e.g. `global` or `flow`). The default `onInput` handler then takes the output from our `beforeSend` and processes it accordingly.
+In `ui-button`, usiamo `beforeSend` valuta il `msg.payload` come abbiamo un `TypedInput` ([docs](https://nodered.org/docs/api/ui/typedInput/). Il `TypedInput` deve essere valutato all'interno di Node-RED, in quanto può fare riferimento a variabili al di fuori del dominio del nodo del pulsante (ad esempio `global` o `flow`). Il gestore `onInput` predefinito prende quindi l'output dal nostro `beforeSend` e lo elabora di conseguenza.
 
 ### `.onInput(msg, send)` (`function`)
 
-Defining this function will override the default `onInput` handler.
+Definire questa funzione sovrascriverà il gestore `onInput` predefinito.
 
 #### Default `onInput` Handler
 
-1. Store the most recent message on the widget under the `node._msg`
-2. Appends any `msg.topic` defined on the node config
-3. Checks if the widget has a `passthru` property:
- - If no `passthru` property is found, runs `send(msg)`
- - If the property is present, `send(msg)` is only run if `passthru` is set to `true`
+1. Memorizza il messaggio più recente sul widget sotto il file `node._msg`
+2. Aggiunge qualsiasi `msg.topic` definito nella configurazione del nodo
+3. Controlla se il widget ha una proprietà `passthru`:
+ - Se non si trova nessuna proprietà `passthru`, esegue `send(msg)`
+ - Se la proprietà è presente, `send(msg)` è eseguito solo se `passthru` è impostato a `true`
 
-#### Custom `onInput` Handler
+#### Gestore `onInput` Personalizzato
 
-When provided, this will override the default handler.
+Se fornito, questo sovrascriverà il gestore predefinito.
 
-We use this in the core widgets in Dashboard with `ui-chart`, where we want to be storing the history of recent `msg` value, rather than _just_ the most recent value as done in the default handler. We also use it here to ensure we don't have too many data points (as defined in the `ui-chart` config).
+Usiamo questo nei widget core nella Dashboard con `ui-chart`, dove vogliamo memorizzare la cronologia del recente valore `msg`, anziché _just_ il valore più recente come fatto nel gestore predefinito. Lo usiamo anche qui per garantire che non abbiamo troppi punti dati (come definito nella configurazione `ui-chart`).
 
-Another use case here would be if you do not want to pass on any incoming `msg` payloads onto connected nodes automatically, for example, you could have a bunch of command-type `msg` payloads that instruct your node to do something, that are then not relevant to any preceding nodes in the flow.
+Un altro caso di utilizzo qui sarebbe se non si desidera trasferire automaticamente qualsiasi payload `msg` in entrata sui nodi connessi, ad esempio. potresti avere un sacco di payload di tipo comando `msg` che istruiscono il tuo nodo a fare qualcosa, che non sono quindi rilevanti per i nodi precedenti nel flusso.
 
 ### `.onError(err)` (`function`)
 
-This function is called within the handlers for `onAction`, `onChange` and `onInput`. If there is ever an issue with these handlers (including those custom handlers provided), then the `onError` function will be called.
+Questa funzione è chiamata all'interno dei gestori per `onAction`, `onChange` e `onInput`. Se c'è mai un problema con questi gestori (inclusi quelli personalizzati forniti), la funzione `onError` verrà chiamata.
 
 ### `.onSocket` (`object`)
 
-This is a somewhat unique event handler, that is only used by externally developed widgets (i.e. not part of core Dashboard widgets detailed in this documentation). It is provided so that developers can `emit`, and consequently subscribe to, custom SocketIO events that are transmitted by their custom widgets.
+Questo è un gestore di eventi un po 'unico, che viene utilizzato solo da widget sviluppati esternamente (i. . non parte dei widget Dashboard core dettagliati in questa documentazione). È previsto in modo che gli sviluppatori possano `emit`, e di conseguenza sottoscrivere, eventi SocketIO personalizzati che vengono trasmessi dai loro widget personalizzati.
 
-You can see a more detailed example in our documentation [here](../widgets/third-party.md#custom-socketio-events).
+Puoi vedere un esempio più dettagliato nella nostra documentazione [here](../widgets/third-party.md#custom-socketio-events).
 
-The general structure of `onSocket` is as follows:
+La struttura generale di `onSocket` è la seguente:
 
 ```js
 const evts = {
@@ -189,4 +189,4 @@ const evts = {
 }
 ```
 
-Note that these events are emitted from the Dashboard, and so, these handlers are run within Node-RED.
+Si noti che questi eventi vengono emessi dalla Dashboard, e quindi questi gestori vengono eseguiti all'interno di Node-RED.
