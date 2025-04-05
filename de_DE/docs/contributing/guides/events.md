@@ -1,98 +1,98 @@
 ---
-description: Dive deep into the events architecture of Node-RED Dashboard 2.0 for efficient data handling and UI interaction.
+description: Tauchen Sie ein in die Ereignisarchitektur des Node-RED Dashboard 2.0 für effiziente Datenverarbeitung und Interaktion.
 ---
 
-# Events Architecture
+# Ereignisarchitektur
 
-An important part of the Dashboard is how Node-RED and the Dashboard communicate. This is achieved using [socket.io](https://socket.io/).
+Ein wichtiger Teil des Dashboards ist die Kommunikation von Node-RED und Dashboard. Dies wird mit [socket.io]erreicht (https://socket.io/).
 
-Here, you can find details on the primary communications that occur between Node-RED (blocks in red) and the Dashboard (blocks in blue). The blocks make reference to particular functions and files within the source code to help navigate and understand where to find the relevant code.
+Hier finden Sie Details zur primären Kommunikation, die zwischen Node-RED (rote Blöcke) und dem Dashboard (blaue Blöcke) stattfindet. Die Blöcke verweisen auf bestimmte Funktionen und Dateien innerhalb des Quellcodes, um zu navigieren und zu verstehen, wo der relevante Code zu finden ist.
 
-Each of the cylindrical blocks directly refer to one of our client- or server-side stores, which are detailed in the [State Management](./state-management.md) guide.
+Jedes der zylindrischen Blöcke bezieht sich direkt auf einen unserer Client- oder Server-Side-Shops, die im [State Management](./state-management.md) Leitfaden detailliert sind.
 
-## Architecture
+## Architektur
 
-We have broken the events architecture/traffic into three key groups:
+Wir haben die Ereignisarchitektur/den Datenverkehr in drei Schlüsselgruppen aufgeteilt:
 
-- **Loading**: The initial loading of the Dashboard, or when a new configuration is sent by Node-RED on a fresh "Deploy".
-- **Input**: When a message (`msg`) is received by a Dashboard node within Node-RED.
-- **Dashboard Actions**: When a user interacts with a widget, or a widget sends a message back to Node-RED.
+- **Laden**: Das erste Laden des Dashboards, oder wenn eine neue Konfiguration von Node-RED auf einer neuen "Deploy" gesendet wird.
+- **Eingabe**: Wenn eine Nachricht (`msg`) von einem Dashboard-Knoten innerhalb von Node-RED empfangen wird.
+- **Dashboard-Aktionen**: Wenn ein Benutzer mit einem Widget interagiert oder ein Widget eine Nachricht an Node-RED zurücksendet.
 
-### "Loading" Event Flow
+### "Laden" Event Flow
 
-![A flow diagram depicting how events traverse between Node-RED (red) and the Dashboard (blue) at deploy and first-load](../../assets/images/events-arch-load.jpg){data-zoomable}
-_A flow diagram depicting how events traverse between Node-RED (red) and the Dashboard (blue) at deploy and first-load_
+![Ein Fließdiagramm, das zeigt, wie Ereignisse zwischen Knoten (rot) und Dashboard (blau) beim Deploy und Firstload](../../assets/images/events-arch-load.jpg){data-zoomable}
+_Ein Fließdiagramm zeigt, wie Ereignisse zwischen Knoten (rot) und Dashboard (blau) beim Deploy und Firstload_ verlaufen.
 
-Here we detail the initial "Setup" HTTP request, consequent SocketIO traffic and appropriate handlers that are run when a Dashboard is deployed (via the Node-RED "Deploy" option), as well as when a Dashboard-client is first loaded.
+Hier beschreiben wir die anfängliche "Setup"-HTTP-Anfrage konsequenter SocketIO-Verkehr und geeignete Handler, die ausgeführt werden, wenn ein Dashboard eingesetzt wird (über die Option "Deploy") sowie wenn ein Dashboard-Client zum ersten Mal geladen wird.
 
-Note the differentiation between a "Dashboard" loading, i.e. the full app and browser connection, and an individual "Widget" loading. The latter is fired for _each_ widget when it is mounted/rendered into the DOM.
+Beachten Sie die Unterscheidung zwischen dem Laden eines Dashboards, d.h. der vollständigen App- und Browserverbindung und einem individuellen "Widget"-Ladegerät. Letzteres wird für _each_ Widget abgefeuert, wenn es im DOM-Format montiert bzw. gerendert wird.
 
-### "Input" Event Flow
+### Ereignisfluss "Eingabe"
 
-![A flow diagram depicting how events traverse between Node-RED (red) and the Dashboard (blue) when messages are received by a Dashboard node](../../assets/images/events-arch-msg.jpg){data-zoomable}
-_A flow diagram depicting how events traverse between Node-RED (red) and the Dashboard (blue) when messages are received by a Dashboard node_
+![Ein Fließdiagramm, das zeigt, wie Ereignisse zwischen Knoten (rot) und Dashboard (blau) verlaufen, wenn Nachrichten von einem Dashboard-Knoten empfangen werden](../../assets/images/events-arch-msg.jpg){data-zoomable}
+_Ein Fließdiagramm zeigt, wie Ereignisse zwischen Knoten (rot) und Dashboard (blau) durchlaufen, wenn Nachrichten von einem Dashboard-Knoten_ empfangen werden
 
-This flow details the functions, and SocketIO traffic that occurs when a message is received by a Dashboard node within Node-RED. Note that most core Dashboard 2.0 widgets use the default `onInput` handler, but in some cases, a custom `onInput` handler is used where we want different behaviour.
+Dieser Fluss beschreibt die Funktionen und den SocketIO-Datenverkehr, der auftritt, wenn eine Nachricht von einem Dashboard-Knoten innerhalb des Node-RED empfangen wird. Beachten Sie, dass die meisten Kern-Dashboard 2. Widgets verwenden den Standard-`onInput` Handler, aber in einigen Fällen wird ein benutzerdefinierter `onInput` Handler verwendet, wo wir ein anderes Verhalten wollen.
 
-Our default server-side `onInput` handler handles the common use cases of:
+Unsere serverseitige Standardbehandlung "onInput" behandelt die üblichen Anwendungsfälle von:
 
-- Updating the widget's value into our server-side data store
-- Checking if the widget is configured to define a `msg.topic` and if so, updating the widget's `msg.topic` property
-- Check if the widget is configured with a `passthrough` option, and if so, check it's value before emitting the `msg` object to any connected nodes.
-- Emit the `msg` object to any connected nodes, if appropriate.
+- Aktualisiere den Widget-Wert in unseren serverseitigen Datenspeicher
+- Überprüft, ob das Widget so konfiguriert ist, dass es eine `msg.topic` definiert, und wenn ja, aktualisiere die Eigenschaft `msg.topic` des Widgets
+- Überprüfen Sie, ob das Widget mit einer Option `passthrough` konfiguriert ist und prüfen Sie den Wert, bevor Sie das `msg`-Objekt zu einem verbundenen Knoten emittieren.
+- Löse das `msg` Objekt an alle verbundenen Knoten, falls zutreffend.
 
-### "Dashboard Actions" Event Flow
+### "Dashboard-Aktionen" Event Flow
 
-Different widgets trigger different events depending on the specific use-cases. The following diagram shows the three types of events that the client can emit to the server, and how these are handled separately.
+Verschiedene Widgets lösen je nach Anwendungsfall unterschiedliche Ereignisse aus. Das folgende Diagramm zeigt die drei Arten von Ereignissen, die der Client an den Server emittieren kann, und wie diese separat behandelt werden.
 
-![A flow diagram depicting how events traverse from Dashboard (blue) to Node-RED (red) when a user interacts with Dashboard](../../assets/images/events-arch-client-events.jpg){data-zoomable}
-_A flow diagram depicting how events traverse from Dashboard (blue) to Node-RED (red) when a user interacts with Dashboard_
+![Ein Fließdiagramm, das zeigt, wie Ereignisse vom Dashboard (blau) zum Knoten (rot) durchlaufen, wenn ein Benutzer mit Dashboard interagiert](../../assets/images/events-arch-client-events.jpg){data-zoomable}
+_Ein Fließdiagramm zeigt, wie Ereignisse vom Dashboard (blau) zum Knoten (rot) durchlaufen, wenn ein Benutzer mit Dashboard interagiert_ interagiert\*
 
-Some examples of events that are emitted from the Dashboard to Node-RED include:
+Einige Beispiele für Ereignisse, die vom Dashboard zum Node-RED emittiert werden, sind:
 
-- `widget-change` - When a user changes the value of a widget, e.g. a slider or text input
-- `widget-action` - When a user interacts with a widget, and state of the widget is not important, e.g. a button click
-- `widget-send` - Used by `ui-template` to send a custom `msg` object, e.g. `send(msg)`, which will be stored in the server-side data store.
+- "widget-change" - Wenn ein Benutzer den Wert eines Widgets ändert, z.B. einen Slider oder Texteingabe
+- `widget-action` - Wenn ein Benutzer mit einem Widget interagiert und der Status des Widgets nicht wichtig ist, z.B. ein Knopfklick
+- `widget-send` - Wird von `ui-template` benutzt um ein benutzerdefiniertes `msg` Objekt zu senden, z.B. `send(msg)`, das im serverseitigen Datenspeicher gespeichert wird.
 
-#### Syncing Widgets
+#### Widgets synchronisieren
 
-The `widget-change` event is used to emit input from the server, and represents a change of state for that widget, e.g. a switch can be on/off by a user clicking it. In this case, if you have multiple clients connected to the same Node-RED instance, Dashboard will ensure that clients are in-sync when values change.
+Das Ereignis `widget-change` wird verwendet, um Eingaben vom Server zu emittieren und stellt eine Änderung des Zustands für dieses Widget dar, z. . Ein Schalter kann ein- oder ausgeschaltet werden, indem ein Benutzer darauf klickt. In diesem Fall, wenn mehrere Clients mit derselben Knoten-RED-Instanz verbunden sind, wird Dashboard sicherstellen, dass Clients synchronisiert werden, wenn Werte geändert werden.
 
-For Example if you move a slider on one instance of the Dashboard, all sliders connected will also auto-update.
+Zum Beispiel, wenn Sie einen Schieberegler auf einer Instanz des Dashboards verschieben, werden alle Schieberegler ebenfalls automatisch aktualisiert.
 
-To disable this "single source of truth" design pattern, you can check the widget type in the ["Client Data"](../../user/multi-tenancy#configuring-client-data) tab of the Dashboard settings.
+Um dieses Designmuster "Single Source of truth" zu deaktivieren, Sie können den Widget-Typ in der Registerkarte ["Klientendaten"](../../user/multi-tenancy#configuring-client-data) der Dashboard-Einstellungen überprüfen.
 
-## Events List
+## Eventliste
 
-This is a comprehensive list of all events that are sent between Node-RED and the Dashboard via socket.io.
+Dies ist eine umfassende Liste aller Ereignisse, die über socket.io zwischen Node-RED und Dashboard gesendet werden.
 
 ### `ui-config`
 
-- Payload: `object{ dashboards, theme, pages, groups, widgets }`
+- Payload: `object{ Dashboards, Theme, Seiten, Gruppen, Widgets }`
 
-Used to transport dashboard/theme/page/groups/[widget](#widget) layout data, each mapped by their respective id's.
+Wird verwendet, um Dashboard/theme/page/groups/[widget](#widget) Layoutdaten zu transportieren, die jeweils von den jeweiligen Ids abgebildet werden.
 
 ### `msg-input:<node-id>`
 
 - Payload: `<msg>`
 
-Sent from NR to UI when a msg input is received into a Dashboard node.
+Von NR an UI gesendet, wenn eine msg-Eingabe in einen Dashboard-Knoten empfangen wird.
 
-### `widget-load`
-
-- ID: `<node-id>`
-- Payload: `none`
-
-Sent from UI to NR when the UI/widget is first loaded. Gives a chance for NR to provide the widget with any known existing values.
-
-### `widget-change`
+### "widget-load"
 
 - ID: `<node-id>`
-- Payload: `<value>` - typically the payload data to be sent in the msg
+- Payload: "keine"
 
-Sent from UI to NR when the value of a widget is changed from the UI, e.g. text input, slider. Assumes the value emitted is the `msg.payload`.
+Gesendet von UI an NR, wenn das UI/Widget zum ersten Mal geladen wird. Gibt NR die Möglichkeit, das Widget mit allen bekannten existierenden Werten auszustatten.
 
-This takes hte previously received msg, and merges it with the newly received value, for example if the msg was:
+### "widget-change"
+
+- ID: `<node-id>`
+- Payload: `<value>` - typischerweise die Payload-Daten, die in der msg gesendet werden
+
+Gesendet von UI an NR, wenn der Wert eines Widgets von der Oberfläche geändert wird, z.B. Texteingabe, Schieberegler. Angenommen der abgestrafte Wert ist die `msg.payload`.
+
+Dies nimmt zuvor empfangene msg und fusioniert sie mit dem neu empfangenen Wert, zum Beispiel wenn das msg war:
 
 ```json
 {
@@ -101,7 +101,7 @@ This takes hte previously received msg, and merges it with the newly received va
 }
 ```
 
-and the `widget-change` received a new value of `40`, then the newly emitted message would be:
+und die `widget-change` erhielt einen neuen Wert von `40`, dann würde die neu emittierte Nachricht lauten:
 
 ```json
 {
@@ -110,33 +110,33 @@ and the `widget-change` received a new value of `40`, then the newly emitted mes
 }
 ```
 
-Any value received here will also be stored against the widget in the datastore.
+Jeder hier empfangene Wert wird auch gegen das Widget im Datenspeicher gespeichert.
 
-### `widget-sync`
+### "widget-sync"
 
 - Payload: `<msg>`
 
-Triggered from the server-side `onChange` handler. This send a message out to all connected clients and informs relevant widgets of state/value changes. For example, when a slider is moved, the `widget-sync` message will ensure all connected clients, and their respective slider, are updated with the new value.
+Ausgelöst vom serverseitigen `onChange` Handler. Dies sendet eine Nachricht an alle verbundenen Clients und informiert relevante Widgets über Status- und Wertänderungen. Wenn zum Beispiel ein Schieberegler verschoben wird, stellt die `widget-sync` Nachricht sicher, dass alle verbundenen Clients und deren jeweiligen Schieberegler mit dem neuen Wert aktualisiert werden.
 
-### `widget-action`
+### "widget-action"
 
 - ID: `<node-id>`
 - Payload: `<msg>`
 
-Sent from UI to NR when a widget is actioned, e.g. click of a button or upload of a file.
+Wird von der Oberfläche an NR gesendet, wenn ein Widget aktiv ist, z.B. auf eine Schaltfläche klicken oder eine Datei hochladen.
 
-### `widget-send`
+### "widget-senden"
 
 - ID: `<node-id>`
 - Payload: `<msg>`
 
-Generally used by `ui-template`. This event is wrapped by the Template's `send(msg)` function which allows users to define their own full `msg` objects to be emitted by a `ui-template` node. If a non-Object value is sent, then Dashboard will automatically wrap that into a `msg.payload` object, e.g:
+In der Regel von `ui-template` verwendet. Dieser Termin ist von der Funktion `send(msg)` des Templates umfasst, die es Benutzern erlaubt, eigene vollständige `msg` Objekte zu definieren, die von einem `ui-template` Knoten emittiert werden. Wenn ein Nicht-Objekt-Wert gesendet wird, wird das Dashboard automatisch in ein `msg.payload`-Objekt einwickeln, z. B.:
 
 ```js
-send(10)
+senden(10)
 ```
 
-will result in a `msg` object of:
+führt zu einem `msg` Objekt von:
 
 ```json
 {
@@ -144,13 +144,13 @@ will result in a `msg` object of:
 }
 ```
 
-Similarly, is instead an object is specified:
+Ähnlich ist stattdessen ein Objekt spezifiziert:
 
 ```js
-send({ myVar: 10, topic: "my-topic" })
+send({ myVar: 10, Thema: "my-topic" })
 ```
 
-then the `msg` object will be:
+dann wird das `msg` Objekt sein:
 
 ```json
 {
@@ -159,17 +159,17 @@ then the `msg` object will be:
 }
 ```
 
-Any `msg` emitted using this function is also stored in the datastore associated with the widget.
+Jede `msg` mit dieser Funktion wird auch in dem dem Widget zugeordneten Datenspeicher gespeichert.
 
 ## Event Payloads
 
-This details some of the object structures used to send data cross the socket io connections between Node-RED and Dashboard.
+Dies beschreibt einige der Objektstrukturen, die verwendet werden, um Daten über die Socket-Io-Verbindungen zwischen Node-RED und Dashboard zu senden.
 
-### `Widget`
+### "Widget"
 
-Within the `ui-config`, the `widgets` property is an array of `Widget` objects. Each `Widget` object has the following properties:
+Innerhalb der `ui-config`, ist die Eigenschaft `widgets` ein Array von `Widget` Objekten. Jedes `Widget` Objekt hat folgende Eigenschaften:
 
-- **id**: The id assigned by Node-RED to uniquely identify that node in the editor
-- **props**: The collection of properties that the user can define within the Editor for that node
-- **component** - The respective Vue component required for rendering, added front-end (in App.vue)
-- **state** - Contains value defining the visual and interactive "state" of a widget, e.g. `enabled: true` or `visible: false` (`visible: ` not yet supported)
+- **id**: Die Id, die von Node-RED zugewiesen wurde, um diesen Knoten im Editor eindeutig zu identifizieren
+- **props**: Die Sammlung von Eigenschaften, die der Benutzer innerhalb des Editors für diesen Knoten festlegen kann
+- **Komponent** - Die jeweilige Vue Komponente, die für das Rendern benötigt wird, Frontend hinzugefügt (in App.vue)
+- **state** - Enthält Wert, der den visuellen und interaktiven Status eines Widgets definiert, z.B. `enabled: true` oder `visible: false` (`sichtbar: ` noch nicht unterstützt)
