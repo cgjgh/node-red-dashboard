@@ -18,7 +18,7 @@ events:
 
 This widget doesn't render any content into your Dashboard. Instead, it listens for user-driven behaviour and events in your Dashboard and emits accordingly into the Node-RED Editor when those events have taken place.
 
-## Events List
+## Lista de eventos
 
 Currently, we support the following events:
 
