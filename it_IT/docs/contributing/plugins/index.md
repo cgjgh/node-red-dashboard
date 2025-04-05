@@ -1,37 +1,37 @@
 ---
-description: Guide to building custom plugins for Node-RED Dashboard 2.0, enhancing its capabilities with your functionality.
+description: Guida alla costruzione di plugin personalizzati per Node-RED Dashboard 2.0, migliorando le sue funzionalità con la tua funzionalità.
 ---
 
 <script setup>
     import AddedIn from '../../components/AddedIn.vue';
 </script>
 
-# Building Dashboard Plugins <AddedIn version="0.11.0"/>
+# Costruire Plugin Dashboard <AddedIn version="0.11.0"/>
 
-Node-RED supports the development of custom plugins that add behaviour and functionality to the Node-RED runtime. A really common use case of plugins is [custom Node-RED Themes](https://nodered.org/docs/api/ui/themes/), which modify the overall CSS/appearance of the underlying Node-RED Editor.
+Node-RED supporta lo sviluppo di plugin personalizzati che aggiungono comportamento e funzionalità all'esecuzione Node-RED. Un caso di uso davvero comune dei plugin è [Temi Node-RED personalizzati](https://nodered.org/docs/api/ui/themes/), che modificano il CSS/aspetto complessivo dell'editor Node-RED sottostante.
 
-Node-RED Dashboard 2.0 also supports plugins. This allows you to define custom behaviour for the Dashboard runtime, independent of particular nodes and widgets. Currently, we provide a collection of [API hooks](#index-js) that allow the injection of code at various points in the Dashboard instantiation and runtime.
+Node-RED Dashboard 2.0 supporta anche i plugin. Questo consente di definire il comportamento personalizzato per il runtime della Dashboard, indipendente da particolari nodi e widget. Attualmente, forniamo una raccolta di [API hooks](#index-js) che consentono l'iniezione di codice in vari punti nell'istanziazione e runtime del cruscotto .
 
-To integrate, make sure your Node-RED plugin is registered with `"type": "node-red-dashboard-2"` in the `package.json` file. This will tell Node-RED that this is a Dashboard 2.0 plugin.
+Per integrare, assicurati che il tuo plugin Node-RED sia registrato con `"type": "node-red-dashboard-2"` nel file `package.json`. Questo dirà a Node-RED che questo è un plugin Dashboard 2.0.
 
-_Note: Plugins differ from [Third Party Widgets](../widgets/third-party.md). Third Party Widgets are built as nodes that become available in the Node-RED Editor, and can be dragged onto the Dashboard. Plugins are built to modify the behaviour of the Dashboard runtime itself._
+_Nota: i plugin differiscono da [Widget di terze parti](../widgets/third-party.md). I widget di terze parti sono costruiti come nodi che diventano disponibili nell'editor Node-RED, e possono essere trascinati nella Dashboard. I plugin sono costruiti per modificare il comportamento del runtime della Dashboard._
 
-## Authentication Plugins <AddedIn version="1.10.0"/>
+## Plugin Di Autenticazione <AddedIn version="1.10.0"/>
 
-One of the most common use cases for Dashboard plugins is to add user data to messages emitted by Dashboard. They utilise an existing authentication framework established on the Node-RED server, and inject user data into the `msg._client` object that is sent to the Node-RED flow.
+Uno dei casi di utilizzo più comuni per i plugin Dashboard è quello di aggiungere i dati utente ai messaggi emessi dalla Dashboard. Usano un framework di autenticazione esistente stabilito sul server Node-RED e iniettano i dati utente nel \`msg. oggetto client che viene inviato al flusso Node-RED.
 
-### Configuration
+### Configurazione
 
-The Dashboard 2.0 sidebar will list any plugins in the "Client Data" tab that have declared `auth: true` in their `index.html` file. This is required if a plugin is appending/modifying data in the `msg._client` object.
+La barra laterale Dashboard 2.0 elencerà tutti i plugin nella scheda "Dati Client" che hanno dichiarato `auth: true` nel loro file `index.html`. Ciò è necessario se un plugin sta aggiungendo/modificando i dati nell'oggetto `msg._client`.
 
-![Screenshot of an example "Client Data" tab](/images/dashboard-sidebar-clientdata.png)
-_Screenshot of an example "Client Data" tab_
+![Screenshot di un esempio di scheda "Dati Client"](/images/dashboard-sidebar-clientdata.png)
+_Screenshot di un esempio di scheda "Dati Client"_
 
-In the above screenshot we can see that the core Dashboard code appends the "Socket ID" data, and we are also running with the FlowFuse Authentication plugin which appends any information about a logged in FlowFuse user when using the dashboard.
+Nell'immagine di cui sopra possiamo vedere che il codice Dashboard core aggiunge i dati "Socket ID", e stiamo anche eseguendo con il plugin di Autenticazione FlowFuse che aggiunge qualsiasi informazione su un utente FlowFuse registrato quando si utilizza la dashboard.
 
-## Plugin Structure
+## Struttura Plugin
 
-Let's take a quick example to give an overview of the structure of a Dashboard plugin:
+Prendiamo un esempio rapido per dare una panoramica della struttura di un plugin Dashboard:
 
 ### package.json
 
@@ -40,7 +40,7 @@ Let's take a quick example to give an overview of the structure of a Dashboard p
     "name": "node-red-dashboard-2-<plugin-name>",
     "version": "<x.y.z>",
     "description": "<describe your plugin>",
-    "main": "index.js",
+    "main": "index. s",
     "scripts": {
         "test": "<run your tests here>"
     },
@@ -50,42 +50,42 @@ Let's take a quick example to give an overview of the structure of a Dashboard p
     },
     "node-red": {
         "plugins": {
-            "node-red-dashboard-2-<plugin-name>": "index.js"
+            "node-red-dashboard-2-<plugin-name>": "index. s"
         }
     },
-    "license": "Apache-2.0"
+    "licenza": "Apache-2. "
 }
 ```
 
 ### index.html
 
-This defines any client/editor plugins. This allows for definition of Node-RED Editor features such as injecting content into the Dashboard 2.0 sidebar, or whether any runtime plugins are appending authentication/client data to messages.
+Questo definisce qualsiasi plugin client/editor. Questo permette di definire le caratteristiche di Node-RED Editor come il contenuto di iniezione nella Dashboard 2. barra laterale, o se i plugin runtime stanno aggiungendo i dati di autenticazione/client ai messaggi.
 
  <script type="text/javascript">
-    RED.plugins.registerPlugin('node-red-dashboard-2-<plugin-name>', {
+    RED.plugin. egisterPlugin('node-red-dashboard-2-<plugin-name>', {
         type: 'node-red-dashboard-2',
         tabs: [
             {
                 id: 'my-tab-id',
-                label: 'My Tab',
+                etichetta: 'La mia scheda',
                 /\*\*
-                 \* Runs when tabs are first created
-                 \* @param {object} base - ui-base node for which this sidebar represents
-                 \* @param {object} parent - DOM element to append content to
+                 \* Esegue quando le schede vengono create per la prima volta
+                 \* @param {object} base - nodo ui-base per cui questa barra laterale rappresenta
+                 \* @param {object} genitore - elemento DOM per aggiungere il contenuto ad
                  \*/
                 init (base, parent) {
-                    // add some content to the tab
+                    // aggiungi dei contenuti alla scheda
                 }
             }
         ],
-        auth: true/false, // Declares to Dashboard 2.0 whether this should list in the "Client Data" tab
-        description: '', // If "auth: true", this is used in the "Client Data" tab of the Dashboard Sidebar
+        auth: true/false, // Dichiara nella Dashboard 2. se questo debba essere elencato nella scheda "Dati Client"
+        descrizione: '', // Se "auth: true", questo viene utilizzato nella scheda "Dati Client" della barra laterale Dashboard
     })
  </script>
 
 ### index.js
 
-A plugin's `js` file will define runtime behaviours for the Dashboard 2.0. This is where you will define your hooks, and any other code that you want to run when the Dashboard 2.0 is instantiated, or messages are sent back and forth between the Dashboard and Node-RED.
+Il file `js` di un plugin definirà i comportamenti di runtime per la Dashboard 2.0. Qui puoi definire i tuoi ganci e qualsiasi altro codice che vuoi eseguire quando la Dashboard 2. è istanziato o i messaggi vengono inviati avanti e indietro tra la Dashboard e Node-RED.
 
 ```js
 module.exports = function(RED) {
@@ -204,4 +204,4 @@ module.exports = function(RED) {
  }
 ```
 
-If any of `onInput`, `onAction`, `onChange` or `onLoad` return `null`, then the `msg` will abruptly stop there, and not be sent on any further in the flow.
+Se uno qualsiasi di `onInput`, `onAction`, `onChange` o `onLoad` restituisce `null`, poi il `msg` si fermerà bruscamente lì, e non sarà inviato su nessun altro nel flusso.
