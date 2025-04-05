@@ -1,75 +1,76 @@
 ---
-description: Explore how layout managers in Node-RED Dashboard 2.0 can help organize your dashboard's appearance effectively.
+description: Erfahren Sie, wie Layout-Manager im Node-RED Dashboard 2.0 das Aussehen Ihres Dashboards effektiv organisieren können.
 ---
 
-# Layout Managers
+# Layout-Manager
 
-Dashboard's UI is built around the central core of a "Layout Manager" which is responsible for rendering the UI, and managing the layout of the widgets within it.
+Das Dashboard-Interface ist um den zentralen Kern eines "Layout-Managers" aufgebaut, der für die Darstellung der Oberfläche verantwortlich ist. und die Verwaltung des Layouts der Widgets darin.
 
-The navigational hierarchy of the Dashboard UI is as follows:
+Die Navigationshierarchie des Dashboard-UI lautet wie folgt:
 
-- **UI** - `ui-base` - Multiple endpoints can be served within a single Dashboard. Later work will be done to treat these as completely isolated interfaces.
-- **Page** - `ui-page` - All pages within a single UI are listed in the navigation drawer (left menu). Each page is configured to use a given "Layout Manager", and that manager will render
-- **Group** - `ui-group` - A group is a collection of widgets that will be positioned together on a page. Each page "layout" defines how these groups are laid out, but internally, within a group, layout is always consistent, using a bootstrap-style Column Layout (default width of 6).
-- **Widget** - `ui-<widget-name>` - Each widget is defined as a Vue component. You can checkout an example `<widget>.vue` file in our [Adding Widgets](../widgets/core-widgets#example-widget-vue) guide.
+- **UI** - `ui-base` - Mehrere Endpunkte können in einem einzigen Dashboard bedient werden. Später wird daran gearbeitet, diese als völlig isolierte Schnittstellen zu behandeln.
+- **Seite** - `ui-page` - Alle Seiten innerhalb eines einzigen UI sind in der Navigationsleiste (linkes Menü) aufgelistet. Jede Seite ist so konfiguriert, dass sie einen gegebenen "Layout-Manager" verwendet, und dieser Manager wird rendern
+- **Gruppe** - `ui-group` - Eine Gruppe ist eine Sammlung von Widgets, die zusammen auf einer Seite positioniert werden. Jede Seite "Layout" legt fest, wie diese Gruppen angelegt werden, aber intern innerhalb einer Gruppe -Layout ist immer konsistent, mit einem bootstrap-artigen Spaltenlayout (Standardbreite von 6).
+- **Widget** - `ui-<widget-name>` - Jedes Widget ist als Vue Komponente definiert. Du kannst dir eine Beispiel `<widget>.vue` Datei in unserem [Widgets](../widgets/core-widgets#example-widget-vue) Guide ansehen.
 
-## Baseline Layouts
+## Grundlinie Layouts
 
-`/Layouts/Baseline.vue` defines the basic structure of a page (header and left-side navigation drawer). Other layouts then can extend this baseline and define _how_ the widgets are rendered within the baseline's default `<slot></slot>`.
+`/Layouts/Baseline.vue` definiert die Grundstruktur einer Seite (Kopfzeile und Navigationsschublade). Andere Layouts können dann diese Basislinie erweitern und _how_ definieren, die Widgets werden innerhalb der Standardeinstellung der Basislinie `<slot></slot> ` gerendert.
 
-This list of baseline layouts will likely grow in time, and for now, just includes a _very_ basic starter template (side navigation and header).
+Diese Liste der Baseline-Layouts wird wahrscheinlich in der Zeit wachsen und enthält vorerst nur ein _very_ einfaches Starter-Template (Seitennavigation und Kopfzeile).
 
-## Adding a new Layout Manager
+## Einen neuen Layout-Manager hinzufügen
 
 ### Checklist
 
-If you're looking to define your own Layout manager to add to Dashboard, then you need to ensure you've completed the following steps:
+Wenn Sie einen eigenen Layout-Manager zum Dashboard hinzufügen möchten, müssen Sie sicherstellen, dass Sie die folgenden Schritte abgeschlossen haben:
 
-1. Created `YourLayout.vue` in `/ui/src/layouts/`
-2. Add your layout in `/ui/src/layouts/index.js` with a specific key, e.g. `your-layout`
-3. Add your layout to the options in `/nodes/config/ui-page_html`, inside the `oneditprepare` function. Ensure to have the `value` set as the key you used in Step 2.
+1. `YourLayout.vue` in `/ui/src/layouts/` erstellt
+2. Füge dein Layout in `/ui/src/layouts/index.js` mit einem bestimmten Schlüssel hinzu, z.B. `your-layout`
+3. Fügen Sie Ihr Layout zu den Optionen in `/nodes/config/ui-page_html` innerhalb der `oneditprepare` Funktion hinzu. Stelle sicher, dass der `value` als Schlüssel gesetzt ist, den du in Schritt 2 benutzt hast.
 
-### Example `.vue` file
+### Beispiel `.vue` Datei
 
-The below example can help you get started with your own layout.
+Das folgende Beispiel kann Ihnen helfen, mit Ihrem eigenen Layout zu beginnen.
 
-We have also documented the structure of the [Widget](./events#widget) object (used in `line 13`), which will provide detail on what data you have available for a given widget/component.
+Wir haben auch die Struktur des [Widget](./events#widget) Objekts dokumentiert (verwendet in `Zeile 13`), , die Details darüber liefert, welche Daten Sie für ein bestimmtes Widget/Komponente zur Verfügung haben.
 
 ```vue:line-numbers {1}
 <template>
-    <!-- Extend the Baseline Template, and render the page title appropriately -->
+    <! - Erweitern Sie die Basisvorlage, und geben den Seitentitel angemessen -->
     <BaselineLayout :page-title="$route.name">
-        <!-- Retrieve our widgets assigned to this page (page id = $route.meta.id) -->
+        <! - Rufen Sie unsere Widgets ab, die dieser Seite zugewiesen sind (Seite id = $route. eta. d) -->
         <div class="nrdb-layout--flex" v-if="widgets && widgets[$route.meta.id]">
-            <!-- Loop over the widgets defined for this page -->
+            <! - Schleife über die Widgets die für diese Seite definiert sind -->
             <div v-for="w in widgets[$route.meta.id]" :key="w.id">
-                <!-- here we wrap all of our widgets inside a Vuetify v-card -->
+                <! - Hier verpacken wir alle unsere Widgets in eine Vuetify v-card -->
                 <v-card variant="outlined" class="">
-                    <!-- draw our widget into the #text slot of the v-card -->
+                    <! - Zeichne unser Widget in den #Text Slot der v-card -->
                     <template #text>
-                        <!-- render the widget's component, passing in the widget id, props and state -->
+                        <! - die Komponente des Widgets, die in der Widget-ID übergeben wird props and state -->
                         <component  :is="w.component" :id="w.id" :props="w.props" :state="w.state"/>
                     </template>
                 </v-card>
             </div>
         </div>
+    
     </BaselineLayout>
 </template>
 
 <script>
-    import BaselineLayout from './Baseline.vue'
-    import { mapState } from 'vuex';
+    Import BaselineLayout von '. Baseline. ue'
+    Import { mapState } von 'vuex';
 
-    export default {
-        name: 'LayoutFlex',
-        computed: {
-            // our "ui" vue store contains a collection
-            //of widgets mapped by Page ID ($route.meta.id)
-            ...mapState('ui', ['widgets']),
+    Export Standard {
+        Name: 'LayoutFlex',
+        berechnet: {
+            // Unser "ui" vue store enthält eine Sammlung
+            //von Widgets, die von Seite ID abgebildet werden ($route. eta.id)
+            ... apState('ui', ['widgets']),
         },
-        components: {
-            // extend the BaselineLayout component to get
-            // the header and navigation drawer
+        Komponenten: {
+            // erweitern Sie die BaselineLayout Komponente um
+            // Header und Navigationsschublade
             BaselineLayout
         }
     }
@@ -77,8 +78,8 @@ We have also documented the structure of the [Widget](./events#widget) object (u
 
 <style scoped>
 /*
-    any CSS you have for this layout can go here,
-    mapped with appropriate CSS classes
+    jegliche CSS die Sie für dieses Layout haben, können hier gehen
+    mit entsprechenden CSS-Klassen
 */
-</style>
+</style> zugeordnet
 ```
