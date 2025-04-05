@@ -103,7 +103,7 @@ Adds a single number input row to your dashboard.
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
@@ -111,7 +111,7 @@ Adds a single number input row to your dashboard.
 
 <ControlsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of Number Inputs Types](/images/node-examples/ui-number-input.png "Example of Number Inputs Types"){data-zoomable}
 _Example of several Number Inputs Types rendered in a Dashboard._
