@@ -41,11 +41,11 @@ If you're looking for a quick cheat sheet on how to write Markdown, you can chec
 
 <PropsTable/>
 
-## Dynamic Properties
+## Propiedades dinámicas
 
 <DynamicPropsTable/>
 
-## Example
+## Ejemplo
 
 ![Example of rendered Markdown](/images/node-examples/ui-markdown.png "Example of rendered Markdown"){data-zoomable}
 _Example of rendered markdown in a Dashboard._
