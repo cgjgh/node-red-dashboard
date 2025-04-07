@@ -54,7 +54,9 @@
         "test:debug": "mocha --inspect=9226 \"test/**/*.spec.js\"",
         "watch": "npm-run-all --parallel watch:dashboard watch:node-red",
         "watch:dashboard": "npm run dev",
-        "watch:node-red": "cd ~/.node-red && npx nodemon --watch $(realpath ./node_modules/@flowfuse/node-red-dashboard/nodes) --ext '*' --exec node-red"
+        "watch:node-red": "cd ~/.node-red && npx nodemon --watch $(realpath ./node_modules/@flowfuse/node-red-dashboard/nodes) --ext '*' --exec node-red",
+        "lunaria:build": "lunaria build",
+        "lunaria:preview": "lunaria preview"
     },
     "dependencies": {
         "acorn": "^8.11.2",
@@ -69,6 +71,7 @@
     },
     "devDependencies": {
         "@flowfuse/flow-renderer": "^0.3.0",
+        "@lunariajs/core": "^0.1.1",
         "@mdi/font": "^7.4.47",
         "@unhead/vue": "^1.7.4",
         "@vite-pwa/assets-generator": "^1.0.0",

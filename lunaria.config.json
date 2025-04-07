@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/@lunariajs/core/config.schema.json",
+  "repository": {
+    "name": "flowfuse/node-red-dashboard"
+  },
+  "files": [
+    {
+      "location": ".vitepress/config/{en,de}.js",
+      "pattern": ".vitepress/config/@lang.js",
+      "type": "universal"
+    },
+    {
+      "location": "./docs/**/*.md",
+      "pattern": "./docs/@lang/@path",
+      "type": "universal"
+    }
+  ],
+  "defaultLocale": {
+    "label": "English",
+    "lang": "en"
+  },
+  "locales": [
+    {
+      "label": "Deutsch",
+      "lang": "de"
+    }
+  ],
+  "outDir": "./docs/.vitepress/dist/_translations",
+  "ignoreKeywords": ["lunaria-ignore"]
+}
