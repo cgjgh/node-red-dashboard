@@ -7,7 +7,7 @@
                     v-model="value" :class="{'compressed': isCompressed, 'stacked-spinner': spinner === 'stacked'}" :reverse="false" :controlVariant="spinner" :hideInput="false" :inset="false"
                     v-bind="props" :disabled="!state.enabled"
                     :rules="validation" :clearable="clearable" variant="outlined" hide-details="auto"
-                    :prepend-icon="prependIcon" :append-icon="appendIcon" :append-inner-icon="appendInnerIcon"
+                    :prepend-icon="prependIcon" :append-icon="appendIcon" :append-inner-icon="appendInnerIcon" :precision="precision"
                     :prepend-inner-icon="prependInnerIcon" :min="min" :max="max" :step="step" @update:model-value="onChange" @keyup.enter="onEnter" @blur="onBlur" @click:clear="onClear"
                 >
                     <template #label>
@@ -22,8 +22,8 @@
 
 <script>
 import DOMPurify from 'dompurify'
-// eslint-disable-next-line import/no-unresolved
-import { VNumberInput } from 'vuetify/labs/VNumberInput'
+
+import { VNumberInput } from 'vuetify/lib/components/VNumberInput/VNumberInput'
 import { mapState } from 'vuex' // eslint-disable-line import/order
 
 export default {
@@ -101,6 +101,10 @@ export default {
         },
         step () {
             return Math.abs(this.getProperty('step')) || 1
+        },
+        precision () {
+            const s = Math.abs(this.getProperty('step')) || 1
+            return s.toString().split('.')[1]?.length || 0
         },
         spinner () {
             return this.getProperty('spinner')

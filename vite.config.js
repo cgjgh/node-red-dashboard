@@ -13,6 +13,13 @@ export default defineConfig({
             vue: 'vue/dist/vue.esm-bundler.js'
         }
     },
+    css: {
+        preprocessorOptions: {
+            scss: {
+                api: 'modern-compiler'
+            }
+        }
+    },
     plugins: [vue(),
         VitePWA({
             strategies: 'injectManifest',
@@ -24,8 +31,8 @@ export default defineConfig({
             manifest: false,
 
             injectManifest: {
-                maximumFileSizeToCacheInBytes: 3000000,
-                globPatterns: ['**/*.{js,css,html,svg,png,jpg,ico,ttf,eot,woff,woff2}']
+                maximumFileSizeToCacheInBytes: process.env.NODE_ENV === 'development' ? 6000000 : 3350000,
+                globPatterns: ['**/*.{js,css,html,svg,png,ico,ttf,eot,woff,woff2}']
             },
 
             devOptions: {
@@ -40,7 +47,17 @@ export default defineConfig({
     build: {
         minify: process.env.NODE_ENV === 'development' ? false : undefined,
         outDir: '../dist',
-        emptyOutDir: true
+        emptyOutDir: true,
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Create a separate chunk the following libraries to reduce .index.js size
+                    mermaid: ['mermaid'],
+                    'vue-vendor': ['vue', 'vuex', 'vue-router'],
+                    echarts: ['echarts']
+                }
+            }
+        }
     },
     base: './'
 })

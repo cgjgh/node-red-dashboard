@@ -3,7 +3,7 @@
         <div v-if="error" class="nrdb-placeholder-container">
             <div class="nrdb-placeholder">
                 <img src="./assets/logo.png">
-                <h1>Node-RED Dashboard 2.0</h1>
+                <h1>FlowFuse Dashboard</h1>
                 <img src="./assets/disconnected.png">
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <p :class="'status-warning'" v-html="error.message" />
@@ -29,12 +29,12 @@
         <div v-else class="nrdb-placeholder-container">
             <div class="nrdb-placeholder">
                 <img src="./assets/logo.png">
-                <h1>Node-RED Dashboard 2.0</h1>
+                <h1>FlowFuse Dashboard</h1>
                 <!-- eslint-disable-next-line vue/no-v-html -->
                 <p :class="'status-' + status.type" v-html="status.msg" />
             </div>
         </div>
-        <PWABadge />
+        <PWABadge v-if="installable" />
     </v-app>
 </template>
 
@@ -59,7 +59,34 @@ export default {
     inject: ['$socket'],
     data () {
         return {
-            loading: true
+            loading: true,
+            installable: false
+        }
+    },
+    head () {
+        const links = []
+        // get default dashboard
+        if (this.dashboards) {
+            const dashboards = Object.keys(this.dashboards)
+            const id = dashboards.length ? dashboards[0] : undefined
+            const dashboard = this.dashboards[id]
+            if (dashboard.allowInstall) {
+                this.installable = true
+                links.push({
+                    rel: 'manifest',
+                    crossorigin: 'use-credentials',
+                    href: './manifest.webmanifest'
+                })
+            } else {
+                this.installable = false
+                // Clear any existing service workers when PWA is disabled
+                this.$nextTick(() => {
+                    this.clearServiceWorkers()
+                })
+            }
+        }
+        return {
+            link: links
         }
     },
     computed: {
@@ -142,7 +169,7 @@ export default {
         }
     },
     created () {
-        this.$socket.on('ui-config', (topic, payload) => {
+        this.$socket?.on('ui-config', (topic, payload) => {
             this.loading = false
             console.log('ui-config received. topic:', topic, 'payload:', payload)
 
@@ -274,6 +301,17 @@ export default {
         },
         reloadApp () {
             location.reload()
+        },
+        clearServiceWorkers () {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                    for (const registration of registrations) {
+                        registration.unregister()
+                    }
+                }).catch(function (error) {
+                    console.error('Error unregistering service workers:', error)
+                })
+            }
         }
     }
 }

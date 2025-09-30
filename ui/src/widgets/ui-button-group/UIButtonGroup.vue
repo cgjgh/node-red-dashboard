@@ -8,7 +8,8 @@
                     <v-icon size="x-large" :icon="`mdi-${option.icon.replace(/^mdi-/, '')}`" />
                 </template>
                 <v-icon v-if="option.icon && !option.label" :icon="`mdi-${option.icon.replace(/^mdi-/, '')}`" size="x-large" />
-                {{ option.label }}
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-html="option.label" />
             </v-btn>
         </v-btn-toggle>
     </div>
@@ -47,8 +48,9 @@ export default {
             if (options) {
                 return options.map(option => {
                     if (typeof option === 'string') {
-                        return { label: option, value: option }
+                        return { label: DOMPurify.sanitize(option), value: option }
                     } else {
+                        option.label = DOMPurify.sanitize(option.label)
                         return option
                     }
                 })
@@ -132,8 +134,17 @@ export default {
     width: max-content;
     border-width: thin;
     border-color: rgba(var(--v-border-color), var(--v-border-opacity));
-    min-height: fit-content;
+    min-height: var(--widget-row-height);
+    max-height: 100%;
 }
+
+/* override opinionated Vuetify stylings */
+.v-btn-group--density-comfortable.v-btn-group,
+.v-btn-group--density-default.v-btn-group,
+.v-btn-group--density-compact.v-btn-group {
+    height: initial !important;
+}
+
 /* default styling for an unselected option */
 .nrdb-ui-button-group-wrapper .v-btn--variant-elevated {
    color: rgb(var(--v-theme-on-group-background));

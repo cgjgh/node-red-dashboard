@@ -138,7 +138,11 @@ export default {
         onSync (msg) {
             // update the UI with any changes
             if (typeof msg?.payload !== 'undefined') {
-                this.value = msg.payload
+                if (this.typeIsComboBox) {
+                    this.value = this.options.find((o) => o.value === msg.payload)
+                } else {
+                    this.value = msg.payload
+                }
             }
         },
         onChange () {
@@ -152,7 +156,7 @@ export default {
                     }
                     return option.value
                 })
-            } else if (this.value) {
+            } else if (typeof this.value !== 'undefined') {
                 // return a single value
                 if (this.props.typeIsComboBox === false) {
                     msg.payload = this.value
